@@ -52,7 +52,7 @@ async function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    icon: path.join(process.cwd(), 'public', 'icon.svg'),
+    icon: path.join(process.cwd(), 'public', 'icon.png'),
   });
 
   await waitForServer(`http://localhost:${NEXUS_PORT}/health`).catch(() => undefined);

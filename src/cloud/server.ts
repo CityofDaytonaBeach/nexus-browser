@@ -175,6 +175,11 @@ export class CloudServer {
       let build = undefined;
       if (this.shouldStartBuild(message, mode)) {
         build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode });
+        messages.push({
+          role: 'assistant',
+          content: `Build started.\n\nWorkspace: ${build.root}\nStatus: ${build.status}\nPreview command: ${build.previewCommand}\nOpenCode log: ${build.logPath}`,
+          timestamp: Date.now(),
+        });
       }
       res.json({ response, messages: this.builderChats.get(sessionId), build });
     });
