@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer, Server as HttpServer } from 'http';
+import * as fs from 'fs';
+import * as path from 'path';
 import { v4 as uuid } from 'uuid';
 import jwt from 'jsonwebtoken';
 import { config } from '../core/config';
@@ -10,6 +12,7 @@ import { createLogger } from '../core/logger';
 import { BrowserEngine } from '../browser/engine';
 import { AIAgent } from '../agent/index';
 import { AutomationEngine } from '../automation/engine';
+import { getAllIntegrationProfiles } from '../integrations/registry';
 
 const log = createLogger('Cloud');
 
@@ -21,6 +24,12 @@ interface CloudClient {
   lastPing: number;
 }
 
+interface BuilderMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: number;
+}
+
 export class CloudServer {
   private app: express.Application;
   private httpServer: HttpServer;
@@ -29,6 +38,7 @@ export class CloudServer {
   private engine: BrowserEngine;
   private agent: AIAgent;
   private automation: AutomationEngine;
+  private builderChats: Map<string, BuilderMessage[]> = new Map();
   private pingInterval?: NodeJS.Timeout;
 
   constructor() {
@@ -40,6 +50,7 @@ export class CloudServer {
     this.app.use(cors({ origin: config.get().server.corsOrigin }));
     this.app.use(helmet({ contentSecurityPolicy: false }));
     this.app.use(express.json({ limit: '50mb' }));
+    this.app.use(express.static(path.join(process.cwd(), 'public')));
 
     this.httpServer = createServer(this.app);
     this.wss = new WebSocketServer({ server: this.httpServer });
@@ -59,6 +70,38 @@ export class CloudServer {
         sessions: this.engine.getAllSessions().length,
         uptime: process.uptime(),
       });
+    });
+
+    router.get('/api/integrations', this.authenticate, (_req, res) => {
+      res.json(getAllIntegrationProfiles());
+    });
+
+    router.get('/api/builder/capabilities', this.authenticate, (_req, res) => {
+      res.json({
+        modes: ['research', 'ui-builder', 'api-mcp', 'database', 'integrations', 'visual-qa', 'ship'],
+        uiLooks: ['faithful-clone', 'modern-saas', 'government-clean', 'dashboard-pro', 'mobile-first', 'luxury-editorial', 'dark-neon', 'minimal'],
+        engines: {
+          browser: true,
+          opencode: true,
+          webgpu: 'client-detected',
+          livePreview: true,
+          visualBuilder: true,
+        },
+        outputs: ['research-project', 'project-brain', 'build-plan', 'tailwind-components', 'sdk-agents', 'mcp-server', 'database-schema', 'integration-factory'],
+      });
+    });
+
+    router.post('/api/builder/chat', this.authenticate, (req, res) => {
+      const sessionId = req.body?.sessionId || 'default';
+      const message = String(req.body?.message || '').trim();
+      const mode = req.body?.mode || 'ui-builder';
+      const uiLook = req.body?.uiLook || 'faithful-clone';
+      const messages = this.builderChats.get(sessionId) || [];
+      if (message) messages.push({ role: 'user', content: message, timestamp: Date.now() });
+      const response = this.buildBuilderResponse(message, mode, uiLook);
+      messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
+      this.builderChats.set(sessionId, messages.slice(-100));
+      res.json({ response, messages: this.builderChats.get(sessionId) });
     });
 
     router.get('/api/sessions', this.authenticate, (_req, res) => {
@@ -117,6 +160,64 @@ export class CloudServer {
     router.get('/api/sessions/:sid/pages/:pid/elements', this.authenticate, async (req, res) => {
       const elements = await this.engine.getInteractiveElements(req.params.sid, req.params.pid);
       res.json(elements);
+    });
+
+    router.post('/api/sessions/:sid/pages/:pid/clone-snapshot', this.authenticate, async (req, res) => {
+      try {
+        const snapshot = await this.engine.captureCloneSnapshot(req.params.sid, req.params.pid);
+        if (req.body?.save) {
+          const outputDir = this.saveCloneSnapshot(snapshot, req.body.outputDir);
+          return res.json({ snapshot, outputDir });
+        }
+        res.json(snapshot);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/sessions/:sid/pages/:pid/api-discovery', this.authenticate, async (req, res) => {
+      try {
+        const catalog = await this.engine.discoverApiEndpoints(req.params.sid, req.params.pid);
+        if (req.body?.save !== false) {
+          const outputDir = this.engine.saveApiDiscoveryCatalog(catalog, req.body?.outputDir);
+          return res.json({ catalog, outputDir });
+        }
+        res.json(catalog);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/sessions/:sid/pages/:pid/api-crawl', this.authenticate, async (req, res) => {
+      try {
+        const catalog = await this.engine.crawlApiDiscovery(req.params.sid, req.params.pid, req.body || {});
+        const outputDir = this.engine.saveApiDiscoveryCatalog(catalog, req.body?.outputDir);
+        res.json({ catalog, outputDir });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/sessions/:sid/pages/:pid/ui-intelligence', this.authenticate, async (req, res) => {
+      try {
+        const report = await this.engine.captureUiIntelligence(req.params.sid, req.params.pid);
+        if (req.body?.save !== false) {
+          const outputDir = this.engine.saveUiIntelligenceReport(report, req.body?.outputDir);
+          return res.json({ report, outputDir });
+        }
+        res.json(report);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/sessions/:sid/pages/:pid/research-project', this.authenticate, async (req, res) => {
+      try {
+        const result = await this.engine.createResearchProject(req.params.sid, req.params.pid, req.body || {});
+        res.json(result);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
     });
 
     router.post('/api/agent/task', this.authenticate, async (req, res) => {
@@ -180,6 +281,45 @@ export class CloudServer {
     });
 
     this.app.use(router);
+  }
+
+  private saveCloneSnapshot(snapshot: Awaited<ReturnType<BrowserEngine['captureCloneSnapshot']>>, outputRoot?: string): string {
+    const safeTitle = (snapshot.title || 'site')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 60) || 'site';
+    const timestamp = snapshot.capturedAt.replace(/[:.]/g, '-');
+    const root = outputRoot ? path.resolve(outputRoot) : path.join(process.cwd(), 'clones');
+    const outputDir = path.join(root, `${safeTitle}-${timestamp}`);
+
+    fs.mkdirSync(outputDir, { recursive: true });
+    fs.writeFileSync(path.join(outputDir, 'snapshot.json'), JSON.stringify(snapshot, null, 2));
+    fs.writeFileSync(path.join(outputDir, 'source.html'), snapshot.html);
+    fs.writeFileSync(path.join(outputDir, 'opencode-prompt.md'), snapshot.opencodePrompt);
+    fs.writeFileSync(path.join(outputDir, 'tailwind-ui.md'), snapshot.tailwindInventory);
+    fs.writeFileSync(path.join(outputDir, 'TailwindPage.tsx'), snapshot.tailwindComponent);
+    fs.writeFileSync(path.join(outputDir, 'screenshot.png'), Buffer.from(snapshot.screenshot, 'base64'));
+
+    return outputDir;
+  }
+
+  private buildBuilderResponse(message: string, mode: string, uiLook: string): string {
+    const intent = message.toLowerCase();
+    const actions = [
+      'Research the current site with the browser crawler.',
+      'Generate project-brain.json, build-plan.json, SDK agents, MCP tools, database schema, and Tailwind UI artifacts.',
+      `Apply UI look mode: ${uiLook}.`,
+      'OpenCode should implement tasks in numeric order, then browser QA should compare the live build against the captured site.',
+    ];
+
+    if (intent.includes('stripe')) actions.push('Enable the Stripe integration factory output and wire checkout, subscriptions, webhooks, and billing UI.');
+    if (intent.includes('github')) actions.push('Enable GitHub repo, issues, PR, Actions, and OAuth integration tasks.');
+    if (intent.includes('database') || intent.includes('db')) actions.push('Use SQLite local-first, then generate Prisma/Drizzle/Postgres migration options from code-intelligence.json.');
+    if (intent.includes('mcp')) actions.push('Expose discovered endpoints as MCP tools with env-based credentials and safe schemas.');
+    if (intent.includes('ui') || intent.includes('figma') || intent.includes('tailwind')) actions.push('Use ui-intelligence output to generate design tokens, component variants, responsive Tailwind classes, and visual QA targets.');
+
+    return `Builder mode: ${mode}\n\nRecommended actions:\n${actions.map((action) => `- ${action}`).join('\n')}\n\nNext: run Research Project, then Build With OpenCode, then Visual QA.`;
   }
 
   private authenticate = (req: express.Request, res: express.Response, next: express.NextFunction) => {

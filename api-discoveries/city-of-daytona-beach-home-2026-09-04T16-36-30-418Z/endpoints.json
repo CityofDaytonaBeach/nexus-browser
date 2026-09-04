@@ -1,0 +1,189 @@
+[
+  {
+    "id": "GET /api/system/cookie",
+    "url": "https://codb.civicweb.net/api/system/cookie?name=%7Bname%7D&_=%7B_%7D",
+    "origin": "https://codb.civicweb.net",
+    "path": "/api/system/cookie",
+    "method": "GET",
+    "resourceType": "xhr",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://codb.civicweb.net/portal/",
+      "accept-language": "en-US",
+      "sec-ch-ua": "\"Chromium\";v=\"151\", \"Not=A?Brand\";v=\"99\"",
+      "sec-ch-ua-mobile": "?0",
+      "x-requested-with": "XMLHttpRequest",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "accept": "application/json, text/javascript, */*; q=0.01",
+      "content-type": "application/json"
+    },
+    "responseHeaders": {
+      "strict-transport-security": "max-age=63072000; includeSubDomains;",
+      "content-security-policy": "default-src 'self'; base-uri 'self'; connect-src 'self' 'unsafe-inline' *.visualstudio.com *.pendo.io ws://*.civicweb.net wss://*.civicweb.net *.civicweb.net ws://localhost wss://localhost *.cke-cs.com ws://*.cke-cs.com wss://*.cke-cs.com translate.googleapis.com maps.googleapis.com *.boxcast.com docaccess.com *.docaccess.com; font-src 'self' data: use.fontawesome.com *.gstatic.com *.boxcast.com; frame-src 'self' *.icompasstech.com *.civicweb.net *.earthchannel.com *.google.com *.youtube.com *.twitter.com *.granicus.com *.swagit.com *.livestream.com *.diligent.com *.vidyard.com diligent.com boxcast.tv *.pendo.io blob: data: docaccess.com *.docaccess.com; frame-ancestors 'self'; img-src * data: blob:; media-src 'self' blob: *.youtube.com *.civicweb.net *.boxcast.com; object-src 'self' blob:; script-src blob: 'self' 'unsafe-inline' 'unsafe-eval' cdn.ckeditor.com cdn.jsdelivr.net *.msecnd.net *.google.com *.google-analytics.com *.googleapis.com *.gstatic.com *.newrelic.com *.twitter.com *.youtube.com *.ytimg.com *.youtu.be *.civicweb.net *.cdn.telerik.com *.boxcast.com *.pendo.io docaccess.com *.docaccess.com; style-src 'self' 'unsafe-inline' use.fontawesome.com code.jquery.com *.googleapis.com *.pendo.io docaccess.com *.docaccess.com; plugin-types application/x-shockwave-flash application/pdf application/x-pnacl",
+      "cache-control": "no-cache",
+      "pragma": "no-cache",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "expires": "-1",
+      "content-length": "4",
+      "date": "Fri, 04 Sep 2026 16:36:07 GMT",
+      "x-xss-protection": "1; mode=block",
+      "content-type": "application/json; charset=utf-8",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "contentType": "application/json; charset=utf-8",
+    "requestBodyExample": null,
+    "queryParameters": [
+      {
+        "name": "name",
+        "example": "{name}"
+      },
+      {
+        "name": "_",
+        "example": "{_}"
+      }
+    ],
+    "usage": "GET /api/system/cookie. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /api/getboxcastlivebroadcasts",
+    "url": "https://codb.civicweb.net/api/getboxcastlivebroadcasts?_=%7B_%7D",
+    "origin": "https://codb.civicweb.net",
+    "path": "/api/getboxcastlivebroadcasts",
+    "method": "GET",
+    "resourceType": "xhr",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://codb.civicweb.net/portal/",
+      "accept-language": "en-US",
+      "sec-ch-ua": "\"Chromium\";v=\"151\", \"Not=A?Brand\";v=\"99\"",
+      "sec-ch-ua-mobile": "?0",
+      "x-requested-with": "XMLHttpRequest",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "accept": "application/json, text/javascript, */*; q=0.01",
+      "content-type": "application/json"
+    },
+    "responseHeaders": {
+      "strict-transport-security": "max-age=63072000; includeSubDomains;",
+      "content-security-policy": "default-src 'self'; base-uri 'self'; connect-src 'self' 'unsafe-inline' *.visualstudio.com *.pendo.io ws://*.civicweb.net wss://*.civicweb.net *.civicweb.net ws://localhost wss://localhost *.cke-cs.com ws://*.cke-cs.com wss://*.cke-cs.com translate.googleapis.com maps.googleapis.com *.boxcast.com docaccess.com *.docaccess.com; font-src 'self' data: use.fontawesome.com *.gstatic.com *.boxcast.com; frame-src 'self' *.icompasstech.com *.civicweb.net *.earthchannel.com *.google.com *.youtube.com *.twitter.com *.granicus.com *.swagit.com *.livestream.com *.diligent.com *.vidyard.com diligent.com boxcast.tv *.pendo.io blob: data: docaccess.com *.docaccess.com; frame-ancestors 'self'; img-src * data: blob:; media-src 'self' blob: *.youtube.com *.civicweb.net *.boxcast.com; object-src 'self' blob:; script-src blob: 'self' 'unsafe-inline' 'unsafe-eval' cdn.ckeditor.com cdn.jsdelivr.net *.msecnd.net *.google.com *.google-analytics.com *.googleapis.com *.gstatic.com *.newrelic.com *.twitter.com *.youtube.com *.ytimg.com *.youtu.be *.civicweb.net *.cdn.telerik.com *.boxcast.com *.pendo.io docaccess.com *.docaccess.com; style-src 'self' 'unsafe-inline' use.fontawesome.com code.jquery.com *.googleapis.com *.pendo.io docaccess.com *.docaccess.com; plugin-types application/x-shockwave-flash application/pdf application/x-pnacl",
+      "cache-control": "no-cache",
+      "pragma": "no-cache",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "expires": "-1",
+      "content-length": "2",
+      "date": "Fri, 04 Sep 2026 16:36:07 GMT",
+      "x-xss-protection": "1; mode=block",
+      "content-type": "application/json; charset=utf-8",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "contentType": "application/json; charset=utf-8",
+    "requestBodyExample": null,
+    "queryParameters": [
+      {
+        "name": "_",
+        "example": "{_}"
+      }
+    ],
+    "usage": "GET /api/getboxcastlivebroadcasts. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /Services/MeetingsService.svc/meetings",
+    "url": "https://codb.civicweb.net/Services/MeetingsService.svc/meetings?from=%7Bfrom%7D&to=%7Bto%7D&_=%7B_%7D",
+    "origin": "https://codb.civicweb.net",
+    "path": "/Services/MeetingsService.svc/meetings",
+    "method": "GET",
+    "resourceType": "xhr",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://codb.civicweb.net/portal/",
+      "accept-language": "en-US",
+      "sec-ch-ua": "\"Chromium\";v=\"151\", \"Not=A?Brand\";v=\"99\"",
+      "sec-ch-ua-mobile": "?0",
+      "x-requested-with": "XMLHttpRequest",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "accept": "application/json, text/javascript, */*; q=0.01",
+      "content-type": "application/json"
+    },
+    "responseHeaders": {
+      "strict-transport-security": "max-age=63072000; includeSubDomains;",
+      "content-security-policy": "default-src 'self'; base-uri 'self'; connect-src 'self' 'unsafe-inline' *.visualstudio.com *.pendo.io ws://*.civicweb.net wss://*.civicweb.net *.civicweb.net ws://localhost wss://localhost *.cke-cs.com ws://*.cke-cs.com wss://*.cke-cs.com translate.googleapis.com maps.googleapis.com *.boxcast.com docaccess.com *.docaccess.com; font-src 'self' data: use.fontawesome.com *.gstatic.com *.boxcast.com; frame-src 'self' *.icompasstech.com *.civicweb.net *.earthchannel.com *.google.com *.youtube.com *.twitter.com *.granicus.com *.swagit.com *.livestream.com *.diligent.com *.vidyard.com diligent.com boxcast.tv *.pendo.io blob: data: docaccess.com *.docaccess.com; frame-ancestors 'self'; img-src * data: blob:; media-src 'self' blob: *.youtube.com *.civicweb.net *.boxcast.com; object-src 'self' blob:; script-src blob: 'self' 'unsafe-inline' 'unsafe-eval' cdn.ckeditor.com cdn.jsdelivr.net *.msecnd.net *.google.com *.google-analytics.com *.googleapis.com *.gstatic.com *.newrelic.com *.twitter.com *.youtube.com *.ytimg.com *.youtu.be *.civicweb.net *.cdn.telerik.com *.boxcast.com *.pendo.io docaccess.com *.docaccess.com; style-src 'self' 'unsafe-inline' use.fontawesome.com code.jquery.com *.googleapis.com *.pendo.io docaccess.com *.docaccess.com; plugin-types application/x-shockwave-flash application/pdf application/x-pnacl",
+      "cache-control": "private",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "content-length": "73083",
+      "date": "Fri, 04 Sep 2026 16:36:07 GMT",
+      "x-xss-protection": "1; mode=block",
+      "content-type": "application/json; charset=utf-8",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "contentType": "application/json; charset=utf-8",
+    "requestBodyExample": null,
+    "queryParameters": [
+      {
+        "name": "from",
+        "example": "{from}"
+      },
+      {
+        "name": "to",
+        "example": "{to}"
+      },
+      {
+        "name": "_",
+        "example": "{_}"
+      }
+    ],
+    "usage": "GET /Services/MeetingsService.svc/meetings. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /domains/codb.civicweb.net/domain.json",
+    "url": "https://docaccess.com/domains/codb.civicweb.net/domain.json",
+    "origin": "https://docaccess.com",
+    "path": "/domains/codb.civicweb.net/domain.json",
+    "method": "GET",
+    "resourceType": "fetch",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://codb.civicweb.net/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Chromium\";v=\"151\", \"Not=A?Brand\";v=\"99\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "access-control-expose-headers": "*",
+      "content-encoding": "gzip",
+      "etag": "\"97b667c1e1c0bdd5a0d8edecf188e632\"",
+      "x-amz-version-id": "qF9xcsrmDBuIMZadYPc2JHvVtxNS2JbJ",
+      "x-cache": "Miss from cloudfront",
+      "x-amz-cf-id": "jzbkUDc7lXMacNbF7nT_TkWz15sJN3ZOflGet-bBlXtwunCL0zM_6Q==",
+      "date": "Fri, 04 Sep 2026 16:36:09 GMT",
+      "content-type": "application/json",
+      "last-modified": "Fri, 04 Sep 2026 16:34:26 GMT",
+      "cache-control": "max-age=15",
+      "via": "1.1 e7145a814fadc1f0b348d01cc9712f1c.cloudfront.net (CloudFront)",
+      "accept-ranges": "bytes",
+      "access-control-allow-origin": "*",
+      "content-length": "67494",
+      "x-amz-cf-pop": "DFW57-P6",
+      "server": "AmazonS3",
+      "x-amz-server-side-encryption": "AES256"
+    },
+    "contentType": "application/json",
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "usage": "GET /domains/codb.civicweb.net/domain.json. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  }
+]

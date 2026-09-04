@@ -1,0 +1,115 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "City of Daytona Beach - Home API",
+    "version": "1.0.0",
+    "description": "Automatically discovered from https://codb.civicweb.net/portal/"
+  },
+  "paths": {
+    "/api/system/cookie": {
+      "get": {
+        "summary": "GET /api/system/cookie",
+        "description": "GET /api/system/cookie. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{name}"
+            }
+          },
+          {
+            "name": "_",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{_}"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "application/json; charset=utf-8"
+          }
+        }
+      }
+    },
+    "/api/getboxcastlivebroadcasts": {
+      "get": {
+        "summary": "GET /api/getboxcastlivebroadcasts",
+        "description": "GET /api/getboxcastlivebroadcasts. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [
+          {
+            "name": "_",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{_}"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "application/json; charset=utf-8"
+          }
+        }
+      }
+    },
+    "/Services/MeetingsService.svc/meetings": {
+      "get": {
+        "summary": "GET /Services/MeetingsService.svc/meetings",
+        "description": "GET /Services/MeetingsService.svc/meetings. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{from}"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{to}"
+            }
+          },
+          {
+            "name": "_",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{_}"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "application/json; charset=utf-8"
+          }
+        }
+      }
+    },
+    "/domains/codb.civicweb.net/domain.json": {
+      "get": {
+        "summary": "GET /domains/codb.civicweb.net/domain.json",
+        "description": "GET /domains/codb.civicweb.net/domain.json. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "application/json"
+          }
+        }
+      }
+    }
+  }
+}
