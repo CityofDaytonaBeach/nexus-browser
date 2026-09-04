@@ -1,0 +1,23 @@
+{
+  "name": "form-filler",
+  "description": "AI-powered form filling automation",
+  "triggers": [
+    { "type": "manual", "config": {} }
+  ],
+  "variables": {},
+  "steps": [
+    {
+      "id": "ai-fill",
+      "action": "ai_task",
+      "params": {
+        "goal": "Fill out all visible forms on the current page with realistic test data. Use placeholder text that looks real. Submit the form if there's a submit button."
+      },
+      "timeout": 60000,
+      "retry": 2
+    }
+  ],
+  "enabled": true,
+  "schedule": null,
+  "createdAt": 0,
+  "runCount": 0
+}

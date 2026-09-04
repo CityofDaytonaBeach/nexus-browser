@@ -1,0 +1,18 @@
+{
+  "name": "nexus-browser",
+  "version": "1.0.0",
+  "description": "NexusBrowser - The First AI-Native Smart Browser",
+  "main": "dist/index.js",
+  "bin": {
+    "nexus": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "start:cloud": "ts-node src/index.ts --cloud",
+    "start:headless": "ts-node src/index.ts --headless",
+    "start:dev": "ts-node-dev --respawn src/index.ts",
+    "cli": "ts-node src/cli.ts",
+    "setup": "node scripts/setup.js"
+  }
+}

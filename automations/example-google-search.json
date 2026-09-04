@@ -1,0 +1,59 @@
+{
+  "name": "google-search-scrape",
+  "description": "Search Google and extract results",
+  "triggers": [
+    { "type": "manual", "config": {} }
+  ],
+  "variables": {
+    "search_term": "AI browser automation"
+  },
+  "steps": [
+    {
+      "id": "nav",
+      "action": "navigate",
+      "params": { "url": "https://www.google.com" },
+      "timeout": 10000
+    },
+    {
+      "id": "wait-for-load",
+      "action": "wait",
+      "params": { "ms": 2000 }
+    },
+    {
+      "id": "search-input",
+      "action": "click",
+      "params": { "selector": "textarea[name='q'], input[name='q']" },
+      "timeout": 5000
+    },
+    {
+      "id": "type-query",
+      "action": "type",
+      "params": { "selector": "textarea[name='q'], input[name='q']", "text": "{{search_term}}" },
+      "timeout": 5000
+    },
+    {
+      "id": "submit",
+      "action": "press",
+      "params": { "key": "Enter" }
+    },
+    {
+      "id": "wait-results",
+      "action": "wait",
+      "params": { "ms": 3000 }
+    },
+    {
+      "id": "screenshot",
+      "action": "screenshot",
+      "params": { "fullPage": false }
+    },
+    {
+      "id": "extract",
+      "action": "extract",
+      "params": { "selector": "#search" }
+    }
+  ],
+  "enabled": true,
+  "schedule": null,
+  "createdAt": 0,
+  "runCount": 0
+}

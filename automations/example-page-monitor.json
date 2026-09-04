@@ -1,0 +1,38 @@
+{
+  "name": "page-monitor",
+  "description": "Monitor a page for changes every 5 minutes",
+  "triggers": [
+    {
+      "type": "schedule",
+      "config": { "interval": "5m" }
+    }
+  ],
+  "variables": {
+    "url": "https://example.com"
+  },
+  "steps": [
+    {
+      "id": "navigate",
+      "action": "navigate",
+      "params": { "url": "{{url}}" },
+      "timeout": 15000
+    },
+    {
+      "id": "screenshot",
+      "action": "screenshot",
+      "params": { "fullPage": true }
+    },
+    {
+      "id": "extract",
+      "action": "extract",
+      "params": {}
+    }
+  ],
+  "schedule": {
+    "type": "interval",
+    "value": "5m"
+  },
+  "enabled": false,
+  "createdAt": 0,
+  "runCount": 0
+}
