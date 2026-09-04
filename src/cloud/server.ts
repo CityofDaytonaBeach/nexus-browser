@@ -15,6 +15,7 @@ import { AutomationEngine } from '../automation/engine';
 import { getAllIntegrationProfiles } from '../integrations/registry';
 import { getCompetitiveBlueprint } from '../competitive/blueprint';
 import { BuilderPlatform } from '../builder/platform';
+import { getProjectAgentSwarm } from '../project-agents/registry';
 
 const log = createLogger('Cloud');
 
@@ -106,6 +107,10 @@ export class CloudServer {
 
     router.get('/api/builder/deploy-targets', this.authenticate, (_req, res) => {
       res.json(this.builderPlatform.getDeployTargets());
+    });
+
+    router.get('/api/builder/agents', this.authenticate, (_req, res) => {
+      res.json(getProjectAgentSwarm());
     });
 
     router.post('/api/builder/opencode-sessions', this.authenticate, (req, res) => {
@@ -402,6 +407,7 @@ export class CloudServer {
     if (intent.includes('database') || intent.includes('db')) actions.push('Use SQLite local-first, then generate Prisma/Drizzle/Postgres migration options from code-intelligence.json.');
     if (intent.includes('mcp')) actions.push('Expose discovered endpoints as MCP tools with env-based credentials and safe schemas.');
     if (intent.includes('ui') || intent.includes('figma') || intent.includes('tailwind')) actions.push('Use ui-intelligence output to generate design tokens, component variants, responsive Tailwind classes, and visual QA targets.');
+    if (intent.includes('agent') || intent.includes('hermes') || intent.includes('skills') || intent.includes('memory')) actions.push('Use the project agent swarm: research, browser UI, API, database, MCP, OpenCode build, React, Tailwind, integration, QA, memory, and scheduler agents. Persist reusable lessons as skills.');
 
     const next = mode === 'research' ? 'search/open sites and run Research Project' : mode === 'plan' ? 'generate build-plan.json and tasks' : mode === 'build' ? 'start OpenCode implementation and live visual QA' : 'run Research Project, then Build With OpenCode, then Visual QA';
     return `Builder mode: ${mode}\n\nRecommended actions:\n${actions.map((action) => `- ${action}`).join('\n')}\n\nNext: ${next}.`;

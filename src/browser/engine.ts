@@ -5,6 +5,7 @@ import { config } from '../core/config';
 import { createLogger } from '../core/logger';
 import { BrowserPage, BrowserAction, ActionResult, PageInfo, SessionInfo } from '../core/types';
 import { IntegrationArtifact, buildIntegrationArtifacts, getAllIntegrationProfiles } from '../integrations/registry';
+import { AgentSwarmPlan, buildAgentFiles, getProjectAgentSwarm } from '../project-agents/registry';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -164,6 +165,7 @@ export interface ResearchProject {
     code: CodeIntelligenceReport;
     recommendedStack: string[];
     integrations: Array<{ name: string; category: string; features: string[]; env: string[] }>;
+    agents: AgentSwarmPlan;
     risks: string[];
     nextResearchActions: string[];
   };
@@ -174,6 +176,7 @@ export interface ResearchProject {
   mcp: Record<string, string>;
   boilerplates: Record<string, string>;
   integrations: Record<string, IntegrationArtifact>;
+  agentFiles: Record<string, string>;
   masterPrompt: string;
 }
 
@@ -864,7 +867,7 @@ ${sections.join('\n') || '      <section className="mx-auto max-w-6xl p-6">No UI
     const safeTitle = (project.title || 'research-project').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'research-project';
     const root = outputRoot ? path.resolve(outputRoot) : path.join(process.cwd(), 'research-projects');
     const outputDir = path.join(root, `${safeTitle}-${project.id}`);
-    const dirs = ['tasks', 'api', 'mcp', 'database', 'ui', 'components', 'flows', 'sdk-agents', 'boilerplates', 'integrations'];
+    const dirs = ['tasks', 'api', 'mcp', 'database', 'ui', 'components', 'flows', 'sdk-agents', 'boilerplates', 'integrations', 'agents'];
     fs.mkdirSync(outputDir, { recursive: true });
     dirs.forEach((dir) => fs.mkdirSync(path.join(outputDir, dir), { recursive: true }));
 
@@ -878,6 +881,7 @@ ${sections.join('\n') || '      <section className="mx-auto max-w-6xl p-6">No UI
     Object.entries(project.database).forEach(([file, content]) => fs.writeFileSync(path.join(outputDir, 'database', file), content));
     Object.entries(project.mcp).forEach(([file, content]) => fs.writeFileSync(path.join(outputDir, 'mcp', file), content));
     Object.entries(project.boilerplates).forEach(([file, content]) => fs.writeFileSync(path.join(outputDir, 'boilerplates', file), content));
+    Object.entries(project.agentFiles).forEach(([file, content]) => fs.writeFileSync(path.join(outputDir, 'agents', file), content));
     for (const [name, artifact] of Object.entries(project.integrations)) {
       const integrationDir = path.join(outputDir, 'integrations', name);
       fs.mkdirSync(integrationDir, { recursive: true });
@@ -917,6 +921,7 @@ ${sections.join('\n') || '      <section className="mx-auto max-w-6xl p-6">No UI
         code: api.codeIntelligence,
         recommendedStack: ['Next.js', 'React', 'Tailwind CSS', 'TypeScript', 'Node.js MCP server', 'SQLite local database', 'Prisma or Drizzle ORM'],
         integrations: getAllIntegrationProfiles().map((profile) => ({ name: profile.name, category: profile.category, features: profile.features, env: profile.env })),
+        agents: getProjectAgentSwarm(),
         risks: this.buildResearchRisks(api, ui),
         nextResearchActions: this.buildNextResearchActions(api, ui),
       },
@@ -927,6 +932,7 @@ ${sections.join('\n') || '      <section className="mx-auto max-w-6xl p-6">No UI
       mcp: this.buildMcpArtifacts(api),
       boilerplates: this.buildBoilerplateArtifacts(api, ui),
       integrations: buildIntegrationArtifacts(),
+      agentFiles: buildAgentFiles(),
     };
     return { ...projectBase, masterPrompt: this.buildMasterPrompt(projectBase) };
   }

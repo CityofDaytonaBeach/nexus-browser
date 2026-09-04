@@ -5,6 +5,11 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
+    "desktop": "npm run build && node scripts/desktop.js",
+    "desktop:dev": "npm run build && node scripts/desktop-dev.js",
+    "package:desktop": "npm run build && electron-builder",
+    "package:win": "npm run build && electron-builder --win",
+    "package:mac": "npm run build && electron-builder --mac",
     "start": "ts-node src/index.ts",
     "start:cloud": "ts-node src/index.ts --cloud",
     "start:headless": "ts-node src/index.ts --headless",
@@ -53,7 +58,41 @@
     "ts-node-dev": "^2.0.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.5",
-    "eslint": "^9.5.0"
+    "eslint": "^9.5.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "ai.nexus.browser",
+    "productName": "NexusBrowser",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "public/**/*",
+      "config/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "dist/ui/electron.js"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   },
   "engines": {
     "node": ">=18.0.0"
