@@ -177,6 +177,29 @@ export interface ResearchProject {
   masterPrompt: string;
 }
 
+export interface BuildOverlayBlock {
+  id: string;
+  order: number;
+  name: string;
+  kind: string;
+  selector: string;
+  text: string;
+  tailwind: string;
+  rect: { x: number; y: number; width: number; height: number };
+  explanation: string;
+}
+
+export interface BuildOverlayPlan {
+  capturedAt: string;
+  sessionId: string;
+  pageId: string;
+  url: string;
+  title: string;
+  viewport: { width: number; height: number } | null;
+  blocks: BuildOverlayBlock[];
+  script: string[];
+}
+
 export class BrowserEngine extends EventEmitter {
   private sessions: Map<string, BrowserSession> = new Map();
   private static instance: BrowserEngine;
@@ -787,6 +810,46 @@ ${sections.join('\n') || '      <section className="mx-auto max-w-6xl p-6">No UI
     }
 
     return outputDir;
+  }
+
+  async createBuildOverlayPlan(sessionId: string, pageId: string): Promise<BuildOverlayPlan> {
+    const [snapshot, ui] = await Promise.all([
+      this.captureCloneSnapshot(sessionId, pageId),
+      this.captureUiIntelligence(sessionId, pageId),
+    ]);
+    const componentBySelector = new Map(ui.components.map((component) => [component.selector, component]));
+    const blocks = snapshot.layout
+      .filter((item) => item.rect.width >= 32 && item.rect.height >= 18 && (item.text || item.role || ['header', 'nav', 'main', 'section', 'footer', 'button', 'a', 'input', 'form'].includes(item.tag)))
+      .sort((a, b) => a.rect.y - b.rect.y || a.rect.x - b.rect.x || (b.rect.width * b.rect.height) - (a.rect.width * a.rect.height))
+      .slice(0, 80)
+      .map((item, index) => {
+        const insight = componentBySelector.get(item.selector);
+        const kind = insight?.kind || this.classifyComponentKind(item);
+        const name = insight?.name || this.componentName(kind, item, index);
+        const tailwind = insight?.tailwind || this.stylesToTailwind(item.styles, item.rect);
+        return {
+          id: `${index + 1}-${this.toSnakeCase(name).replace(/_/g, '-')}`,
+          order: index + 1,
+          name,
+          kind,
+          selector: item.selector,
+          text: item.text,
+          tailwind,
+          rect: item.rect,
+          explanation: `Build ${kind} ${name} with Tailwind classes: ${tailwind}`,
+        };
+      });
+
+    return {
+      capturedAt: new Date().toISOString(),
+      sessionId,
+      pageId,
+      url: snapshot.url,
+      title: snapshot.title,
+      viewport: snapshot.viewport,
+      blocks,
+      script: blocks.map((block) => `${block.order}. ${block.explanation}`),
+    };
   }
 
   async createResearchProject(sessionId: string, pageId: string, options: CrawlOptions = {}): Promise<{ project: ResearchProject; outputDir: string }> {

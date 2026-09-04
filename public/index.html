@@ -49,8 +49,21 @@
     .tab.active { color: var(--text); border-color: var(--blue); background: rgba(56,189,248,.12); }
     .preview { position: relative; min-height: 0; overflow: hidden; background: repeating-linear-gradient(45deg, #f8fafc, #f8fafc 10px, #eef2f7 10px, #eef2f7 20px); }
     .preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .overlay-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .build-block { position: absolute; border: 2px solid rgba(56,189,248,.95); background: rgba(56,189,248,.16); border-radius: 8px; box-shadow: 0 0 0 1px rgba(15,23,42,.28), 0 14px 40px rgba(56,189,248,.25); opacity: 0; transform: scale(.96); transition: opacity .22s ease, transform .22s ease; }
+    .build-block.live { opacity: 1; transform: scale(1); }
+    .build-block.done { border-color: rgba(34,197,94,.9); background: rgba(34,197,94,.12); box-shadow: 0 0 0 1px rgba(15,23,42,.2); }
+    .block-label { position: absolute; left: 0; top: -24px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 999px; background: rgba(3,7,18,.88); color: white; padding: 4px 8px; font-size: 11px; }
     .empty { height: 100%; display: grid; place-items: center; color: #172033; text-align: center; padding: 30px; }
     .empty h1 { font-size: clamp(28px, 5vw, 64px); line-height: .95; margin-bottom: 14px; }
+    .landing-builder { width: min(860px, 94vw); border: 1px solid rgba(15,23,42,.12); border-radius: 28px; background: rgba(255,255,255,.88); box-shadow: 0 30px 90px rgba(15,23,42,.18); padding: 28px; backdrop-filter: blur(18px); color: #0f172a; }
+    .landing-builder p { color: #475569; margin-bottom: 18px; }
+    .landing-chat { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 18px; background: white; }
+    .landing-chat textarea { min-height: 74px; resize: none; border: 0; outline: 0; color: #0f172a; font-size: 15px; line-height: 1.45; }
+    .landing-chat button { align-self: end; }
+    .quick-prompts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+    .quick-prompts button { border: 1px solid #cbd5e1; border-radius: 999px; background: #f8fafc; color: #334155; padding: 7px 11px; cursor: pointer; }
+    .quick-prompts button:hover { border-color: #38bdf8; color: #0369a1; }
     .hud { position: absolute; top: 14px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
     .pill { border: 1px solid rgba(255,255,255,.24); background: rgba(3,7,18,.72); color: #e2e8f0; border-radius: 999px; padding: 6px 9px; font-size: 11px; backdrop-filter: blur(12px); }
     .build-stream { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; }
@@ -119,6 +132,7 @@
           <div class="tool" onclick="runUiIntelligence()"><strong>Figma-Level UI Intelligence</strong><span>Extract tokens, components, layout, interactions, Tailwind config, and React components.</span></div>
           <div class="tool" onclick="runApiCrawl()"><strong>API + MCP Crawl</strong><span>Crawl pages, gather endpoints, response samples, SDK agents, and MCP tool stubs.</span></div>
           <div class="tool" onclick="runResearchProject()"><strong>Full App Brain</strong><span>Create project-brain, OpenCode tasks, database, integrations, boilerplates, and master prompt.</span></div>
+          <div class="tool" onclick="runBuildOverlay()"><strong>Watch AI Build Overlay</strong><span>Paint the captured UI block by block with component names and Tailwind classes.</span></div>
           <div class="tool" onclick="sendBuilderPrompt('Change the captured UI to the selected look while keeping the original information architecture.')"><strong>Restyle UI</strong><span>Tell the AI to transform the design language without losing structure.</span></div>
           <div class="tool" onclick="sendBuilderPrompt('Prepare a visual QA plan that compares the live build to the captured site and creates repair tasks.')"><strong>Visual QA</strong><span>Generate comparison and repair instructions for the live build.</span></div>
         </div>
@@ -144,9 +158,19 @@
             <span class="pill" id="lookPill">Faithful Clone</span>
           </div>
           <div class="empty">
-            <div>
+            <div class="landing-builder">
               <h1>Browser-first AI builder</h1>
-              <p>Research a live website, generate the app brain, then let OpenCode build while this view stays live.</p>
+              <p>Tell Nexus what to build, paste a URL, or ask it to research a live website and generate the full OpenCode app plan.</p>
+              <div class="landing-chat">
+                <textarea id="landingChatInput" placeholder="Example: Build a better version of codb.civicweb.net/portal with React, Tailwind, API discovery, MCP tools, local database, GitHub, Stripe, and visual QA." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLandingChat();}"></textarea>
+                <button class="btn primary" onclick="sendLandingChat()">Start Build</button>
+              </div>
+              <div class="quick-prompts">
+                <button onclick="quickStart('Research this website and create a complete app build plan with UI, API, database, MCP, and integrations.')">Research Website</button>
+                <button onclick="quickStart('Clone the UI into smart React and Tailwind components, then show the block-by-block build overlay.')">Clone UI</button>
+                <button onclick="quickStart('Find all API endpoints, create SDKs, and generate a custom MCP server.')">API + MCP</button>
+                <button onclick="quickStart('Build a SaaS app with auth, Stripe billing, GitHub integration, database, and deployment tasks.')">SaaS App</button>
+              </div>
             </div>
           </div>
         </div>
@@ -184,6 +208,8 @@
     let currentSessionId = null;
     let currentPageId = null;
     let viewMode = 'preview';
+    let lastScreenshot = null;
+    let overlayTimer = null;
 
     function headers() { return { 'x-api-key': apiKey, 'Content-Type': 'application/json' }; }
 
@@ -259,6 +285,15 @@
       addMessage('assistant', `API/MCP crawl exported to ${result.outputDir}`);
     }
 
+    async function runBuildOverlay() {
+      if (!currentSessionId || !currentPageId) return addMessage('system', 'No active page to build from.');
+      appendStream('researchStream', 'Creating block-by-block build overlay...');
+      const plan = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/build-overlay`, {});
+      document.getElementById('componentCount').textContent = plan.blocks.length;
+      addMessage('assistant', `Starting visual build overlay with ${plan.blocks.length} blocks.`);
+      animateBuildOverlay(plan);
+    }
+
     async function sendChat() {
       const input = document.getElementById('chatInput');
       const message = input.value.trim();
@@ -274,6 +309,26 @@
       sendChat();
     }
 
+    function sendLandingChat() {
+      const input = document.getElementById('landingChatInput');
+      const message = input?.value.trim();
+      if (!message) return;
+      const urlMatch = message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i);
+      if (urlMatch) {
+        document.getElementById('urlInput').value = urlMatch[0].startsWith('http') ? urlMatch[0] : `https://${urlMatch[0]}`;
+        navigate();
+      }
+      document.getElementById('chatInput').value = message;
+      sendChat();
+      input.value = '';
+    }
+
+    function quickStart(message) {
+      const input = document.getElementById('landingChatInput');
+      if (input) input.value = message;
+      sendLandingChat();
+    }
+
     function updatePage(page) {
       document.getElementById('pageStatus').textContent = `${page.title || 'Page'} - ${page.url}`;
       document.getElementById('urlInput').value = page.url;
@@ -283,7 +338,63 @@
     function refreshScreenshot() { if (currentPageId) sendWs('page:screenshot', { pageId: currentPageId }); }
 
     function showScreenshot(base64) {
-      document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">${viewMode}</span><span class="pill">${document.getElementById('uiLook').value}</span></div><img src="data:image/png;base64,${base64}" alt="Live browser screenshot">`;
+      lastScreenshot = base64;
+      document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">${viewMode}</span><span class="pill">${document.getElementById('uiLook').value}</span></div><img id="previewImage" src="data:image/png;base64,${base64}" alt="Live browser screenshot"><div class="overlay-layer" id="overlayLayer"></div>`;
+    }
+
+    function animateBuildOverlay(plan) {
+      if (overlayTimer) clearInterval(overlayTimer);
+      if (!lastScreenshot) refreshScreenshot();
+      const view = document.getElementById('browserView');
+      if (!document.getElementById('overlayLayer')) {
+        view.insertAdjacentHTML('beforeend', '<div class="overlay-layer" id="overlayLayer"></div>');
+      }
+      const layer = document.getElementById('overlayLayer');
+      layer.innerHTML = '';
+      const scale = getOverlayScale(plan);
+      let index = 0;
+      document.getElementById('qaStream').textContent = 'AI visual build started...';
+      overlayTimer = setInterval(() => {
+        if (index >= plan.blocks.length) {
+          clearInterval(overlayTimer);
+          appendStream('qaStream', 'AI visual build overlay complete.');
+          addMessage('assistant', 'Overlay complete. OpenCode now has the ordered component build script.');
+          return;
+        }
+        const block = plan.blocks[index];
+        const el = document.createElement('div');
+        el.className = 'build-block live';
+        el.style.left = `${block.rect.x * scale.x + scale.offsetX}px`;
+        el.style.top = `${block.rect.y * scale.y + scale.offsetY}px`;
+        el.style.width = `${Math.max(10, block.rect.width * scale.x)}px`;
+        el.style.height = `${Math.max(10, block.rect.height * scale.y)}px`;
+        el.innerHTML = `<div class="block-label">${block.order}. ${block.kind} - ${block.name}</div>`;
+        layer.appendChild(el);
+        appendStream('taskStream', `${block.order}. ${block.name}\n${block.tailwind}`);
+        appendStream('qaStream', block.explanation);
+        setTimeout(() => el.classList.add('done'), 550);
+        index += 1;
+      }, 420);
+    }
+
+    function getOverlayScale(plan) {
+      const view = document.getElementById('browserView');
+      const img = document.getElementById('previewImage');
+      const viewport = plan.viewport || { width: img?.naturalWidth || view.clientWidth, height: img?.naturalHeight || view.clientHeight };
+      const containerRatio = view.clientWidth / view.clientHeight;
+      const sourceRatio = viewport.width / viewport.height;
+      let width = view.clientWidth;
+      let height = view.clientHeight;
+      let offsetX = 0;
+      let offsetY = 0;
+      if (sourceRatio > containerRatio) {
+        height = width / sourceRatio;
+        offsetY = (view.clientHeight - height) / 2;
+      } else {
+        width = height * sourceRatio;
+        offsetX = (view.clientWidth - width) / 2;
+      }
+      return { x: width / viewport.width, y: height / viewport.height, offsetX, offsetY };
     }
 
     function setViewMode(el, mode) {

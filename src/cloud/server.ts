@@ -211,6 +211,15 @@ export class CloudServer {
       }
     });
 
+    router.post('/api/sessions/:sid/pages/:pid/build-overlay', this.authenticate, async (req, res) => {
+      try {
+        const plan = await this.engine.createBuildOverlayPlan(req.params.sid, req.params.pid);
+        res.json(plan);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
     router.post('/api/sessions/:sid/pages/:pid/research-project', this.authenticate, async (req, res) => {
       try {
         const result = await this.engine.createResearchProject(req.params.sid, req.params.pid, req.body || {});
