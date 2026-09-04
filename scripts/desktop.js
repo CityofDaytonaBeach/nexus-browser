@@ -43,7 +43,9 @@ async function main() {
 
   await waitForServer();
 
-  const electronBin = path.join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'electron.cmd' : 'electron');
+  const electronBin = process.platform === 'win32'
+    ? path.join(root, 'node_modules', 'electron', 'dist', 'electron.exe')
+    : path.join(root, 'node_modules', '.bin', 'electron');
   const electron = spawn(electronBin, [path.join(root, 'dist', 'ui', 'electron.js')], {
     cwd: root,
     env: { ...process.env, NEXUS_PORT: port, NEXUS_EXTERNAL_SERVER: 'true' },

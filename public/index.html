@@ -457,6 +457,7 @@
         applyModeFromMessage(message);
         const result = await api('/api/builder/chat', { sessionId: currentSessionId, message, mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value });
         addMessage('assistant', result.response);
+        if (result.build) showBuildStarted(result.build);
         if (pendingAutoBuild !== message) executeChatIntent(message);
       } catch (error) {
         addMessage('system', `Builder chat failed: ${error.message}`);
@@ -503,7 +504,7 @@
     function executeChatIntent(message) {
       const mode = document.getElementById('builderMode').value;
       const text = message.toLowerCase();
-      if (!currentPageId && !message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i)) {
+      if (!currentPageId && !message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i) && !/\b(build|create|make|generate|code)\b/i.test(message)) {
         if (mode === 'build' || mode === 'plan') addMessage('system', 'Give me a target URL first, or switch to research mode so I can search the web for one.');
         return;
       }
@@ -522,6 +523,13 @@
       } else if (/\b(ui|tailwind|figma|overlay|component|clone)\b/.test(text)) {
         setTimeout(() => runUiIntelligence().then(() => runBuildOverlay()).catch(error => addMessage('system', `UI build failed: ${error.message}`)), 1200);
       }
+    }
+
+    function showBuildStarted(build) {
+      document.getElementById('outputPath').textContent = build.root;
+      document.getElementById('taskStream').textContent = `Build workspace created\n\n${build.root}\n\nOpenCode status: ${build.status}\n\nPreview command:\n${build.previewCommand}\n\nLog:\n${build.logPath}`;
+      document.getElementById('qaStream').textContent = `OpenCode command:\n${build.opencodeCommand}\n\nIf the app does not change, open the log file and run the command manually from the workspace.`;
+      addMessage('assistant', `Started build workspace: ${build.root}\nStatus: ${build.status}`);
     }
 
     function shouldWebSearch(message) {

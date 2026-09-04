@@ -48,22 +48,22 @@ async function main() {
   await browserManager.initialize();
   log.info('Browser engine ready');
 
-  if (!apiOnly) {
-    const cloudServer = new CloudServer();
-    await cloudServer.start();
-    log.info(`REST API: http://localhost:${config.get().server.port}`);
-    log.info(`WebSocket: ws://localhost:${config.get().server.port}`);
-  }
+  const cloudServer = new CloudServer();
+  await cloudServer.start();
+  log.info(`REST API: http://localhost:${config.get().server.port}`);
+  log.info(`WebSocket: ws://localhost:${config.get().server.port}`);
 
-  if (config.get().ide.enabled && !noIDE) {
+  if (config.get().ide.enabled && !noIDE && !apiOnly) {
     const ideServer = new IDEServer();
     await ideServer.start();
     log.info(`IDE: http://localhost:${config.get().ide.port}`);
   }
 
-  const automation = new AutomationEngine();
-  await automation.initialize();
-  log.info('Automation engine ready');
+  if (!apiOnly) {
+    const automation = new AutomationEngine();
+    await automation.initialize();
+    log.info('Automation engine ready');
+  }
 
   if (!isCloud) {
     log.info('');

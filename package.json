@@ -77,12 +77,14 @@
       "main": "dist/ui/electron.js"
     },
     "win": {
+      "icon": "public/icon.svg",
       "target": [
         "nsis",
         "zip"
       ]
     },
     "mac": {
+      "icon": "public/icon.svg",
       "target": [
         "dmg",
         "zip"

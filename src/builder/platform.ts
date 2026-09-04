@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawn, ChildProcess } from 'child_process';
 import { v4 as uuid } from 'uuid';
 
 export interface AiProviderProfile {
@@ -35,10 +36,24 @@ export interface OpenCodeSessionStub {
   createdAt: string;
 }
 
+export interface BuildWorkspace {
+  id: string;
+  name: string;
+  root: string;
+  prompt: string;
+  status: 'created' | 'opencode-running' | 'opencode-unavailable' | 'failed';
+  opencodeCommand: string;
+  logPath: string;
+  previewCommand: string;
+  createdAt: string;
+}
+
 export class BuilderPlatform {
   private snapshots: Map<string, WorkspaceSnapshot> = new Map();
   private locks: Map<string, FileLock> = new Map();
   private sessions: Map<string, OpenCodeSessionStub> = new Map();
+  private builds: Map<string, BuildWorkspace> = new Map();
+  private buildProcesses: Map<string, ChildProcess> = new Map();
 
   getProviders(): AiProviderProfile[] {
     return [
@@ -67,6 +82,68 @@ export class BuilderPlatform {
 
   getOpenCodeSessions(): OpenCodeSessionStub[] {
     return Array.from(this.sessions.values());
+  }
+
+  startBuildFromPrompt(prompt: string, options: { workspaceRoot?: string; uiLook?: string; mode?: string } = {}): BuildWorkspace {
+    const id = uuid().slice(0, 8);
+    const name = this.safeProjectName(prompt) || `nexus-app-${id}`;
+    const root = path.join(path.resolve(options.workspaceRoot || path.join(process.cwd(), 'generated-apps')), `${name}-${id}`);
+    const logPath = path.join(root, 'opencode-build.log');
+    const opencodePrompt = this.buildOpenCodeAppPrompt(prompt, options.uiLook || 'modern-saas');
+
+    fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+    this.writeStarterApp(root, name, prompt);
+    fs.writeFileSync(path.join(root, 'OPENCODE_BUILD_PROMPT.md'), opencodePrompt);
+
+    const command = `opencode run ${JSON.stringify(opencodePrompt)}`;
+    const build: BuildWorkspace = {
+      id,
+      name,
+      root,
+      prompt,
+      status: 'created',
+      opencodeCommand: command,
+      logPath,
+      previewCommand: 'npm install && npm run dev',
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const commandParts = process.platform === 'win32'
+        ? { command: 'cmd.exe', args: ['/c', 'opencode', 'run', opencodePrompt] }
+        : { command: 'opencode', args: ['run', opencodePrompt] };
+      const child = spawn(commandParts.command, commandParts.args, {
+        cwd: root,
+        env: process.env,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: false,
+        windowsHide: true,
+      });
+      const log = fs.createWriteStream(logPath, { flags: 'a' });
+      child.stdout.pipe(log);
+      child.stderr.pipe(log);
+      child.on('exit', (code) => {
+        log.write(`\nOpenCode exited with code ${code}\n`);
+        this.buildProcesses.delete(id);
+      });
+      child.on('error', (error) => {
+        log.write(`\nOpenCode failed to start: ${error.message}\n`);
+        build.status = 'opencode-unavailable';
+      });
+      this.buildProcesses.set(id, child);
+      build.status = 'opencode-running';
+    } catch {
+      fs.writeFileSync(logPath, `OpenCode could not be launched automatically. Run this manually from ${root}:\n${command}\n`);
+      build.status = 'opencode-unavailable';
+    }
+
+    this.builds.set(id, build);
+    this.createOpenCodeSession(root, opencodePrompt, options.mode || 'build');
+    return build;
+  }
+
+  getBuilds(): BuildWorkspace[] {
+    return Array.from(this.builds.values());
   }
 
   createSnapshot(root: string, reason = 'manual snapshot'): WorkspaceSnapshot {
@@ -144,5 +221,33 @@ export class BuilderPlatform {
     };
     visit(root);
     return files;
+  }
+
+  private safeProjectName(prompt: string): string {
+    const base = prompt.toLowerCase().replace(/https?:\/\/\S+/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 42);
+    if (base.includes('landing')) return 'landing-page';
+    if (base.includes('dashboard')) return 'dashboard-app';
+    if (base.includes('saas')) return 'saas-app';
+    return base || 'nexus-app';
+  }
+
+  private writeStarterApp(root: string, name: string, prompt: string): void {
+    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
+      scripts: { dev: 'vite --host 0.0.0.0', build: 'vite build', preview: 'vite preview' },
+      dependencies: { '@vitejs/plugin-react': 'latest', vite: 'latest', typescript: 'latest', react: 'latest', 'react-dom': 'latest' },
+      devDependencies: {},
+    }, null, 2));
+    fs.writeFileSync(path.join(root, 'index.html'), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>\n');
+    fs.writeFileSync(path.join(root, 'src', 'main.jsx'), `import React from 'react';\nimport { createRoot } from 'react-dom/client';\nimport './styles.css';\n\nfunction App() {\n  return (\n    <main className="page">\n      <nav className="nav"><strong>${name}</strong><a>Features</a><a>Pricing</a><button>Start Building</button></nav>\n      <section className="hero">\n        <p className="eyebrow">NexusBrowser generated starter</p>\n        <h1>${this.escapeHtml(prompt).slice(0, 90) || 'Build a production landing page'}</h1>\n        <p>OpenCode is now connected to this workspace. It should turn this starter into a polished application using the prompt in OPENCODE_BUILD_PROMPT.md.</p>\n        <div className="actions"><button>Get Started</button><button className="ghost">View Plan</button></div>\n      </section>\n      <section className="grid"><article>Research</article><article>Plan</article><article>Build</article></section>\n    </main>\n  );\n}\n\ncreateRoot(document.getElementById('root')).render(<App />);\n`);
+    fs.writeFileSync(path.join(root, 'src', 'styles.css'), `body{margin:0;font-family:Inter,system-ui,sans-serif;background:#f7fbff;color:#0f172a}.page{min-height:100vh}.nav{height:64px;display:flex;align-items:center;gap:24px;padding:0 40px;border-bottom:1px solid #dbeafe;background:white}.nav strong{margin-right:auto;color:#0284c7}.nav a{color:#475569}.nav button,.hero button{border:0;border-radius:12px;background:#0284c7;color:white;padding:12px 18px;font-weight:700}.hero{max-width:920px;margin:0 auto;padding:96px 24px;text-align:center}.eyebrow{color:#0284c7;font-weight:800;text-transform:uppercase;letter-spacing:.16em}.hero h1{font-size:clamp(40px,8vw,84px);line-height:.95;margin:16px 0}.hero p{font-size:20px;color:#475569}.actions{display:flex;gap:12px;justify-content:center;margin-top:28px}.hero .ghost{background:white;color:#0284c7;border:1px solid #bae6fd}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:980px;margin:0 auto;padding:0 24px 80px}.grid article{border:1px solid #dbeafe;border-radius:20px;background:white;padding:28px;font-weight:800;color:#0284c7}@media(max-width:760px){.nav{padding:0 16px}.nav a{display:none}.grid{grid-template-columns:1fr}.hero{text-align:left}.actions{justify-content:flex-start}}`);
+    fs.writeFileSync(path.join(root, 'README.md'), `# ${name}\n\nGenerated by NexusBrowser Builder.\n\nPrompt:\n${prompt}\n\nRun locally:\n\n\`\`\`bash\nnpm install\nnpm run dev\n\`\`\`\n`);
+  }
+
+  private buildOpenCodeAppPrompt(prompt: string, uiLook: string): string {
+    return `You are OpenCode inside a NexusBrowser generated app workspace.\n\nUser request: ${prompt}\n\nUI look: ${uiLook}\n\nBuild a real working application, not just notes. Use the starter files already created in this workspace. Improve the landing page/application with clean React, production-quality CSS, responsive layout, accessible components, and clear project structure.\n\nRequired work:\n- Inspect the current files.\n- Replace the starter with a polished implementation matching the request.\n- Keep the app runnable with npm install and npm run dev.\n- Add clear README usage instructions.\n- Do not hardcode secrets.\n- Run or explain build verification.\n`;
+  }
+
+  private escapeHtml(value: string): string {
+    return value.replace(/[&<>]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[char] || char));
   }
 }

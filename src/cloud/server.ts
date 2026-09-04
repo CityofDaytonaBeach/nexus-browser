@@ -145,6 +145,23 @@ export class CloudServer {
       res.json(this.builderPlatform.createVisualQaPlan(req.body?.targetUrl || '', req.body?.localUrl || 'http://localhost:5173'));
     });
 
+    router.post('/api/builder/start-build', this.authenticate, (req, res) => {
+      try {
+        const build = this.builderPlatform.startBuildFromPrompt(String(req.body?.prompt || 'Build a landing page'), {
+          workspaceRoot: req.body?.workspaceRoot,
+          uiLook: req.body?.uiLook,
+          mode: req.body?.mode || 'build',
+        });
+        res.json(build);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/builder/builds', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getBuilds());
+    });
+
     router.post('/api/builder/chat', this.authenticate, (req, res) => {
       const sessionId = req.body?.sessionId || 'default';
       const message = String(req.body?.message || '').trim();
@@ -155,7 +172,11 @@ export class CloudServer {
       const response = this.buildBuilderResponse(message, mode, uiLook);
       messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
       this.builderChats.set(sessionId, messages.slice(-100));
-      res.json({ response, messages: this.builderChats.get(sessionId) });
+      let build = undefined;
+      if (this.shouldStartBuild(message, mode)) {
+        build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode });
+      }
+      res.json({ response, messages: this.builderChats.get(sessionId), build });
     });
 
     router.get('/api/sessions', this.authenticate, (_req, res) => {
@@ -373,6 +394,12 @@ export class CloudServer {
     if (/\bplan\s+mode\b|\bswitch\s+to\s+plan\b/.test(text)) return 'plan';
     if (/\bbuild\s+mode\b|\bswitch\s+to\s+build\b/.test(text)) return 'build';
     return fallback;
+  }
+
+  private shouldStartBuild(message: string, mode: string): boolean {
+    const text = message.toLowerCase();
+    if (!message.trim()) return false;
+    return mode === 'build' || /\b(build|create|make|generate|code)\b/.test(text) && /\b(app|application|landing page|website|dashboard|saas|ui|page)\b/.test(text);
   }
 
   private buildBuilderResponse(message: string, mode: string, uiLook: string): string {
