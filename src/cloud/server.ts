@@ -13,6 +13,8 @@ import { BrowserEngine } from '../browser/engine';
 import { AIAgent } from '../agent/index';
 import { AutomationEngine } from '../automation/engine';
 import { getAllIntegrationProfiles } from '../integrations/registry';
+import { getCompetitiveBlueprint } from '../competitive/blueprint';
+import { BuilderPlatform } from '../builder/platform';
 
 const log = createLogger('Cloud');
 
@@ -39,12 +41,14 @@ export class CloudServer {
   private agent: AIAgent;
   private automation: AutomationEngine;
   private builderChats: Map<string, BuilderMessage[]> = new Map();
+  private builderPlatform: BuilderPlatform;
   private pingInterval?: NodeJS.Timeout;
 
   constructor() {
     this.engine = BrowserEngine.getInstance();
     this.agent = new AIAgent();
     this.automation = new AutomationEngine();
+    this.builderPlatform = new BuilderPlatform();
 
     this.app = express();
     this.app.use(cors({ origin: config.get().server.corsOrigin }));
@@ -78,7 +82,7 @@ export class CloudServer {
 
     router.get('/api/builder/capabilities', this.authenticate, (_req, res) => {
       res.json({
-        modes: ['research', 'ui-builder', 'api-mcp', 'database', 'integrations', 'visual-qa', 'ship'],
+        modes: ['research', 'plan', 'build', 'ui-builder', 'api-mcp', 'database', 'integrations', 'visual-qa', 'ship'],
         uiLooks: ['faithful-clone', 'modern-saas', 'government-clean', 'dashboard-pro', 'mobile-first', 'luxury-editorial', 'dark-neon', 'minimal'],
         engines: {
           browser: true,
@@ -88,13 +92,58 @@ export class CloudServer {
           visualBuilder: true,
         },
         outputs: ['research-project', 'project-brain', 'build-plan', 'tailwind-components', 'sdk-agents', 'mcp-server', 'database-schema', 'integration-factory'],
+        competitiveBlueprint: true,
       });
+    });
+
+    router.get('/api/builder/competitive-blueprint', this.authenticate, (_req, res) => {
+      res.json(getCompetitiveBlueprint());
+    });
+
+    router.get('/api/builder/providers', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getProviders());
+    });
+
+    router.get('/api/builder/deploy-targets', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getDeployTargets());
+    });
+
+    router.post('/api/builder/opencode-sessions', this.authenticate, (req, res) => {
+      res.json(this.builderPlatform.createOpenCodeSession(req.body?.workspace || process.cwd(), req.body?.prompt || '', req.body?.mode || 'build'));
+    });
+
+    router.get('/api/builder/opencode-sessions', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getOpenCodeSessions());
+    });
+
+    router.post('/api/builder/snapshots', this.authenticate, (req, res) => {
+      res.json(this.builderPlatform.createSnapshot(req.body?.root || process.cwd(), req.body?.reason || 'manual snapshot'));
+    });
+
+    router.get('/api/builder/snapshots', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getSnapshots());
+    });
+
+    router.post('/api/builder/file-locks', this.authenticate, (req, res) => {
+      res.json(this.builderPlatform.lockFile(req.body?.path, req.body?.owner || 'opencode', req.body?.reason || 'agent editing'));
+    });
+
+    router.delete('/api/builder/file-locks', this.authenticate, (req, res) => {
+      res.json({ success: this.builderPlatform.unlockFile(req.body?.path) });
+    });
+
+    router.get('/api/builder/file-locks', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getLocks());
+    });
+
+    router.post('/api/builder/visual-qa-plan', this.authenticate, (req, res) => {
+      res.json(this.builderPlatform.createVisualQaPlan(req.body?.targetUrl || '', req.body?.localUrl || 'http://localhost:5173'));
     });
 
     router.post('/api/builder/chat', this.authenticate, (req, res) => {
       const sessionId = req.body?.sessionId || 'default';
       const message = String(req.body?.message || '').trim();
-      const mode = req.body?.mode || 'ui-builder';
+      const mode = this.detectBuilderMode(message, req.body?.mode || 'ui-builder');
       const uiLook = req.body?.uiLook || 'faithful-clone';
       const messages = this.builderChats.get(sessionId) || [];
       if (message) messages.push({ role: 'user', content: message, timestamp: Date.now() });
@@ -313,14 +362,40 @@ export class CloudServer {
     return outputDir;
   }
 
+  private detectBuilderMode(message: string, fallback: string): string {
+    const text = message.toLowerCase();
+    if (/\bresearch\s+mode\b|\bswitch\s+to\s+research\b/.test(text)) return 'research';
+    if (/\bplan\s+mode\b|\bswitch\s+to\s+plan\b/.test(text)) return 'plan';
+    if (/\bbuild\s+mode\b|\bswitch\s+to\s+build\b/.test(text)) return 'build';
+    return fallback;
+  }
+
   private buildBuilderResponse(message: string, mode: string, uiLook: string): string {
     const intent = message.toLowerCase();
-    const actions = [
-      'Research the current site with the browser crawler.',
-      'Generate project-brain.json, build-plan.json, SDK agents, MCP tools, database schema, and Tailwind UI artifacts.',
-      `Apply UI look mode: ${uiLook}.`,
-      'OpenCode should implement tasks in numeric order, then browser QA should compare the live build against the captured site.',
-    ];
+    const actions = mode === 'research'
+      ? [
+        'Use the browser as a web researcher: search the web, open relevant sites, crawl resources, discover APIs, and capture UI intelligence.',
+        'Collect sources, screenshots, links, endpoints, integrations, docs, and examples before writing code.',
+        'Generate or update project-brain.json with every useful finding.',
+      ]
+      : mode === 'plan'
+        ? [
+          'Convert research into an implementation plan for OpenCode.',
+          'Create architecture, database schema, UI component plan, API/MCP plan, integration plan, test plan, and ordered tasks.',
+          'Do not build yet; identify missing research and risks first.',
+        ]
+        : mode === 'build'
+          ? [
+            'Hand the build plan to OpenCode and implement tasks in numeric order.',
+            'Keep the browser live as the preview and use visual QA after each major UI step.',
+            `Apply UI look mode: ${uiLook}.`,
+          ]
+          : [
+            'Research the current site with the browser crawler.',
+            'Generate project-brain.json, build-plan.json, SDK agents, MCP tools, database schema, and Tailwind UI artifacts.',
+            `Apply UI look mode: ${uiLook}.`,
+            'OpenCode should implement tasks in numeric order, then browser QA should compare the live build against the captured site.',
+          ];
 
     if (intent.includes('stripe')) actions.push('Enable the Stripe integration factory output and wire checkout, subscriptions, webhooks, and billing UI.');
     if (intent.includes('github')) actions.push('Enable GitHub repo, issues, PR, Actions, and OAuth integration tasks.');
@@ -328,7 +403,8 @@ export class CloudServer {
     if (intent.includes('mcp')) actions.push('Expose discovered endpoints as MCP tools with env-based credentials and safe schemas.');
     if (intent.includes('ui') || intent.includes('figma') || intent.includes('tailwind')) actions.push('Use ui-intelligence output to generate design tokens, component variants, responsive Tailwind classes, and visual QA targets.');
 
-    return `Builder mode: ${mode}\n\nRecommended actions:\n${actions.map((action) => `- ${action}`).join('\n')}\n\nNext: run Research Project, then Build With OpenCode, then Visual QA.`;
+    const next = mode === 'research' ? 'search/open sites and run Research Project' : mode === 'plan' ? 'generate build-plan.json and tasks' : mode === 'build' ? 'start OpenCode implementation and live visual QA' : 'run Research Project, then Build With OpenCode, then Visual QA';
+    return `Builder mode: ${mode}\n\nRecommended actions:\n${actions.map((action) => `- ${action}`).join('\n')}\n\nNext: ${next}.`;
   }
 
   private authenticate = (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -420,6 +496,17 @@ export class CloudServer {
       case 'session:list':
         client.ws.send(JSON.stringify({ type: 'sessions', sessions: this.engine.getAllSessions() }));
         break;
+
+      case 'session:attach': {
+        const session = this.engine.getSession(msg.sessionId);
+        if (!session) {
+          client.ws.send(JSON.stringify({ type: 'error', error: 'Session not found' }));
+          return;
+        }
+        client.sessionId = msg.sessionId;
+        client.ws.send(JSON.stringify({ type: 'session:attached', session: this.engine.getSessionInfo(session) }));
+        break;
+      }
 
       case 'page:action': {
         if (!client.sessionId) {

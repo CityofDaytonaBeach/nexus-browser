@@ -67,9 +67,7 @@ async function main() {
 
   if (!isCloud) {
     log.info('');
-    log.info('Opening browser...');
-    const session = await browserManager.getEngine().createSession();
-    log.info(`Session ${session.id} created with ${session.pages.length} page(s)`);
+    log.info(`Open builder UI: http://localhost:${config.get().server.port}`);
   }
 
   log.info('');
