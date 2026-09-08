@@ -70,6 +70,16 @@
     .tab.active { color: var(--blue); border-color: var(--blue); background: var(--blue-soft); }
     .preview { position: relative; min-height: 0; overflow: hidden; background: repeating-linear-gradient(45deg, var(--preview-grid-a), var(--preview-grid-a) 10px, var(--preview-grid-b) 10px, var(--preview-grid-b) 20px); }
     .preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .app-frame { width: 100%; height: 100%; border: 0; background: white; display: block; }
+    .preview-actions { position: absolute; right: 14px; top: 14px; display: flex; gap: 6px; z-index: 4; }
+    .staging-studio { height: 100%; display: grid; grid-template-columns: 220px 1fr; gap: 10px; padding: 56px 12px 12px; color: var(--text); }
+    .staging-panel { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 10px; overflow: auto; box-shadow: var(--shadow); }
+    .staging-score { font-size: 34px; line-height: 1; color: var(--blue); margin: 6px 0; }
+    .device-wall { min-width: 0; overflow: auto; display: flex; align-items: flex-start; gap: 12px; padding-bottom: 8px; }
+    .device-frame { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 16px; background: #0f172a; padding: 8px; box-shadow: var(--shadow); }
+    .device-frame header { color: #e2e8f0; font-size: 11px; display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .device-frame iframe { border: 0; background: white; border-radius: 10px; transform-origin: top left; display: block; }
+    .device-shot { width: 100%; border-radius: 10px; background: white; display: none; }
     .overlay-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
     .build-block { position: absolute; border: 2px solid rgba(56,189,248,.95); background: rgba(56,189,248,.16); border-radius: 8px; box-shadow: 0 0 0 1px rgba(15,23,42,.28), 0 14px 40px rgba(56,189,248,.25); opacity: 0; transform: scale(.96); transition: opacity .22s ease, transform .22s ease; }
     .build-block.live { opacity: 1; transform: scale(1); }
@@ -155,9 +165,20 @@
         <div class="section tools">
           <div class="tool" onclick="runResearchProject()"><strong>Research + Plan</strong><span>Crawl, extract UI/API, create project brain and OpenCode tasks.</span></div>
           <div class="tool" onclick="runBuildOverlay()"><strong>Build Overlay</strong><span>Watch the UI reconstruction plan block by block.</span></div>
+          <div class="tool" onclick="startActiveBuildPreview()"><strong>Live App Preview</strong><span>Start the generated app runtime and render it in Nexus.</span></div>
+          <div class="tool" onclick="runStagingStudio()"><strong>Staging Studio</strong><span>Multi-device preview wall, health checks, logs, and creative uniqueness scoring.</span></div>
+          <div class="tool" onclick="runBuildDoctor(false)"><strong>Build Doctor</strong><span>Diagnose scripts, deps, API/env setup, build, preview, and quality gaps.</span></div>
+          <div class="tool" onclick="runBuildDoctor(true)"><strong>Auto Heal</strong><span>Snapshot the app and launch OpenCode repair for detected failures.</span></div>
+          <div class="tool" onclick="runAutoHealLoop()"><strong>Heal Loop</strong><span>Doctor, repair, rebuild, restart preview, and optional visual QA until healthy.</span></div>
+          <div class="tool" onclick="runExpertRouter()"><strong>Expert Router</strong><span>Auto-select official-source experts from deps, files, prompt, and logs.</span></div>
+          <div class="tool" onclick="createCreativeDirection()"><strong>Creative Mind</strong><span>Generate anti-template visual DNA so every app feels custom-built.</span></div>
+          <div class="tool" onclick="showProjectMemory()"><strong>Project Memory</strong><span>Review decisions, fixes, preferences, routing, and creative history.</span></div>
+          <div class="tool" onclick="showLanguageExpert('typescript')"><strong>TypeScript Expert</strong><span>Pull official GitHub signals and generate current compiler repair guidance.</span></div>
+          <div class="tool" onclick="showAllLanguageExperts()"><strong>Stack Experts</strong><span>Languages, DBs, package tools, DevOps, cloud, auth, payments, and AI SDK agents.</span></div>
           <div class="tool" onclick="runUiIntelligence()"><strong>UI Inspect</strong><span>Tokens, components, layout, Tailwind, React files.</span></div>
           <div class="tool" onclick="runApiCrawl()"><strong>API / MCP</strong><span>Endpoints, SDKs, MCP tools, response samples.</span></div>
           <div class="tool" onclick="createVisualQaPlan()"><strong>QA Plan</strong><span>Target vs local preview checks and repair prompt.</span></div>
+          <div class="tool" onclick="runVisualQaRepair()"><strong>Auto Repair QA</strong><span>Compare target to live app and generate OpenCode repair tasks.</span></div>
           <div class="tool" onclick="showBuilderPlatform()"><strong>Platform</strong><span>Providers, deploys, snapshots, locks, sessions.</span></div>
           <div class="tool" onclick="showAgentSwarm()"><strong>Agents</strong><span>Project/app agents, skills, memory, routing, automations.</span></div>
           <div class="tool" onclick="showCompetitiveBlueprint()"><strong>Roadmap</strong><span>Palot/Bolt-inspired priorities for Nexus.</span></div>
@@ -241,6 +262,8 @@
     let overlayTimer = null;
     let pendingAutoBuild = null;
     let pendingNavigateUrl = null;
+    let activeBuildId = null;
+    let previewLogTimer = null;
 
     function initTheme() {
       const saved = localStorage.getItem('nexus-theme') || 'light';
@@ -259,6 +282,12 @@
 
     async function api(path, body) {
       const res = await fetch(path, { method: 'POST', headers: headers(), body: JSON.stringify(body || {}) });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function deleteApi(path) {
+      const res = await fetch(path, { method: 'DELETE', headers: headers() });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     }
@@ -447,6 +476,203 @@
       }
     }
 
+    async function runVisualQaRepair() {
+      if (!currentSessionId || !currentPageId) return addMessage('system', 'No active target page. Open the site you want to compare first.');
+      try {
+        let build = await getActiveBuild();
+        if (!activeBuildId) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        if (!build?.previewUrl) build = await api(`/api/builder/builds/${activeBuildId}/preview`, {});
+        if (!build?.previewUrl) return addMessage('system', 'No live generated preview yet. Start a build preview first.');
+        appendStream('qaStream', `Running DOM-Vision Fusion QA against ${build.previewUrl}`);
+        const run = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/visual-qa-repair`, { localUrl: build.previewUrl });
+        document.getElementById('outputPath').textContent = run.outputDir;
+        document.getElementById('qaStream').textContent = `DOM-Vision Fusion: ${run.scores.overall}/100\nPixel: ${run.scores.pixel}/100\nLayout: ${run.scores.layout}/100\nText: ${run.scores.text}/100\nColor: ${run.scores.color}/100\n\n${run.findings.map(f => `[${f.severity}] ${f.area}: ${f.repair}`).join('\n\n')}`;
+        document.getElementById('taskStream').textContent = `Repair artifacts:\n${run.artifacts.repairTasks}\n${run.artifacts.opencodePrompt}\n\nOpenCode repair prompt:\n${run.repairPrompt}`;
+        addMessage('assistant', `Visual QA repair package created. Score: ${run.scores.overall}/100\nOutput: ${run.outputDir}`);
+      } catch (error) {
+        addMessage('system', `Visual QA repair failed: ${error.message}`);
+      }
+    }
+
+    async function getActiveBuild() {
+      const builds = await getApi('/api/builder/builds');
+      let build = activeBuildId ? builds.find(item => item.id === activeBuildId) : null;
+      if (!build) build = builds[builds.length - 1];
+      if (build?.id) activeBuildId = build.id;
+      return build;
+    }
+
+    async function runBuildDoctor(autoHeal) {
+      try {
+        const build = await getActiveBuild();
+        if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        appendStream('qaStream', `${autoHeal ? 'Auto-heal' : 'Build Doctor'} inspecting ${build.name}...`);
+        const report = await api(`/api/builder/builds/${build.id}/${autoHeal ? 'auto-heal' : 'doctor'}`, { runBuild: true, autoHeal });
+        document.getElementById('outputPath').textContent = report.outputDir;
+        document.getElementById('qaStream').textContent = `Build Doctor: ${report.score}/100\nStatus: ${report.status}\nIssues: ${report.issues.length}\n\n${report.issues.map(issue => `[${issue.severity}] ${issue.area}: ${issue.issue}\nFix: ${issue.fix}`).join('\n\n') || 'No issues found.'}`;
+        document.getElementById('taskStream').textContent = `Repair plan:\n${report.outputDir}\n\n${report.repairPrompt}`;
+        if (report.autoHealSession) addMessage('assistant', `Auto-heal started. Session: ${report.autoHealSession.id}\nScore: ${report.score}/100\nOutput: ${report.outputDir}`);
+        else addMessage('assistant', `Build Doctor report created. Score: ${report.score}/100\nOutput: ${report.outputDir}`);
+      } catch (error) {
+        addMessage('system', `Build Doctor failed: ${error.message}`);
+      }
+    }
+
+    async function runAutoHealLoop() {
+      try {
+        const build = await getActiveBuild();
+        if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        appendStream('qaStream', `Auto-heal loop started for ${build.name}. This may take a few minutes.`);
+        const result = await api(`/api/builder/builds/${build.id}/auto-heal-loop`, { threshold: 90, maxPasses: 3, sessionId: currentSessionId, pageId: currentPageId });
+        const loop = result.loop;
+        document.getElementById('outputPath').textContent = loop.reports[loop.reports.length - 1]?.outputDir || build.root;
+        document.getElementById('qaStream').textContent = `Auto-Heal Loop: ${loop.status}\n${loop.summary}\n\nPasses: ${loop.healLogs.length}\nFinal Doctor: ${loop.reports[loop.reports.length - 1]?.score}/100\n${result.visualQa?.scores ? `Visual QA: ${result.visualQa.scores.overall}/100` : result.visualQa?.error ? `Visual QA error: ${result.visualQa.error}` : 'Visual QA skipped: no target page.'}`;
+        document.getElementById('taskStream').textContent = loop.reports.map((report, index) => `Report ${index + 1}: ${report.score}/100 ${report.status}\n${report.issues.map(issue => `- [${issue.severity}] ${issue.area}: ${issue.issue}`).join('\n') || 'No issues.'}`).join('\n\n');
+        if (loop.preview?.previewUrl) showAppPreview(loop.preview);
+        addMessage('assistant', `Auto-heal loop finished: ${loop.status}\n${loop.summary}`);
+      } catch (error) {
+        addMessage('system', `Auto-heal loop failed: ${error.message}`);
+      }
+    }
+
+    async function runStagingStudio() {
+      try {
+        const build = await getActiveBuild();
+        if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        appendStream('qaStream', `Staging Studio preparing multi-device preview for ${build.name}...`);
+        const report = await api(`/api/builder/builds/${build.id}/staging`, { devices: ['desktop', 'tablet', 'mobile', 'game'], runDoctor: false });
+        document.getElementById('outputPath').textContent = report.outputDir;
+        showStagingStudio(report);
+        document.getElementById('researchStream').textContent = `Staging Studio\n${report.summary}\n\nDevices:\n${report.devices.map(check => `- ${check.device.name}: ${check.status} ${check.device.width}x${check.device.height}, HTTP ${check.healthCode || 'n/a'}, ${check.latencyMs || 0}ms`).join('\n')}`;
+        document.getElementById('taskStream').textContent = report.creativeUniqueness.antiTemplatePrompt;
+        document.getElementById('qaStream').textContent = `Health: ${report.health.score}/100 ${report.health.status}\nCreative uniqueness: ${report.creativeUniqueness.score}/100\n\n${report.health.issues.join('\n') || 'No blocking health issues detected.'}`;
+        addMessage('assistant', `Staging Studio ready. Health ${report.health.score}/100, creative uniqueness ${report.creativeUniqueness.score}/100. Output: ${report.outputDir}`);
+      } catch (error) {
+        addMessage('system', `Staging Studio failed: ${error.message}`);
+      }
+    }
+
+    function showStagingStudio(report) {
+      const maxHeight = Math.max(220, document.getElementById('browserView').clientHeight - 120);
+      const frames = report.devices.map(check => {
+        const scale = Math.min(1, 360 / check.device.width, maxHeight / check.device.height);
+        const runtime = [...(check.consoleErrors || []), ...(check.networkErrors || [])];
+        return `<div class="device-frame" style="width:${Math.round(check.device.width * scale) + 16}px">
+          <header><span>${check.device.name}</span><span>${check.status}</span></header>
+          <img class="device-shot" id="shot-${report.id}-${check.device.id}" alt="${check.device.name} staging screenshot">
+          <iframe src="${report.previewUrl}" title="${check.device.name}" style="width:${check.device.width}px;height:${check.device.height}px;transform:scale(${scale});margin-bottom:${Math.round(check.device.height * scale - check.device.height)}px"></iframe>
+          ${runtime.length ? `<pre>${runtime.slice(0, 3).join('\n')}</pre>` : ''}
+        </div>`;
+      }).join('');
+      document.getElementById('browserView').innerHTML = `
+        <div class="hud"><span class="pill">Staging Studio</span><span class="pill">${report.health.status}</span><span class="pill">${report.previewUrl}</span></div>
+        <div class="preview-actions"><button class="btn" onclick="runStagingStudio()">Refresh</button><button class="btn amber" onclick="startActiveBuildPreview()">Live Preview</button></div>
+        <div class="staging-studio">
+          <aside class="staging-panel">
+            <div class="label">Health</div><div class="staging-score">${report.health.score}</div>
+            <div class="label">Creative</div><div class="staging-score">${report.creativeUniqueness.score}</div>
+            <p>${report.summary}</p>
+          </aside>
+          <div class="device-wall">${frames}</div>
+        </div>`;
+      document.getElementById('pageStatus').textContent = `Nexus Staging Studio - ${report.previewUrl}`;
+      loadStagingScreenshots(report);
+    }
+
+    async function loadStagingScreenshots(report) {
+      for (const check of report.devices) {
+        if (!check.screenshotUrl) continue;
+        try {
+          const response = await fetch(check.screenshotUrl, { headers: { 'x-api-key': apiKey } });
+          if (!response.ok) continue;
+          const blob = await response.blob();
+          const image = document.getElementById(`shot-${report.id}-${check.device.id}`);
+          if (image) {
+            image.src = URL.createObjectURL(blob);
+            image.style.display = 'block';
+          }
+        } catch {}
+      }
+    }
+
+    async function runExpertRouter() {
+      try {
+        const build = await getActiveBuild();
+        if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        appendStream('qaStream', `Expert Router analyzing ${build.name}...`);
+        const report = await api(`/api/builder/builds/${build.id}/expert-route`, {});
+        document.getElementById('outputPath').textContent = report.outputDir;
+        document.getElementById('researchStream').textContent = `Selected experts\n\n${report.selectedExperts.map(expert => `${expert.score}/100 ${expert.name}\n${expert.reasons.map(reason => `- ${reason}`).join('\n')}\nOfficial: https://github.com/${expert.officialGithub}`).join('\n\n') || 'No experts selected.'}`;
+        document.getElementById('taskStream').textContent = report.prompt;
+        document.getElementById('qaStream').textContent = `Expert routing complete. ${report.selectedExperts.length} agents selected from dependencies, files, prompt, and logs.`;
+        addMessage('assistant', `Expert Router selected ${report.selectedExperts.length} official-source agents. Output: ${report.outputDir}`);
+      } catch (error) {
+        addMessage('system', `Expert Router failed: ${error.message}`);
+      }
+    }
+
+    async function createCreativeDirection() {
+      try {
+        const build = await getActiveBuild();
+        if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        const styleSeed = document.getElementById('uiLook').value;
+        appendStream('researchStream', `Creative Mind generating non-template visual DNA for ${build.name}...`);
+        const direction = await api(`/api/builder/builds/${build.id}/creative-direction`, { styleSeed });
+        document.getElementById('outputPath').textContent = direction.outputDir;
+        document.getElementById('researchStream').textContent = `${direction.name}\n\n${direction.thesis}\n\nVisual language:\n${direction.visualLanguage.map(item => `- ${item}`).join('\n')}\n\nAnti-template rules:\n${direction.antiTemplateRules.map(item => `- ${item}`).join('\n')}`;
+        document.getElementById('taskStream').textContent = direction.prompt;
+        document.getElementById('qaStream').textContent = `Creative DNA ready. Use this prompt with Build Mode, Expert Router, Auto Heal, and Visual QA so the app does not look templated.`;
+        addMessage('assistant', `Creative Mind created: ${direction.name}. Output: ${direction.outputDir}`);
+      } catch (error) {
+        addMessage('system', `Creative Mind failed: ${error.message}`);
+      }
+    }
+
+    async function showProjectMemory() {
+      try {
+        const build = await getActiveBuild();
+        if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        const memory = await getApi(`/api/builder/builds/${build.id}/memory`);
+        document.getElementById('outputPath').textContent = `${memory.workspace}/.nexus/memory`;
+        document.getElementById('researchStream').textContent = `Project Memory\nUpdated: ${memory.updatedAt}\nEntries: ${memory.entries.length}\n\n${memory.entries.slice(-30).reverse().map(entry => `[${entry.type}] ${entry.summary}\nTags: ${entry.tags.join(', ')}\nEvidence: ${entry.evidence.slice(0, 4).join(' | ')}`).join('\n\n') || 'No memory entries yet.'}`;
+        document.getElementById('taskStream').textContent = `Working fixes\n${memory.workingFixes.join('\n') || 'None recorded.'}\n\nFailed fixes\n${memory.failedFixes.join('\n') || 'None recorded.'}`;
+        document.getElementById('qaStream').textContent = 'Project memory loaded. Expert Router and Creative Mind append lessons here automatically.';
+        addMessage('assistant', `Project memory loaded with ${memory.entries.length} entries.`);
+      } catch (error) {
+        addMessage('system', `Project Memory failed: ${error.message}`);
+      }
+    }
+
+    async function showLanguageExpert(id) {
+      try {
+        appendStream('researchStream', `Fetching official ${id} expert update from GitHub...`);
+        const update = await getApi(`/api/builder/language-experts/${id}/update`);
+        document.getElementById('researchStream').textContent = `${update.name}\nOfficial: https://github.com/${update.officialGithub}\nFetched: ${update.fetchedAt}\nLatest release: ${update.latestRelease?.tag || 'unavailable'}\nPublished: ${update.latestRelease?.publishedAt || 'unknown'}\nRepo pushed: ${update.repo?.pushedAt || 'unknown'}`;
+        document.getElementById('taskStream').textContent = update.prompt;
+        document.getElementById('qaStream').textContent = `Official-source expert context loaded. Use this with Build Doctor/Auto Heal when TypeScript, React, Vite, or Node setup is broken.`;
+        addMessage('assistant', `${update.name} updated from official GitHub source. Latest release: ${update.latestRelease?.tag || 'unavailable'}`);
+      } catch (error) {
+        addMessage('system', `Language expert update failed: ${error.message}`);
+      }
+    }
+
+    async function showAllLanguageExperts() {
+      try {
+        const experts = await getApi('/api/builder/language-experts');
+        const grouped = experts.reduce((acc, expert) => {
+          acc[expert.category] ||= [];
+          acc[expert.category].push(expert);
+          return acc;
+        }, {});
+        document.getElementById('researchStream').textContent = Object.entries(grouped).map(([category, items]) => `${category.toUpperCase()}\n${items.map(expert => `- ${expert.id}: ${expert.officialGithub}`).join('\n')}`).join('\n\n');
+        document.getElementById('taskStream').textContent = experts.map(expert => `${expert.name}\nOfficial: https://github.com/${expert.officialGithub}\nChecks: ${expert.checks.join(', ')}\nRepairs: ${expert.repairSkills.join(', ')}`).join('\n\n');
+        document.getElementById('qaStream').textContent = `${experts.length} official-source full-stack expert agents loaded. Use chat like "typescript expert", "react expert", "docker expert", or run Auto Heal Loop to route failures automatically.`;
+        addMessage('assistant', `Loaded ${experts.length} official-source stack expert agents.`);
+      } catch (error) {
+        addMessage('system', `Stack experts failed: ${error.message}`);
+      }
+    }
+
     async function sendChat() {
       const input = document.getElementById('chatInput');
       const message = input.value.trim();
@@ -504,16 +730,38 @@
     function executeChatIntent(message) {
       const mode = document.getElementById('builderMode').value;
       const text = message.toLowerCase();
-      if (!currentPageId && !message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i) && !/\b(build|create|make|generate|code)\b/i.test(message)) {
+      const buildCommand = /\b(staging studio|multi-device preview|device wall|preview wall|staging preview|expert router|route experts|smart agents|creative mind|creative direction|visual dna|anti-template|project memory|memory|auto heal loop|heal loop|build doctor|doctor|auto heal|self heal|stack experts|all experts|official source agents|official-source agents|[a-z0-9-]+ expert)\b/.test(text);
+      if (!currentPageId && !buildCommand && !message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i) && !/\b(build|create|make|generate|code)\b/i.test(message)) {
         if (mode === 'build' || mode === 'plan') addMessage('system', 'Give me a target URL first, or switch to research mode so I can search the web for one.');
         return;
       }
-      if (mode === 'build' || /\b(start building|build app|build mode|full app|research project)\b/.test(text)) {
+      if (/\b(staging studio|multi-device preview|device wall|preview wall|staging preview)\b/.test(text)) {
+        setTimeout(() => runStagingStudio(), 600);
+      } else if (/\b(expert router|route experts|smart agents)\b/.test(text)) {
+        setTimeout(() => runExpertRouter(), 600);
+      } else if (/\b(creative mind|creative direction|visual dna|anti-template|make it not look the same)\b/.test(text)) {
+        setTimeout(() => createCreativeDirection(), 600);
+      } else if (/\b(project memory|memory)\b/.test(text)) {
+        setTimeout(() => showProjectMemory(), 600);
+      } else if (/\b(auto heal loop|heal loop|repair loop|self healing loop)\b/.test(text)) {
+        setTimeout(() => runAutoHealLoop(), 800);
+      } else if (/\b(stack experts|all experts|official source agents|official-source agents)\b/.test(text)) {
+        setTimeout(() => showAllLanguageExperts(), 600);
+      } else if (/\b(typescript expert|typescript agent|ts expert|compiler expert)\b/.test(text)) {
+        setTimeout(() => showLanguageExpert('typescript'), 600);
+      } else if (/\b([a-z0-9-]+)\s+expert\b/.test(text)) {
+        const match = text.match(/\b([a-z0-9-]+)\s+expert\b/);
+        setTimeout(() => showLanguageExpert(match[1]), 600);
+      } else if (/\b(build doctor|doctor|auto heal|self heal|fix setup|dev setup|repair build)\b/.test(text)) {
+        setTimeout(() => runBuildDoctor(/\b(auto heal|self heal|fix|repair)\b/.test(text)), 800);
+      } else if (mode === 'build' || /\b(start building|build app|build mode|full app|research project)\b/.test(text)) {
         addMessage('system', 'Starting research-project compiler for OpenCode build...');
         setTimeout(() => runResearchProject().then(() => openIDE()).catch(error => addMessage('system', `Build start failed: ${error.message}`)), 1200);
       } else if (mode === 'plan' || /\b(plan app|plan mode|architecture plan)\b/.test(text)) {
         addMessage('system', 'Generating plan artifacts from the active page...');
         setTimeout(() => runResearchProject().catch(error => addMessage('system', `Plan generation failed: ${error.message}`)), 1200);
+      } else if (/\b(visual qa|repair qa|auto repair|compare preview|qa repair)\b/.test(text)) {
+        setTimeout(() => runVisualQaRepair(), 800);
       } else if (/\b(api|mcp|sdk|endpoint)\b/.test(text)) {
         setTimeout(() => runApiCrawl().catch(error => addMessage('system', `API crawl failed: ${error.message}`)), 1200);
       } else if (/\b(bolt|palot|lovable|codex|better than|competitive)\b/.test(text)) {
@@ -526,10 +774,60 @@
     }
 
     function showBuildStarted(build) {
+      activeBuildId = build.id;
       document.getElementById('outputPath').textContent = build.root;
       document.getElementById('taskStream').textContent = `Build workspace created\n\n${build.root}\n\nOpenCode status: ${build.status}\n\nPreview command:\n${build.previewCommand}\n\nLog:\n${build.logPath}`;
-      document.getElementById('qaStream').textContent = `OpenCode command:\n${build.opencodeCommand}\n\nIf the app does not change, open the log file and run the command manually from the workspace.`;
+      document.getElementById('qaStream').textContent = `OpenCode command:\n${build.opencodeCommand}\n\nStarting live app preview...`;
       addMessage('assistant', `Started build workspace: ${build.root}\nStatus: ${build.status}`);
+      startActiveBuildPreview();
+    }
+
+    async function startActiveBuildPreview() {
+      if (!activeBuildId) {
+        const builds = await getApi('/api/builder/builds').catch(() => []);
+        activeBuildId = builds[builds.length - 1]?.id || null;
+      }
+      if (!activeBuildId) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+      try {
+        const build = await api(`/api/builder/builds/${activeBuildId}/preview`, {});
+        showAppPreview(build);
+        pollPreviewLog(build.id);
+        addMessage('assistant', `Live preview starting: ${build.previewUrl}`);
+      } catch (error) {
+        addMessage('system', `Preview start failed: ${error.message}`);
+      }
+    }
+
+    async function stopActiveBuildPreview() {
+      if (!activeBuildId) return;
+      try {
+        const build = await deleteApi(`/api/builder/builds/${activeBuildId}/preview`);
+        if (previewLogTimer) clearInterval(previewLogTimer);
+        appendStream('qaStream', `Preview stopped for ${build.name}.`);
+      } catch (error) {
+        addMessage('system', `Preview stop failed: ${error.message}`);
+      }
+    }
+
+    function showAppPreview(build) {
+      document.getElementById('browserView').innerHTML = `
+        <div class="hud"><span class="pill">Live App</span><span class="pill">${build.previewStatus}</span><span class="pill">${build.previewUrl || 'starting'}</span></div>
+        <div class="preview-actions"><button class="btn" onclick="startActiveBuildPreview()">Restart</button><button class="btn amber" onclick="stopActiveBuildPreview()">Stop</button></div>
+        <iframe class="app-frame" src="${build.previewUrl || 'about:blank'}" title="Generated app preview"></iframe>`;
+      document.getElementById('pageStatus').textContent = `Generated app preview - ${build.previewUrl || 'starting'}`;
+    }
+
+    function pollPreviewLog(buildId) {
+      if (previewLogTimer) clearInterval(previewLogTimer);
+      const readLog = async () => {
+        try {
+          const result = await getApi(`/api/builder/builds/${buildId}/preview-log`);
+          const lines = result.log.split('\n').slice(-40).join('\n');
+          document.getElementById('qaStream').textContent = lines || 'Preview is starting...';
+        } catch {}
+      };
+      readLog();
+      previewLogTimer = setInterval(readLog, 2500);
     }
 
     function shouldWebSearch(message) {

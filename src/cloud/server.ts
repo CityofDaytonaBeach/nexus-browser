@@ -16,6 +16,7 @@ import { getAllIntegrationProfiles } from '../integrations/registry';
 import { getCompetitiveBlueprint } from '../competitive/blueprint';
 import { BuilderPlatform } from '../builder/platform';
 import { getProjectAgentSwarm } from '../project-agents/registry';
+import { fetchLanguageUpdate, getLanguageExperts } from '../languages/registry';
 
 const log = createLogger('Cloud');
 
@@ -93,8 +94,21 @@ export class CloudServer {
           visualBuilder: true,
         },
         outputs: ['research-project', 'project-brain', 'build-plan', 'tailwind-components', 'sdk-agents', 'mcp-server', 'database-schema', 'integration-factory'],
+        languageExperts: getLanguageExperts().map((expert) => ({ id: expert.id, category: expert.category, officialGithub: expert.officialGithub })),
         competitiveBlueprint: true,
       });
+    });
+
+    router.get('/api/builder/language-experts', this.authenticate, (_req, res) => {
+      res.json(getLanguageExperts());
+    });
+
+    router.get('/api/builder/language-experts/:id/update', this.authenticate, async (req, res) => {
+      try {
+        res.json(await fetchLanguageUpdate(req.params.id));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
     });
 
     router.get('/api/builder/competitive-blueprint', this.authenticate, (_req, res) => {
@@ -160,6 +174,141 @@ export class CloudServer {
 
     router.get('/api/builder/builds', this.authenticate, (_req, res) => {
       res.json(this.builderPlatform.getBuilds());
+    });
+
+    router.get('/api/builder/doctor-reports', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getDoctorReports());
+    });
+
+    router.post('/api/builder/builds/:id/doctor', this.authenticate, async (req, res) => {
+      try {
+        const report = await this.builderPlatform.runBuildDoctor(req.params.id, { runBuild: req.body?.runBuild !== false, autoHeal: Boolean(req.body?.autoHeal) });
+        res.json(report);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/builder/builds/:id/auto-heal', this.authenticate, async (req, res) => {
+      try {
+        const report = await this.builderPlatform.runBuildDoctor(req.params.id, { runBuild: req.body?.runBuild !== false, autoHeal: true });
+        res.json(report);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/builder/builds/:id/auto-heal-loop', this.authenticate, async (req, res) => {
+      try {
+        const loop = await this.builderPlatform.runAutoHealLoop(req.params.id, {
+          threshold: req.body?.threshold,
+          maxPasses: req.body?.maxPasses,
+          timeoutMs: req.body?.timeoutMs,
+        });
+        let visualQa = undefined;
+        if (req.body?.sessionId && req.body?.pageId && loop.preview?.previewUrl) {
+          visualQa = await this.engine.runVisualQaRepair(req.body.sessionId, req.body.pageId, loop.preview.previewUrl, req.body?.outputDir).catch((error) => ({ error: error.message }));
+        }
+        res.json({ loop, visualQa });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/builder/auto-heal-loops', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getAutoHealLoops());
+    });
+
+    router.get('/api/builder/expert-routes', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getExpertRoutes());
+    });
+
+    router.post('/api/builder/builds/:id/expert-route', this.authenticate, (req, res) => {
+      try {
+        res.json(this.builderPlatform.routeExperts(req.params.id));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/builder/builds/:id/memory', this.authenticate, (req, res) => {
+      try {
+        res.json(this.builderPlatform.getProjectMemory(req.params.id));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/builder/builds/:id/memory', this.authenticate, (req, res) => {
+      try {
+        res.json(this.builderPlatform.addProjectMemory(req.params.id, {
+          type: req.body?.type || 'decision',
+          summary: String(req.body?.summary || ''),
+          evidence: Array.isArray(req.body?.evidence) ? req.body.evidence : [],
+          tags: Array.isArray(req.body?.tags) ? req.body.tags : [],
+        }));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/builder/creative-directions', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getCreativeDirections());
+    });
+
+    router.post('/api/builder/builds/:id/creative-direction', this.authenticate, (req, res) => {
+      try {
+        res.json(this.builderPlatform.createCreativeDirection(req.params.id, String(req.body?.styleSeed || '')));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/builder/staging-reports', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getStagingReports());
+    });
+
+    router.get('/api/builder/staging-reports/:reportId/devices/:deviceId/screenshot', this.authenticate, (req, res) => {
+      try {
+        res.sendFile(this.builderPlatform.getStagingScreenshot(req.params.reportId, req.params.deviceId));
+      } catch (error: any) {
+        res.status(404).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/builder/builds/:id/staging', this.authenticate, async (req, res) => {
+      try {
+        res.json(await this.builderPlatform.runStagingStudio(req.params.id, {
+          devices: Array.isArray(req.body?.devices) ? req.body.devices : undefined,
+          runDoctor: Boolean(req.body?.runDoctor),
+        }));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/builder/builds/:id/preview', this.authenticate, (req, res) => {
+      try {
+        res.json(this.builderPlatform.startPreview(req.params.id));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.delete('/api/builder/builds/:id/preview', this.authenticate, (req, res) => {
+      try {
+        res.json(this.builderPlatform.stopPreview(req.params.id));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/builder/builds/:id/preview-log', this.authenticate, (req, res) => {
+      try {
+        res.json(this.builderPlatform.getPreviewLog(req.params.id));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
     });
 
     router.post('/api/builder/chat', this.authenticate, (req, res) => {
@@ -295,6 +444,15 @@ export class CloudServer {
       try {
         const plan = await this.engine.createBuildOverlayPlan(req.params.sid, req.params.pid);
         res.json(plan);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/sessions/:sid/pages/:pid/visual-qa-repair', this.authenticate, async (req, res) => {
+      try {
+        const run = await this.engine.runVisualQaRepair(req.params.sid, req.params.pid, req.body?.localUrl || 'http://localhost:5173', req.body?.outputDir);
+        res.json(run);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }

@@ -8,6 +8,7 @@ import { IntegrationArtifact, buildIntegrationArtifacts, getAllIntegrationProfil
 import { AgentSwarmPlan, buildAgentFiles, getProjectAgentSwarm } from '../project-agents/registry';
 import * as fs from 'fs';
 import * as path from 'path';
+import sharp from 'sharp';
 
 const log = createLogger('Browser');
 
@@ -202,6 +203,40 @@ export interface BuildOverlayPlan {
   blocks: BuildOverlayBlock[];
   script: string[];
 }
+
+export interface VisualQaRun {
+  id: string;
+  capturedAt: string;
+  targetUrl: string;
+  localUrl: string;
+  outputDir: string;
+  scores: {
+    overall: number;
+    pixel: number;
+    text: number;
+    layout: number;
+    color: number;
+  };
+  findings: Array<{ severity: 'high' | 'medium' | 'low'; area: string; issue: string; repair: string }>;
+  artifacts: {
+    targetScreenshot: string;
+    localScreenshot: string;
+    diffJson: string;
+    repairTasks: string;
+    opencodePrompt: string;
+  };
+  repairPrompt: string;
+}
+
+type VisualPageProfile = {
+  url: string;
+  title: string;
+  screenshot: Buffer;
+  text: string;
+  words: string[];
+  colors: string[];
+  layout: Array<{ tag: string; text: string; rect: { x: number; y: number; width: number; height: number }; styles: Record<string, string> }>;
+};
 
 export class BrowserEngine extends EventEmitter {
   private sessions: Map<string, BrowserSession> = new Map();
@@ -853,6 +888,161 @@ ${sections.join('\n') || '      <section className="mx-auto max-w-6xl p-6">No UI
       blocks,
       script: blocks.map((block) => `${block.order}. ${block.explanation}`),
     };
+  }
+
+  async runVisualQaRepair(sessionId: string, pageId: string, localUrl: string, outputRoot?: string): Promise<VisualQaRun> {
+    const session = this.sessions.get(sessionId);
+    if (!session) throw new Error('Session not found');
+    const targetPage = session.pages.get(pageId);
+    if (!targetPage) throw new Error('Page not found');
+    if (!localUrl) throw new Error('localUrl required');
+
+    const localPage = await session.context.newPage();
+    try {
+      await localPage.goto(localUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await localPage.waitForTimeout(1500);
+      const [target, local] = await Promise.all([
+        this.captureVisualPageProfile(targetPage),
+        this.captureVisualPageProfile(localPage),
+      ]);
+      const scores = await this.scoreVisualQa(target, local);
+      const findings = this.buildVisualQaFindings(target, local, scores);
+      const id = uuid().slice(0, 8);
+      const capturedAt = new Date().toISOString();
+      const outputDir = this.saveVisualQaRun(id, capturedAt, target, local, scores, findings, outputRoot);
+      const repairPrompt = this.buildVisualQaRepairPrompt(target, local, scores, findings, outputDir);
+      fs.writeFileSync(path.join(outputDir, 'opencode-repair-prompt.md'), repairPrompt);
+
+      return {
+        id,
+        capturedAt,
+        targetUrl: target.url,
+        localUrl: local.url,
+        outputDir,
+        scores,
+        findings,
+        artifacts: {
+          targetScreenshot: path.join(outputDir, 'target-screenshot.png'),
+          localScreenshot: path.join(outputDir, 'local-screenshot.png'),
+          diffJson: path.join(outputDir, 'visual-diff.json'),
+          repairTasks: path.join(outputDir, 'repair-tasks.md'),
+          opencodePrompt: path.join(outputDir, 'opencode-repair-prompt.md'),
+        },
+        repairPrompt,
+      };
+    } finally {
+      await localPage.close().catch(() => {});
+    }
+  }
+
+  private async captureVisualPageProfile(page: Page): Promise<VisualPageProfile> {
+    const data = await page.evaluate(() => {
+      const visible = Array.from(document.querySelectorAll('body *'))
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          const styles = window.getComputedStyle(element);
+          return {
+            tag: element.tagName.toLowerCase(),
+            text: (element.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 160),
+            rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+            styles: {
+              color: styles.color,
+              backgroundColor: styles.backgroundColor,
+              fontFamily: styles.fontFamily,
+              fontSize: styles.fontSize,
+              fontWeight: styles.fontWeight,
+              borderRadius: styles.borderRadius,
+            },
+          };
+        })
+        .filter((item) => item.rect.width > 0 && item.rect.height > 0)
+        .slice(0, 300);
+      const colors = new Set<string>();
+      visible.forEach((item) => {
+        if (item.styles.color && item.styles.color !== 'rgba(0, 0, 0, 0)') colors.add(item.styles.color);
+        if (item.styles.backgroundColor && item.styles.backgroundColor !== 'rgba(0, 0, 0, 0)') colors.add(item.styles.backgroundColor);
+      });
+      const text = (document.body?.innerText || '').replace(/\s+/g, ' ').trim();
+      const words = text.toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length > 2).slice(0, 2000);
+      return { text, words, colors: Array.from(colors).slice(0, 80), layout: visible };
+    });
+
+    return {
+      url: page.url(),
+      title: await page.title(),
+      screenshot: await page.screenshot({ type: 'png', fullPage: true }),
+      ...data,
+    };
+  }
+
+  private async scoreVisualQa(target: VisualPageProfile, local: VisualPageProfile): Promise<VisualQaRun['scores']> {
+    const [targetRaw, localRaw] = await Promise.all([
+      sharp(target.screenshot).resize(256, 256, { fit: 'fill' }).removeAlpha().raw().toBuffer(),
+      sharp(local.screenshot).resize(256, 256, { fit: 'fill' }).removeAlpha().raw().toBuffer(),
+    ]);
+    let delta = 0;
+    for (let i = 0; i < targetRaw.length; i++) delta += Math.abs(targetRaw[i] - localRaw[i]);
+    const pixel = Math.max(0, 100 - (delta / targetRaw.length / 255) * 100);
+    const text = this.jaccardScore(target.words, local.words);
+    const color = this.jaccardScore(target.colors, local.colors);
+    const layout = this.layoutScore(target.layout, local.layout);
+    const overall = Math.round((pixel * 0.45) + (layout * 0.25) + (text * 0.2) + (color * 0.1));
+    return { overall, pixel: Math.round(pixel), text: Math.round(text), layout: Math.round(layout), color: Math.round(color) };
+  }
+
+  private jaccardScore(left: string[], right: string[]): number {
+    const a = new Set(left);
+    const b = new Set(right);
+    if (a.size === 0 && b.size === 0) return 100;
+    const intersection = Array.from(a).filter((item) => b.has(item)).length;
+    const union = new Set([...a, ...b]).size || 1;
+    return (intersection / union) * 100;
+  }
+
+  private layoutScore(target: VisualPageProfile['layout'], local: VisualPageProfile['layout']): number {
+    const countScore = 100 - Math.min(100, Math.abs(target.length - local.length) / Math.max(target.length, 1) * 100);
+    const targetTags = target.map((item) => item.tag);
+    const localTags = local.map((item) => item.tag);
+    const tagScore = this.jaccardScore(targetTags, localTags);
+    const targetLarge = target.filter((item) => item.rect.width > 200 && item.rect.height > 80).length;
+    const localLarge = local.filter((item) => item.rect.width > 200 && item.rect.height > 80).length;
+    const regionScore = 100 - Math.min(100, Math.abs(targetLarge - localLarge) / Math.max(targetLarge, 1) * 100);
+    return (countScore * 0.35) + (tagScore * 0.35) + (regionScore * 0.3);
+  }
+
+  private buildVisualQaFindings(target: VisualPageProfile, local: VisualPageProfile, scores: VisualQaRun['scores']): VisualQaRun['findings'] {
+    const findings: VisualQaRun['findings'] = [];
+    if (scores.pixel < 82) findings.push({ severity: 'high', area: 'visual match', issue: `Pixel similarity is ${scores.pixel}/100.`, repair: 'Adjust page-level layout, spacing, backgrounds, imagery, and above-the-fold composition to match target-screenshot.png.' });
+    if (scores.layout < 82) findings.push({ severity: 'high', area: 'layout structure', issue: `Layout similarity is ${scores.layout}/100 with ${target.layout.length} target elements vs ${local.layout.length} local elements.`, repair: 'Rebuild missing structural sections first: header, nav, hero, cards, forms, data regions, and footer.' });
+    if (scores.text < 75) findings.push({ severity: 'medium', area: 'content coverage', issue: `Text overlap is ${scores.text}/100.`, repair: 'Copy visible headings, labels, calls to action, and representative body text from the target into the generated app.' });
+    if (scores.color < 70) findings.push({ severity: 'medium', area: 'design tokens', issue: `Color overlap is ${scores.color}/100.`, repair: `Update Tailwind theme colors to use captured target colors: ${target.colors.slice(0, 12).join(', ')}.` });
+    const missingWords = Array.from(new Set(target.words)).filter((word) => !local.words.includes(word)).slice(0, 20);
+    if (missingWords.length) findings.push({ severity: 'low', area: 'missing terms', issue: `Missing prominent terms: ${missingWords.join(', ')}.`, repair: 'Use these terms to identify omitted content blocks and labels.' });
+    return findings.length ? findings : [{ severity: 'low', area: 'acceptance', issue: 'No major mismatch detected by DOM-Vision Fusion scoring.', repair: 'Run manual review for interactions, responsive behavior, and authenticated states.' }];
+  }
+
+  private saveVisualQaRun(id: string, capturedAt: string, target: VisualPageProfile, local: VisualPageProfile, scores: VisualQaRun['scores'], findings: VisualQaRun['findings'], outputRoot?: string): string {
+    const safeTitle = (target.title || 'visual-qa').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'visual-qa';
+    const root = outputRoot ? path.resolve(outputRoot) : path.join(process.cwd(), 'visual-qa-runs');
+    const outputDir = path.join(root, `${safeTitle}-${id}`);
+    fs.mkdirSync(outputDir, { recursive: true });
+    fs.writeFileSync(path.join(outputDir, 'target-screenshot.png'), target.screenshot);
+    fs.writeFileSync(path.join(outputDir, 'local-screenshot.png'), local.screenshot);
+    fs.writeFileSync(path.join(outputDir, 'visual-diff.json'), JSON.stringify({ id, capturedAt, targetUrl: target.url, localUrl: local.url, scores, findings, target: this.visualProfileSummary(target), local: this.visualProfileSummary(local) }, null, 2));
+    fs.writeFileSync(path.join(outputDir, 'repair-tasks.md'), this.buildVisualQaRepairTasks(scores, findings));
+    return outputDir;
+  }
+
+  private visualProfileSummary(profile: VisualPageProfile): Record<string, any> {
+    return { url: profile.url, title: profile.title, textLength: profile.text.length, words: profile.words.slice(0, 80), colors: profile.colors, layout: profile.layout.slice(0, 80) };
+  }
+
+  private buildVisualQaRepairTasks(scores: VisualQaRun['scores'], findings: VisualQaRun['findings']): string {
+    return `# Visual QA Repair Tasks\n\nDOM-Vision Fusion score: ${scores.overall}/100\n\nScores:\n- Pixel: ${scores.pixel}/100\n- Layout: ${scores.layout}/100\n- Text: ${scores.text}/100\n- Color: ${scores.color}/100\n\n## Tasks\n${findings.map((finding, index) => `${index + 1}. [${finding.severity}] ${finding.area}: ${finding.repair}`).join('\n')}\n`;
+  }
+
+  private buildVisualQaRepairPrompt(target: VisualPageProfile, local: VisualPageProfile, scores: VisualQaRun['scores'], findings: VisualQaRun['findings'], outputDir: string): string {
+    return `You are OpenCode repairing a NexusBrowser generated app using DOM-Vision Fusion QA.\n\nTarget URL: ${target.url}\nLocal preview: ${local.url}\nArtifact directory: ${outputDir}\nOverall score: ${scores.overall}/100\n\nUse these files:\n- target-screenshot.png\n- local-screenshot.png\n- visual-diff.json\n- repair-tasks.md\n\nRepair findings:\n${findings.map((finding) => `- [${finding.severity}] ${finding.area}: ${finding.issue} Fix: ${finding.repair}`).join('\n')}\n\nRules:\n- Prioritize structural layout and above-the-fold visual match first.\n- Preserve maintainable React/Tailwind code.\n- Do not copy secrets, cookies, account data, or private content.\n- Run the app build after changes and rerun visual QA.\n`;
   }
 
   async createResearchProject(sessionId: string, pageId: string, options: CrawlOptions = {}): Promise<{ project: ResearchProject; outputDir: string }> {
