@@ -86,8 +86,12 @@ export class CloudServer {
       res.json({
         modes: ['research', 'plan', 'build', 'ui-builder', 'api-mcp', 'database', 'integrations', 'visual-qa', 'ship'],
         uiLooks: ['faithful-clone', 'modern-saas', 'government-clean', 'dashboard-pro', 'mobile-first', 'luxury-editorial', 'dark-neon', 'minimal'],
+        buildBrains: this.builderPlatform.getBuildBrains(),
         engines: {
           browser: true,
+          browserTabs: true,
+          searchResults: true,
+          embeddedIde: true,
           opencode: true,
           webgpu: 'client-detected',
           livePreview: true,
@@ -97,6 +101,16 @@ export class CloudServer {
         languageExperts: getLanguageExperts().map((expert) => ({ id: expert.id, category: expert.category, officialGithub: expert.officialGithub })),
         competitiveBlueprint: true,
       });
+    });
+
+    router.get('/api/browser/search', this.authenticate, async (req, res) => {
+      const query = String(req.query.q || '').trim();
+      if (!query) return res.json({ query, results: [] });
+      try {
+        res.json(await this.searchWeb(query));
+      } catch (error: any) {
+        res.json({ query, results: this.fallbackSearchResults(query), warning: error.message });
+      }
     });
 
     router.get('/api/builder/language-experts', this.authenticate, (_req, res) => {
@@ -117,6 +131,10 @@ export class CloudServer {
 
     router.get('/api/builder/providers', this.authenticate, (_req, res) => {
       res.json(this.builderPlatform.getProviders());
+    });
+
+    router.get('/api/builder/build-brains', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getBuildBrains());
     });
 
     router.get('/api/builder/deploy-targets', this.authenticate, (_req, res) => {
@@ -165,6 +183,9 @@ export class CloudServer {
           workspaceRoot: req.body?.workspaceRoot,
           uiLook: req.body?.uiLook,
           mode: req.body?.mode || 'build',
+          brainMode: req.body?.brainMode,
+          aiProvider: req.body?.aiProvider,
+          aiModel: req.body?.aiModel,
         });
         res.json(build);
       } catch (error: any) {
@@ -316,6 +337,7 @@ export class CloudServer {
       const message = String(req.body?.message || '').trim();
       const mode = this.detectBuilderMode(message, req.body?.mode || 'ui-builder');
       const uiLook = req.body?.uiLook || 'faithful-clone';
+      const brainOptions = { brainMode: req.body?.brainMode, aiProvider: req.body?.aiProvider, aiModel: req.body?.aiModel };
       const activeBuildId = String(req.body?.activeBuildId || '');
       const messages = this.builderChats.get(sessionId) || [];
       if (message) messages.push({ role: 'user', content: message, timestamp: Date.now() });
@@ -327,14 +349,14 @@ export class CloudServer {
       if (activeBuildId && this.shouldUpdateBuild(message, mode)) {
         const targetBuildId = this.builderPlatform.getBuild(activeBuildId)?.id || this.builderPlatform.getBuilds().slice(-1)[0]?.id;
         if (!targetBuildId) throw new Error('No generated build workspace yet. Ask Build Mode to create one first.');
-        update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode });
+        update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode, ...brainOptions });
         messages.push({
           role: 'assistant',
           content: `App update started.\n\nWorkspace: ${update.workspace}\nSession: ${update.session.id}\nLog: ${update.logPath}\nI will restart the preview when the update command finishes.`,
           timestamp: Date.now(),
         });
       } else if (this.shouldStartBuild(message, mode)) {
-        build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode });
+        build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode, ...brainOptions });
         messages.push({
           role: 'assistant',
           content: `Build started.\n\nWorkspace: ${build.root}\nStatus: ${build.status}\nPreview command: ${build.previewCommand}\nOpenCode log: ${build.logPath}`,
@@ -560,6 +582,45 @@ export class CloudServer {
     fs.writeFileSync(path.join(outputDir, 'screenshot.png'), Buffer.from(snapshot.screenshot, 'base64'));
 
     return outputDir;
+  }
+
+  private async searchWeb(query: string): Promise<{ query: string; results: Array<{ title: string; url: string; snippet: string; source: string }> }> {
+    const url = `https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+    const response = await fetch(url, { headers: { 'User-Agent': 'NexusBrowser/1.0 research browser' } });
+    if (!response.ok) throw new Error(`Search failed with HTTP ${response.status}`);
+    const html = await response.text();
+    const results = Array.from(html.matchAll(/<a rel="nofollow" class="result__a" href="([^"]+)">([\s\S]*?)<\/a>[\s\S]*?<a class="result__snippet"[\s\S]*?>([\s\S]*?)<\/a>/g))
+      .slice(0, 10)
+      .map((match) => {
+        const rawUrl = this.decodeHtml(match[1]);
+        const parsedUrl = rawUrl.match(/[?&]uddg=([^&]+)/)?.[1];
+        const finalUrl = parsedUrl ? decodeURIComponent(parsedUrl) : rawUrl;
+        return {
+          title: this.stripHtml(match[2]),
+          url: finalUrl,
+          snippet: this.stripHtml(match[3]),
+          source: 'DuckDuckGo',
+        };
+      })
+      .filter((item) => item.title && item.url);
+    return { query, results: results.length ? results : this.fallbackSearchResults(query) };
+  }
+
+  private fallbackSearchResults(query: string): Array<{ title: string; url: string; snippet: string; source: string }> {
+    const encoded = encodeURIComponent(query);
+    return [
+      { title: `Search the web for ${query}`, url: `https://www.google.com/search?q=${encoded}`, snippet: 'Open Google results in a browser tab for research and app-building context.', source: 'Google' },
+      { title: `Developer docs for ${query}`, url: `https://github.com/search?q=${encoded}&type=repositories`, snippet: 'Search GitHub repositories to understand APIs, SDKs, frameworks, and examples.', source: 'GitHub' },
+      { title: `Technical references for ${query}`, url: `https://developer.mozilla.org/search?q=${encoded}`, snippet: 'Search MDN and web platform references for browser behavior and APIs.', source: 'MDN' },
+    ];
+  }
+
+  private stripHtml(value: string): string {
+    return this.decodeHtml(value.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+  }
+
+  private decodeHtml(value: string): string {
+    return value.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
   }
 
   private detectBuilderMode(message: string, fallback: string): string {

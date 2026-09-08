@@ -8,78 +8,98 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       color-scheme: light;
-      --bg: #f7fbff;
-      --canvas: #eef7ff;
-      --panel: rgba(255,255,255,.92);
+      --bg: #f6f6f4;
+      --canvas: #ffffff;
+      --panel: rgba(255,255,255,.86);
       --panel-2: #ffffff;
-      --line: #c9e2f7;
-      --text: #0f172a;
-      --muted: #5f728a;
-      --blue: #0284c7;
-      --blue-soft: rgba(2,132,199,.12);
-      --violet: #8b5cf6;
-      --green: #22c55e;
-      --amber: #f59e0b;
-      --red: #ef4444;
-      --shadow: 0 20px 60px rgba(2, 132, 199, .12);
-      --preview-grid-a: #fbfdff;
-      --preview-grid-b: #eaf6ff;
+      --line: #deded8;
+      --text: #171717;
+      --muted: #73736d;
+      --blue: #111827;
+      --blue-soft: rgba(17,24,39,.07);
+      --violet: #6d5efc;
+      --green: #16a34a;
+      --amber: #b7791f;
+      --red: #dc2626;
+      --shadow: 0 18px 45px rgba(0,0,0,.08);
+      --preview-grid-a: #fafafa;
+      --preview-grid-b: #f1f1ee;
     }
     [data-theme="dark"] {
       color-scheme: dark;
-      --bg: #111318;
-      --canvas: #0b0d12;
-      --panel: rgba(24,27,34,.94);
-      --panel-2: #20242d;
-      --line: #333947;
-      --text: #e8eef7;
-      --muted: #99a5b8;
-      --blue: #38bdf8;
-      --blue-soft: rgba(56,189,248,.14);
-      --shadow: 0 20px 70px rgba(0,0,0,.32);
-      --preview-grid-a: #181b22;
-      --preview-grid-b: #20242d;
+      --bg: #0f0f0f;
+      --canvas: #050505;
+      --panel: rgba(18,18,18,.9);
+      --panel-2: #171717;
+      --line: #2a2a2a;
+      --text: #f5f5f0;
+      --muted: #9a9a91;
+      --blue: #f5f5f0;
+      --blue-soft: rgba(245,245,240,.08);
+      --shadow: 0 20px 70px rgba(0,0,0,.42);
+      --preview-grid-a: #111;
+      --preview-grid-b: #171717;
     }
-    body { height: 100vh; overflow: hidden; background: radial-gradient(circle at top left, var(--blue-soft), transparent 34%), var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, Segoe UI, sans-serif; }
+    body { height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, Segoe UI, sans-serif; }
     button, input, select, textarea { font: inherit; }
-    .shell { display: grid; grid-template-rows: 44px 1fr 24px; height: 100vh; }
-    .topbar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(16px); box-shadow: 0 6px 24px rgba(2,132,199,.08); }
-    .brand { width: 150px; font-size: 13px; font-weight: 800; letter-spacing: .1em; background: linear-gradient(90deg, var(--blue), #0ea5e9); -webkit-background-clip: text; color: transparent; }
-    .url { flex: 1; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel-2); border-radius: 9px; padding: 4px 6px; }
+    .shell { display: grid; grid-template-rows: 48px 1fr 24px; height: 100vh; }
+    .topbar { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(18px); }
+    .brand { width: 132px; font-size: 12px; font-weight: 760; letter-spacing: .08em; color: var(--text); }
+    .browser-tabs { display: flex; align-items: center; gap: 6px; max-width: 34vw; overflow: auto; }
+    .browser-tab { display: inline-flex; align-items: center; gap: 6px; max-width: 180px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    .browser-tab.active { background: var(--panel-2); color: var(--text); border-color: var(--text); }
+    .browser-tab span { overflow: hidden; text-overflow: ellipsis; }
+    .url { flex: 1; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel-2); border-radius: 12px; padding: 4px 6px; box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
     .url input { flex: 1; border: 0; outline: 0; color: var(--text); background: transparent; }
-    .btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 5px 8px; cursor: pointer; transition: .16s ease; font-size: 12px; white-space: nowrap; }
-    .btn:hover { border-color: var(--blue); transform: translateY(-1px); }
-    .btn.primary { border: 0; background: linear-gradient(135deg, var(--blue), #38bdf8); color: white; font-weight: 800; }
+    .btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 6px 9px; cursor: pointer; transition: .14s ease; font-size: 12px; white-space: nowrap; }
+    .btn:hover { border-color: var(--text); background: var(--blue-soft); }
+    .btn.primary { border-color: var(--text); background: var(--text); color: var(--bg); font-weight: 760; }
     .btn.green { border-color: rgba(34,197,94,.55); color: var(--green); }
     .btn.amber { border-color: rgba(245,158,11,.55); color: var(--amber); }
-    .workspace { display: grid; grid-template-columns: 236px minmax(420px, 1fr) 360px; min-height: 0; }
-    .panel { min-height: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--panel); }
-    .panel.right { border-right: 0; border-left: 1px solid var(--line); }
-    .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .workspace { position: relative; display: grid; grid-template-columns: 1fr; min-height: 0; overflow: hidden; }
+    .panel { position: absolute; top: 10px; bottom: 10px; left: 10px; z-index: 20; width: 260px; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); backdrop-filter: blur(18px); box-shadow: var(--shadow); transform: translateX(calc(-100% - 18px)); opacity: 0; pointer-events: none; transition: .16s ease; }
+    .panel.open { transform: translateX(0); opacity: 1; pointer-events: auto; }
+    .panel.right { left: auto; right: 12px; top: auto; bottom: 34px; width: min(420px, calc(100vw - 24px)); height: min(640px, calc(100vh - 96px)); border: 1px solid var(--line); transform: translateY(16px) scale(.98); transform-origin: bottom right; }
+    .panel.right.open { transform: translateY(0) scale(1); }
+    body.chat-popout .shell { display: block; height: 100vh; }
+    body.chat-popout .topbar, body.chat-popout .center, body.chat-popout .statusbar, body.chat-popout #toolsPanel { display: none; }
+    body.chat-popout .workspace { height: 100vh; display: block; }
+    body.chat-popout #chatPanel { inset: 0; width: 100vw; height: 100vh; border: 0; border-radius: 0; transform: none; opacity: 1; pointer-events: auto; }
+    .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px; border-bottom: 1px solid var(--line); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
     .section { padding: 8px; border-bottom: 1px solid var(--line); }
     .label { margin-bottom: 5px; color: var(--muted); font-size: 11px; }
-    .select, .input { width: 100%; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 6px 8px; outline: none; font-size: 12px; }
-    .tools { display: grid; gap: 6px; }
-    .tool { display: grid; gap: 2px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); cursor: pointer; box-shadow: none; }
-    .tool:hover { border-color: var(--blue); }
-    .tool strong { font-size: 12px; }
-    .tool span { color: var(--muted); font-size: 11px; line-height: 1.25; }
-    .center { min-width: 0; min-height: 0; display: grid; grid-template-rows: 34px 1fr 148px; background: var(--canvas); }
-    .mode-tabs { display: flex; gap: 5px; align-items: center; padding: 5px 8px; border-bottom: 1px solid var(--line); background: var(--panel); }
-    .tab { border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 4px 8px; font-size: 11px; cursor: pointer; }
-    .tab.active { color: var(--blue); border-color: var(--blue); background: var(--blue-soft); }
-    .preview { position: relative; min-height: 0; overflow: hidden; background: repeating-linear-gradient(45deg, var(--preview-grid-a), var(--preview-grid-a) 10px, var(--preview-grid-b) 10px, var(--preview-grid-b) 20px); }
+    .select, .input { width: 100%; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 7px 8px; outline: none; font-size: 12px; }
+    .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; overflow: auto; }
+    .tool { min-height: 36px; display: flex; align-items: center; padding: 8px 9px; border: 1px solid var(--line); border-radius: 11px; background: transparent; cursor: pointer; }
+    .tool:hover { border-color: var(--text); background: var(--blue-soft); }
+    .tool strong { font-size: 12px; font-weight: 650; }
+    .tool span { display: none; }
+    .center { min-width: 0; min-height: 0; display: grid; grid-template-rows: 40px 1fr 104px; background: var(--canvas); }
+    .mode-tabs { display: flex; gap: 6px; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(18px); }
+    .tab { border: 1px solid transparent; color: var(--muted); border-radius: 999px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+    .tab.active { color: var(--text); border-color: var(--line); background: var(--panel-2); }
+    .preview { position: relative; min-height: 0; overflow: hidden; background: linear-gradient(180deg,var(--canvas),var(--preview-grid-b)); }
     .preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .app-frame { width: 100%; height: 100%; border: 0; background: white; display: block; }
-    .preview-actions { position: absolute; right: 14px; top: 14px; display: flex; gap: 6px; z-index: 4; }
+    .search-page { height: 100%; overflow: auto; padding: 72px min(7vw,72px) 40px; }
+    .search-page h1 { font-size: clamp(26px,4vw,52px); letter-spacing: -.06em; margin-bottom: 18px; }
+    .search-result { display: grid; gap: 7px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); padding: 16px; margin-bottom: 10px; cursor: pointer; }
+    .search-result:hover { border-color: var(--text); background: var(--panel-2); }
+    .search-result b { font-size: 17px; }
+    .search-result small { color: var(--muted); overflow-wrap: anywhere; }
+    .search-result p { color: var(--muted); line-height: 1.45; }
+    .preview-actions { position: absolute; right: 14px; top: 14px; display: flex; gap: 6px; z-index: 4; padding: 4px; border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb,var(--panel),transparent 8%); backdrop-filter: blur(18px); }
     .staging-studio { height: 100%; display: grid; grid-template-columns: 220px 1fr; gap: 10px; padding: 56px 12px 12px; color: var(--text); }
     .staging-panel { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 10px; overflow: auto; box-shadow: var(--shadow); }
     .staging-score { font-size: 34px; line-height: 1; color: var(--blue); margin: 6px 0; }
     .device-wall { min-width: 0; overflow: auto; display: flex; align-items: flex-start; gap: 12px; padding-bottom: 8px; }
     .device-frame { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 16px; background: #0f172a; padding: 8px; box-shadow: var(--shadow); }
     .device-frame header { color: #e2e8f0; font-size: 11px; display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
-    .device-frame iframe { border: 0; background: white; border-radius: 10px; transform-origin: top left; display: block; }
-    .device-shot { width: 100%; border-radius: 10px; background: white; display: none; }
+    .device-shot { width: 100%; max-height: 560px; object-fit: contain; border-radius: 10px; background: white; display: block; }
+    .preview-card { height: 100%; display: grid; place-items: center; padding: 48px; }
+    .preview-card-inner { width: min(720px, 92vw); border: 1px solid var(--line); border-radius: 24px; background: var(--panel); box-shadow: var(--shadow); padding: 24px; }
+    .preview-card-inner h1 { font-size: clamp(28px, 5vw, 56px); letter-spacing: -.07em; margin-bottom: 10px; }
+    .preview-card-inner p { color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
     .overlay-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
     .build-block { position: absolute; border: 2px solid rgba(56,189,248,.95); background: rgba(56,189,248,.16); border-radius: 8px; box-shadow: 0 0 0 1px rgba(15,23,42,.28), 0 14px 40px rgba(56,189,248,.25); opacity: 0; transform: scale(.96); transition: opacity .22s ease, transform .22s ease; }
     .build-block.live { opacity: 1; transform: scale(1); }
@@ -87,28 +107,29 @@
     .block-label { position: absolute; left: 0; top: -24px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 999px; background: rgba(3,7,18,.88); color: white; padding: 4px 8px; font-size: 11px; }
     .empty { height: 100%; display: grid; place-items: center; color: var(--text); text-align: center; padding: 30px; }
     .empty h1 { font-size: clamp(24px, 4vw, 48px); line-height: .95; margin-bottom: 10px; }
-    .landing-builder { width: min(760px, 94vw); border: 1px solid var(--line); border-radius: 18px; background: var(--panel); box-shadow: var(--shadow); padding: 18px; backdrop-filter: blur(18px); color: var(--text); }
-    .landing-builder p { color: var(--muted); margin-bottom: 12px; font-size: 13px; }
-    .landing-chat { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 13px; background: var(--panel-2); }
-    .landing-chat textarea { min-height: 58px; resize: none; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 13px; line-height: 1.4; }
+    .landing-builder { width: min(720px, 94vw); border: 1px solid var(--line); border-radius: 24px; background: var(--panel); box-shadow: var(--shadow); padding: 22px; backdrop-filter: blur(18px); color: var(--text); text-align: left; }
+    .landing-builder p { color: var(--muted); margin-bottom: 14px; font-size: 14px; }
+    .landing-chat { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel-2); }
+    .landing-chat textarea { min-height: 68px; resize: none; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 14px; line-height: 1.45; }
     .landing-chat button { align-self: end; }
     .quick-prompts { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
     .quick-prompts button { border: 1px solid var(--line); border-radius: 999px; background: var(--panel-2); color: var(--text); padding: 5px 8px; cursor: pointer; font-size: 11px; }
     .quick-prompts button:hover { border-color: var(--blue); color: var(--blue); }
-    .hud { position: absolute; top: 14px; left: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .pill { border: 1px solid rgba(255,255,255,.24); background: rgba(3,7,18,.72); color: #e2e8f0; border-radius: 999px; padding: 6px 9px; font-size: 11px; backdrop-filter: blur(12px); }
-    .build-stream { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 6px; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; }
-    .stream-card { border: 1px solid var(--line); background: var(--panel-2); border-radius: 9px; padding: 7px; min-height: 90px; }
-    .stream-card h3 { font-size: 11px; margin-bottom: 5px; color: var(--blue); }
+    .hud { position: absolute; top: 14px; left: 14px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 4; }
+    .pill { border: 1px solid var(--line); background: color-mix(in srgb,var(--panel),transparent 8%); color: var(--text); border-radius: 999px; padding: 6px 9px; font-size: 11px; backdrop-filter: blur(12px); }
+    .build-stream { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; border-top: 1px solid var(--line); background: var(--panel); overflow: hidden; }
+    .stream-card { border-right: 1px solid var(--line); background: transparent; padding: 8px; min-height: 90px; overflow: auto; }
+    .stream-card:last-child { border-right: 0; }
+    .stream-card h3 { font-size: 11px; margin-bottom: 5px; color: var(--muted); font-weight: 650; }
     .stream-card pre { white-space: pre-wrap; color: var(--muted); font-size: 10px; line-height: 1.35; }
     .chat { min-height: 0; display: flex; flex-direction: column; }
-    .messages { flex: 1; overflow: auto; padding: 8px; display: flex; flex-direction: column; gap: 7px; }
-    .msg { max-width: 94%; border: 1px solid var(--line); border-radius: 10px; padding: 8px 9px; white-space: pre-wrap; font-size: 12px; line-height: 1.38; }
-    .msg.user { align-self: flex-end; background: var(--blue-soft); border-color: var(--blue); }
+    .messages { flex: 1; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .msg { max-width: 94%; border: 1px solid var(--line); border-radius: 14px; padding: 10px 11px; white-space: pre-wrap; font-size: 13px; line-height: 1.42; }
+    .msg.user { align-self: flex-end; background: var(--text); color: var(--bg); border-color: var(--text); }
     .msg.assistant { align-self: flex-start; background: var(--panel-2); }
     .msg.system { align-self: center; color: var(--muted); background: transparent; border: 0; font-size: 12px; }
-    .composer { display: grid; grid-template-columns: 1fr auto; gap: 7px; padding: 8px; border-top: 1px solid var(--line); }
-    .composer textarea { min-height: 58px; resize: none; border: 1px solid var(--line); border-radius: 9px; padding: 8px; color: var(--text); background: var(--panel-2); outline: none; font-size: 12px; }
+    .composer { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
+    .composer textarea { min-height: 74px; resize: none; border: 1px solid var(--line); border-radius: 16px; padding: 10px; color: var(--text); background: var(--panel-2); outline: none; font-size: 13px; }
     .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .metric { border: 1px solid var(--line); border-radius: 9px; padding: 7px; background: var(--panel-2); }
     .metric b { display: block; font-size: 16px; }
@@ -116,25 +137,28 @@
     .statusbar { display: flex; gap: 12px; align-items: center; padding: 4px 10px; border-top: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 10px; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 6px; }
     .dot.bad { background: var(--red); }
-    @media (max-width: 1100px) { .workspace { grid-template-columns: 1fr; } .panel { display: none; } .panel.right { display: flex; } .center { grid-row: 1; } }
+    @media (max-width: 720px) { .browser-tabs { max-width: 28vw; } .panel { width: calc(100vw - 24px); } .build-stream { display: none; } .center { grid-template-rows: 40px 1fr; } }
   </style>
 </head>
 <body>
   <div class="shell">
     <header class="topbar">
-      <div class="brand">NEXUS BUILDER</div>
+      <div class="brand">NEXUS</div>
+      <div class="browser-tabs" id="browserTabs"></div>
       <div class="url">
-        <input id="urlInput" placeholder="Enter a website to research and build from" value="">
+        <input id="urlInput" placeholder="Search, open a site, or build from the browser" value="">
         <button class="btn primary" onclick="navigate()">Go</button>
       </div>
-      <button class="btn green" onclick="runResearchProject()">Research Project</button>
+      <button class="btn" onclick="toggleTools()">Tools</button>
+      <button class="btn primary" onclick="toggleChat()">Chat</button>
+      <button class="btn green" onclick="runResearchProject()">Research</button>
       <button class="btn" id="themeToggle" onclick="toggleTheme()">Dark Mode</button>
-      <button class="btn" onclick="openIDE()">OpenCode IDE</button>
+      <button class="btn" onclick="openIDE()">Code</button>
     </header>
 
     <main class="workspace">
-      <aside class="panel">
-        <div class="panel-title"><span>Builder Modes</span><span id="gpuBadge">WebGPU checking</span></div>
+      <aside class="panel" id="toolsPanel">
+        <div class="panel-title"><span>Tools</span><button class="btn" onclick="toggleTools(false)">Close</button></div>
         <div class="section">
           <div class="label">AI Build Mode</div>
           <select id="builderMode" class="select">
@@ -161,6 +185,30 @@
             <option value="dark-neon">Dark Neon</option>
             <option value="minimal">Minimal</option>
           </select>
+        </div>
+        <div class="section">
+          <div class="label">Build Brain</div>
+          <select id="brainMode" class="select">
+            <option value="hybrid" selected>Hybrid</option>
+            <option value="opencode">OpenCode Only</option>
+            <option value="ollama">Ollama Local</option>
+            <option value="cloud">Cloud AI</option>
+          </select>
+        </div>
+        <div class="section">
+          <div class="label">AI Provider</div>
+          <select id="aiProvider" class="select">
+            <option value="openai" selected>OpenAI</option>
+            <option value="anthropic">Claude</option>
+            <option value="gemini">Gemini</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="ollama">Ollama</option>
+            <option value="lmstudio">LM Studio</option>
+          </select>
+        </div>
+        <div class="section">
+          <div class="label">Model Override</div>
+          <input id="aiModel" class="input" placeholder="optional model name">
         </div>
         <div class="section tools">
           <div class="tool" onclick="runResearchProject()"><strong>Research + Plan</strong><span>Crawl, extract UI/API, create project brain and OpenCode tasks.</span></div>
@@ -207,16 +255,16 @@
           </div>
           <div class="empty">
             <div class="landing-builder">
-              <h1>Browser-first AI builder</h1>
-              <p>Search the web, research resources, plan the architecture, then switch to build mode by saying it in chat.</p>
+              <h1>Build in the browser</h1>
+              <p>Describe an app, open a site, or ask for a change. Nexus keeps preview, research, agents, and code in one loop.</p>
               <div class="landing-chat">
-                <textarea id="landingChatInput" placeholder="Try: research mode find city portal APIs and UI examples. Then say: plan mode. Then: build mode with React, Tailwind, MCP, SQLite, GitHub, and Stripe." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLandingChat();}"></textarea>
-                <button class="btn primary" onclick="sendLandingChat()">Start Build</button>
+                <textarea id="landingChatInput" placeholder="Build a cinematic website about frogs with facts, gallery, habitat pages, and a playful mobile design." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLandingChat();}"></textarea>
+                <button class="btn primary" onclick="sendLandingChat()">Build</button>
               </div>
               <div class="quick-prompts">
-                <button onclick="quickStart('research mode find useful websites, API docs, UI examples, and resources for this application.')">Research Web</button>
-                <button onclick="quickStart('plan mode turn the research into architecture, tasks, database, UI, MCP, SDK, and integration plans.')">Plan App</button>
-                <button onclick="quickStart('build mode start implementing with OpenCode using the project brain and live browser preview.')">Build App</button>
+                <button onclick="quickStart('research mode find useful websites, API docs, UI examples, and resources for this application.')">Research</button>
+                <button onclick="quickStart('plan mode turn the research into architecture, tasks, database, UI, MCP, SDK, and integration plans.')">Plan</button>
+                <button onclick="quickStart('build mode start implementing with OpenCode using the project brain and live browser preview.')">Build</button>
                 <button onclick="quickStart('Clone the UI into smart React and Tailwind components, then show the block-by-block build overlay.')">Clone UI</button>
                 <button onclick="quickStart('Find all API endpoints, create SDKs, and generate a custom MCP server.')">API + MCP</button>
                 <button onclick="quickStart('Build a SaaS app with auth, Stripe billing, GitHub integration, database, and deployment tasks.')">SaaS App</button>
@@ -231,14 +279,14 @@
         </div>
       </section>
 
-      <aside class="panel right">
-        <div class="panel-title"><span>OpenCode Builder Chat</span><span id="wsBadge"><span class="dot bad"></span>offline</span></div>
+      <aside class="panel right" id="chatPanel">
+        <div class="panel-title"><span>Chat</span><span><span id="wsBadge"><span class="dot bad"></span>offline</span> <button class="btn" onclick="popoutChat()">Popout</button> <button class="btn" onclick="toggleChat(false)">Hide</button></span></div>
         <div class="chat">
           <div class="messages" id="messages">
-            <div class="msg system">Ask for UI changes, API/MCP generation, database plans, integrations, or visual QA.</div>
+            <div class="msg system">Ask Nexus to build or change the active app.</div>
           </div>
           <div class="composer">
-            <textarea id="chatInput" placeholder="Example: Build a better version of this portal with Stripe billing, GitHub sync, MCP tools, and a modern SaaS UI." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+            <textarea id="chatInput" placeholder="Build an app, then say things like: add pages, change the style, fix the preview, run staging." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
             <button class="btn primary" onclick="sendChat()">Send</button>
           </div>
         </div>
@@ -264,6 +312,38 @@
     let pendingNavigateUrl = null;
     let activeBuildId = localStorage.getItem('nexus-active-build-id') || null;
     let previewLogTimer = null;
+    let activeTabId = 'home';
+    const browserTabs = [{ id: 'home', title: 'Home', kind: 'home', url: '' }];
+
+    function upsertBrowserTab(tab) {
+      const existing = browserTabs.find(item => item.id === tab.id);
+      if (existing) Object.assign(existing, tab);
+      else browserTabs.push(tab);
+      activeTabId = tab.id;
+      renderBrowserTabs();
+    }
+
+    function renderBrowserTabs() {
+      const el = document.getElementById('browserTabs');
+      if (!el) return;
+      el.innerHTML = browserTabs.map(tab => `<button class="browser-tab ${tab.id === activeTabId ? 'active' : ''}" onclick="activateBrowserTab('${tab.id}')"><span>${tab.title}</span></button>`).join('');
+    }
+
+    function activateBrowserTab(id) {
+      const tab = browserTabs.find(item => item.id === id);
+      if (!tab) return;
+      activeTabId = id;
+      renderBrowserTabs();
+      if (tab.kind === 'ide') return showBrowserFrame('IDE', tab.url, 'Traditional file/folder coding workspace');
+      if (tab.kind === 'page') return showBrowserFrame('Browser', tab.url, tab.title);
+      if (tab.kind === 'preview') return openActiveBuildExternal();
+    }
+
+    function showBrowserFrame(label, url, title) {
+      document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">${label}</span><span class="pill">${title}</span></div><div class="preview-actions"><button class="btn" onclick="window.open('${url}', '_blank', 'noopener,noreferrer')">Open</button></div><iframe class="app-frame" src="${url}" title="${title}"></iframe>`;
+      document.getElementById('pageStatus').textContent = `${label} - ${url}`;
+      document.getElementById('urlInput').value = url;
+    }
 
     function initTheme() {
       const saved = localStorage.getItem('nexus-theme') || 'light';
@@ -278,7 +358,37 @@
       document.getElementById('themeToggle').textContent = next === 'dark' ? 'Light Mode' : 'Dark Mode';
     }
 
+    function toggleTools(force) {
+      const panel = document.getElementById('toolsPanel');
+      panel.classList.toggle('open', typeof force === 'boolean' ? force : !panel.classList.contains('open'));
+    }
+
+    function toggleChat(force) {
+      const panel = document.getElementById('chatPanel');
+      panel.classList.toggle('open', typeof force === 'boolean' ? force : !panel.classList.contains('open'));
+      if (panel.classList.contains('open')) document.getElementById('chatInput').focus();
+    }
+
+    function popoutChat() {
+      window.open(`${location.origin}${location.pathname}#chat`, 'nexus-chat', 'width=430,height=720,menubar=no,toolbar=no,location=no,status=no');
+    }
+
+    function initWindowMode() {
+      if (location.hash === '#chat') {
+        document.body.classList.add('chat-popout');
+        document.getElementById('chatPanel').classList.add('open');
+      }
+    }
+
     function headers() { return { 'x-api-key': apiKey, 'Content-Type': 'application/json' }; }
+
+    function buildBrainOptions() {
+      return {
+        brainMode: document.getElementById('brainMode')?.value || 'hybrid',
+        aiProvider: document.getElementById('aiProvider')?.value || 'openai',
+        aiModel: document.getElementById('aiModel')?.value.trim() || undefined,
+      };
+    }
 
     async function api(path, body) {
       const res = await fetch(path, { method: 'POST', headers: headers(), body: JSON.stringify(body || {}) });
@@ -362,7 +472,13 @@
     function navigate() {
       const raw = document.getElementById('urlInput').value.trim();
       if (!raw) return;
+      const looksLikeUrl = /^https?:\/\//i.test(raw) || /^[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?$/i.test(raw);
+      if (!looksLikeUrl) {
+        runBrowserSearch(raw);
+        return;
+      }
       const url = raw.startsWith('http') ? raw : `https://${raw}`;
+      upsertBrowserTab({ id: `page-${Date.now()}`, title: new URL(url).hostname, kind: 'page', url });
       if (!currentPageId) {
         pendingNavigateUrl = url;
         appendStream('researchStream', `Creating target browser session for ${url}`);
@@ -370,6 +486,36 @@
         return;
       }
       navigateToUrl(url);
+    }
+
+    async function runBrowserSearch(query) {
+      try {
+        upsertBrowserTab({ id: `search-${Date.now()}`, title: query, kind: 'search', url: query });
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Search</span><span class="pill">${query}</span></div><div class="search-page"><h1>Searching ${query}</h1><p>Finding pages, docs, APIs, repos, and implementation clues.</p></div>`;
+        const payload = await getApi(`/api/browser/search?q=${encodeURIComponent(query)}`);
+        showSearchResults(payload.query, payload.results || []);
+      } catch (error) {
+        addMessage('system', `Search failed: ${error.message}`);
+      }
+    }
+
+    function showSearchResults(query, results) {
+      document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Search</span><span class="pill">${results.length} results</span></div><div class="search-page"><h1>${query}</h1>${results.map((result) => `<article class="search-result" onclick="openSearchResult('${encodeURIComponent(result.url)}','${encodeURIComponent(result.title)}')"><b>${result.title}</b><small>${result.url}</small><p>${result.snippet || ''}</p></article>`).join('') || '<p>No results found.</p>'}</div>`;
+      document.getElementById('pageStatus').textContent = `Search - ${query}`;
+      document.getElementById('researchStream').textContent = results.map((result) => `${result.title}\n${result.url}\n${result.snippet}`).join('\n\n');
+    }
+
+    function openSearchResult(encodedUrl, encodedTitle) {
+      const url = decodeURIComponent(encodedUrl);
+      const title = decodeURIComponent(encodedTitle);
+      upsertBrowserTab({ id: `page-${Date.now()}`, title, kind: 'page', url });
+      if (!currentPageId) {
+        pendingNavigateUrl = url;
+        newSession();
+      } else {
+        navigateToUrl(url);
+      }
+      showBrowserFrame('Browser', url, title);
     }
 
     function navigateToUrl(url) {
@@ -554,14 +700,13 @@
     }
 
     function showStagingStudio(report) {
-      const maxHeight = Math.max(220, document.getElementById('browserView').clientHeight - 120);
+      upsertBrowserTab({ id: `staging-${report.id}`, title: 'Staging', kind: 'staging', url: report.previewUrl });
       const frames = report.devices.map(check => {
-        const scale = Math.min(1, 360 / check.device.width, maxHeight / check.device.height);
         const runtime = [...(check.consoleErrors || []), ...(check.networkErrors || [])];
-        return `<div class="device-frame" style="width:${Math.round(check.device.width * scale) + 16}px">
+        return `<div class="device-frame" style="width:${check.device.id === 'mobile' ? 260 : 360}px">
           <header><span>${check.device.name}</span><span>${check.status}</span></header>
           <img class="device-shot" id="shot-${report.id}-${check.device.id}" alt="${check.device.name} staging screenshot">
-          <iframe src="${report.previewUrl}" title="${check.device.name}" style="width:${check.device.width}px;height:${check.device.height}px;transform:scale(${scale});margin-bottom:${Math.round(check.device.height * scale - check.device.height)}px"></iframe>
+          <small>${check.device.width}x${check.device.height} capture</small>
           ${runtime.length ? `<pre>${runtime.slice(0, 3).join('\n')}</pre>` : ''}
         </div>`;
       }).join('');
@@ -682,7 +827,7 @@
       addMessage('user', message);
       try {
         applyModeFromMessage(message);
-        const result = await api('/api/builder/chat', { sessionId: currentSessionId, activeBuildId, message, mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value });
+        const result = await api('/api/builder/chat', { sessionId: currentSessionId, activeBuildId, message, mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value, ...buildBrainOptions() });
         addMessage('assistant', result.response);
         if (result.build) showBuildStarted(result.build);
         if (result.update) showBuildUpdateStarted(result.update);
@@ -708,8 +853,7 @@
         pendingAutoBuild = shouldAutoBuildFromMessage(message) ? message : null;
         navigate();
       } else if (shouldWebSearch(message)) {
-        document.getElementById('urlInput').value = `https://www.google.com/search?q=${encodeURIComponent(cleanSearchQuery(message))}`;
-        navigate();
+        runBrowserSearch(cleanSearchQuery(message));
       }
       document.getElementById('chatInput').value = message;
       sendChat();
@@ -779,7 +923,7 @@
       activeBuildId = build.id;
       localStorage.setItem('nexus-active-build-id', build.id);
       document.getElementById('outputPath').textContent = build.root;
-      document.getElementById('taskStream').textContent = `Build workspace created\n\n${build.root}\n\nOpenCode status: ${build.status}\n\nPreview command:\n${build.previewCommand}\n\nLog:\n${build.logPath}`;
+      document.getElementById('taskStream').textContent = `Build workspace created\n\n${build.root}\n\nBrain: ${build.brain?.mode || 'hybrid'} / ${build.brain?.provider || 'openai'} ${build.brain?.model || ''}\nOpenCode status: ${build.status}\n\nPreview command:\n${build.previewCommand}\n\nLog:\n${build.logPath}`;
       document.getElementById('qaStream').textContent = `OpenCode command:\n${build.opencodeCommand}\n\nStarting live app preview...`;
       addMessage('assistant', `Started build workspace: ${build.root}\nStatus: ${build.status}`);
       startActiveBuildPreview();
@@ -828,10 +972,12 @@
     }
 
     function showAppPreview(build) {
+      upsertBrowserTab({ id: `preview-${build.id}`, title: build.name || 'Preview', kind: 'preview', url: build.previewUrl || '' });
+      if (build.previewUrl) window.open(build.previewUrl, `nexus-preview-${build.id}`);
       document.getElementById('browserView').innerHTML = `
         <div class="hud"><span class="pill">Live App</span><span class="pill">${build.previewStatus}</span><span class="pill">${build.previewUrl || 'starting'}</span></div>
-        <div class="preview-actions"><button class="btn" onclick="openActiveBuildExternal()">Open App</button><button class="btn" onclick="startActiveBuildPreview()">Restart</button><button class="btn amber" onclick="stopActiveBuildPreview()">Stop</button></div>
-        <iframe class="app-frame" src="${build.previewUrl || 'about:blank'}" title="Generated app preview"></iframe>`;
+        <div class="preview-actions"><button class="btn primary" onclick="openActiveBuildExternal()">Open App</button><button class="btn" onclick="startActiveBuildPreview()">Restart</button><button class="btn amber" onclick="stopActiveBuildPreview()">Stop</button></div>
+        <div class="preview-card"><div class="preview-card-inner"><h1>Preview opened as a real browser tab</h1><p>Generated apps are no longer iframed. They run in their own tab so routing, auth redirects, storage, popups, WebGL, devtools, and browser automation behave like a real app.</p><button class="btn primary" onclick="openActiveBuildExternal()">Open App Again</button></div></div>`;
       document.getElementById('pageStatus').textContent = `Generated app preview - ${build.previewUrl || 'starting'}`;
     }
 
@@ -972,16 +1118,23 @@
 
     async function detectWebGpu() {
       const supported = Boolean(navigator.gpu);
-      document.getElementById('gpuBadge').textContent = supported ? 'WebGPU ready' : 'WebGPU unavailable';
+      const badge = document.getElementById('gpuBadge');
+      if (badge) badge.textContent = supported ? 'GPU' : 'CPU';
       appendStream('qaStream', supported ? 'WebGPU available for future visual analysis acceleration.' : 'WebGPU not available; CPU/browser mode active.');
     }
 
-    function openIDE() { window.open(`http://${location.hostname}:3002`, '_blank'); }
+    function openIDE() {
+      const url = `http://${location.hostname === 'localhost' ? '127.0.0.1' : location.hostname}:3002`;
+      upsertBrowserTab({ id: 'ide', title: 'IDE', kind: 'ide', url });
+      showBrowserFrame('IDE', url, 'Files and terminal');
+    }
 
     document.getElementById('urlInput').addEventListener('keydown', (event) => { if (event.key === 'Enter') navigate(); });
     document.getElementById('uiLook').addEventListener('change', (event) => { document.getElementById('lookPill').textContent = event.target.value; });
 
     initTheme();
+    initWindowMode();
+    renderBrowserTabs();
     detectWebGpu();
     connect();
   </script>

@@ -38,6 +38,16 @@ export interface OpenCodeSessionStub {
   createdAt: string;
 }
 
+export type BuildBrainMode = 'opencode' | 'hybrid' | 'ollama' | 'cloud';
+
+export interface BuildBrainProfile {
+  mode: BuildBrainMode;
+  provider: string;
+  model?: string;
+  executor: 'opencode' | 'nexus-fallback';
+  notes: string[];
+}
+
 export interface BuildWorkspace {
   id: string;
   name: string;
@@ -51,6 +61,7 @@ export interface BuildWorkspace {
   logPath: string;
   previewLogPath: string;
   previewCommand: string;
+  brain: BuildBrainProfile;
   createdAt: string;
 }
 
@@ -234,6 +245,33 @@ export class BuilderPlatform {
     ];
   }
 
+  getBuildBrains(): BuildBrainProfile[] {
+    return [
+      this.createBuildBrain('opencode', 'opencode'),
+      this.createBuildBrain('hybrid', process.env.LLM_PROVIDER || 'openai'),
+      this.createBuildBrain('ollama', 'ollama', process.env.OLLAMA_MODEL || 'qwen2.5-coder'),
+      this.createBuildBrain('cloud', process.env.LLM_PROVIDER || 'openai'),
+    ];
+  }
+
+  private createBuildBrain(mode: BuildBrainMode, provider: string, model?: string): BuildBrainProfile {
+    const normalizedProvider = provider || (mode === 'ollama' ? 'ollama' : mode === 'opencode' ? 'opencode' : 'openai');
+    const defaultModel = model || (normalizedProvider === 'ollama' ? process.env.OLLAMA_MODEL || 'qwen2.5-coder' : normalizedProvider === 'anthropic' ? process.env.ANTHROPIC_MODEL : normalizedProvider === 'gemini' ? process.env.GEMINI_MODEL : process.env.OPENAI_MODEL);
+    return {
+      mode,
+      provider: normalizedProvider,
+      model: defaultModel,
+      executor: 'opencode',
+      notes: mode === 'opencode'
+        ? ['OpenCode performs planning, file edits, commands, and repair directly.']
+        : mode === 'hybrid'
+          ? ['Nexus routes strategy to the selected AI provider, then OpenCode executes file edits and shell commands.', 'Use this as the default for strongest app-building behavior.']
+          : mode === 'ollama'
+            ? ['Use local Ollama for private planning/review when available, with OpenCode as executor.', 'Falls back to Nexus deterministic builder if local model is unavailable.']
+            : ['Use selected cloud AI for planning/code reasoning, with OpenCode as executor and Nexus browser QA.'],
+    };
+  }
+
   createOpenCodeSession(workspace: string, prompt: string, mode = 'build'): OpenCodeSessionStub {
     const session: OpenCodeSessionStub = {
       id: uuid(),
@@ -251,13 +289,14 @@ export class BuilderPlatform {
     return Array.from(this.sessions.values());
   }
 
-  startBuildFromPrompt(prompt: string, options: { workspaceRoot?: string; uiLook?: string; mode?: string } = {}): BuildWorkspace {
+  startBuildFromPrompt(prompt: string, options: { workspaceRoot?: string; uiLook?: string; mode?: string; brainMode?: BuildBrainMode; aiProvider?: string; aiModel?: string } = {}): BuildWorkspace {
     const id = uuid().slice(0, 8);
     const name = this.safeProjectName(prompt) || `nexus-app-${id}`;
     const root = path.join(path.resolve(options.workspaceRoot || path.join(process.cwd(), 'generated-apps')), `${name}-${id}`);
     const logPath = path.join(root, 'opencode-build.log');
     const previewLogPath = path.join(root, 'preview.log');
-    const opencodePrompt = this.buildOpenCodeAppPrompt(prompt, options.uiLook || 'modern-saas');
+    const brain = this.createBuildBrain(options.brainMode || 'hybrid', options.aiProvider || 'openai', options.aiModel);
+    const opencodePrompt = this.buildOpenCodeAppPrompt(prompt, options.uiLook || 'modern-saas', brain);
 
     fs.mkdirSync(path.join(root, 'src'), { recursive: true });
     this.writeStarterApp(root, name, prompt);
@@ -275,6 +314,7 @@ export class BuilderPlatform {
       logPath,
       previewLogPath,
       previewCommand: 'npm install && npm run dev',
+      brain,
       createdAt: new Date().toISOString(),
     };
 
@@ -321,7 +361,7 @@ export class BuilderPlatform {
     return this.builds.get(buildId) || this.hydrateGeneratedBuild(buildId);
   }
 
-  updateBuildFromChat(buildId: string, message: string, options: { uiLook?: string; mode?: string; launch?: boolean } = {}): BuildUpdateRun {
+  updateBuildFromChat(buildId: string, message: string, options: { uiLook?: string; mode?: string; launch?: boolean; brainMode?: BuildBrainMode; aiProvider?: string; aiModel?: string } = {}): BuildUpdateRun {
     const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     const id = uuid().slice(0, 8);
@@ -329,7 +369,9 @@ export class BuilderPlatform {
     fs.mkdirSync(outputDir, { recursive: true });
     this.createSnapshot(build.root, `chat update ${id}: ${message.slice(0, 120)}`);
     this.applyDeterministicAppUpdate(build, message);
-    const prompt = this.buildChatUpdatePrompt(build, message, options.uiLook || 'modern-saas');
+    const brain = this.createBuildBrain(options.brainMode || build.brain?.mode || 'hybrid', options.aiProvider || build.brain?.provider || 'openai', options.aiModel || build.brain?.model);
+    build.brain = brain;
+    const prompt = this.buildChatUpdatePrompt(build, message, options.uiLook || 'modern-saas', brain);
     const logPath = path.join(outputDir, 'opencode-update.log');
     fs.writeFileSync(path.join(outputDir, 'opencode-update-prompt.md'), prompt);
     const session = this.createOpenCodeSession(build.root, prompt, options.mode || 'update');
@@ -832,12 +874,12 @@ export class BuilderPlatform {
     return `You are the NexusBrowser Creative Mind Builder.\n\nWorkspace: ${build.root}\nProduct request: ${build.prompt}\nCreative direction: ${direction.name}\nThesis: ${direction.thesis}\n\nAnti-template rules:\n${direction.antiTemplateRules.map((rule) => `- ${rule}`).join('\n')}\n\nVisual language:\n${direction.visualLanguage.map((item) => `- ${item}`).join('\n')}\n\nLayout moves:\n${direction.layoutMoves.map((item) => `- ${item}`).join('\n')}\n\nInteraction and animation moves:\n${direction.interactionMoves.map((item) => `- ${item}`).join('\n')}\n\nTypography:\n${direction.typography.map((item) => `- ${item}`).join('\n')}\n\nColor system:\n${direction.colorSystem.map((item) => `- ${item}`).join('\n')}\n\nSignature details:\n${direction.signatureDetails.map((item) => `- ${item}`).join('\n')}\n\nBuild rules:\n- Do not make this look like a stock SaaS template.\n- Every screen needs a distinct reason for its layout, spacing, typography, and motion.\n- Use design-system consistency without making every section visually identical.\n- Include accessible focus states, reduced-motion handling, empty states, loading states, and error states.\n- If using an existing component library, restyle it until the app has its own identity.\n`;
   }
 
-  private buildChatUpdatePrompt(build: BuildWorkspace, message: string, uiLook: string): string {
+  private buildChatUpdatePrompt(build: BuildWorkspace, message: string, uiLook: string, brain: BuildBrainProfile): string {
     const memory = this.loadProjectMemory(build);
     const latestCreative = Array.from(this.creativeDirections.values()).filter((item) => item.buildId === build.id).slice(-1)[0];
     const latestRoute = Array.from(this.expertRoutes.values()).filter((item) => item.buildId === build.id).slice(-1)[0];
     const previewLog = fs.existsSync(build.previewLogPath) ? fs.readFileSync(build.previewLogPath, 'utf8').slice(-5000) : '';
-    return `You are OpenCode updating an existing NexusBrowser generated app from a conversational user request.\n\nWorkspace: ${build.root}\nOriginal app goal: ${build.prompt}\nUser follow-up request: ${message}\nCurrent preview URL: ${build.previewUrl || 'not running'}\nRequested look/mode: ${uiLook}\n\nProject memory:\n${memory.entries.slice(-20).map((entry) => `- [${entry.type}] ${entry.summary}`).join('\n') || '- No memory yet.'}\n\n${latestCreative ? `Creative direction to preserve and improve:\n${latestCreative.prompt.slice(0, 6000)}` : 'No creative direction exists yet. Create a distinct, anti-template design direction before changing UI.'}\n\n${latestRoute ? `Relevant expert routing context:\n${latestRoute.selectedExperts.map((expert) => `- ${expert.name}: ${expert.reasons.join('; ')}`).join('\n')}` : 'No expert route exists yet. Infer needed experts from package.json, files, and errors.'}\n\nRecent preview log:\n${previewLog || 'No preview log yet.'}\n\nUpdate rules:\n- Treat the user message as a modification to the existing app, not a request to start over.\n- Inspect files before editing.\n- Make the smallest complete code changes that satisfy the request.\n- If UI changes are requested, make them visually distinctive and avoid generic templates.\n- Preserve existing working functionality unless the user explicitly asks to replace it.\n- Update related loading, empty, error, hover, focus, mobile, and reduced-motion states when relevant.\n- Run npm install only if dependencies change.\n- Run npm run build and fix any failures.\n- Leave a concise summary in .nexus/memory/project-memory.md if you learn a durable decision.\n`;
+    return `You are OpenCode updating an existing NexusBrowser generated app from a conversational user request.\n\nWorkspace: ${build.root}\nOriginal app goal: ${build.prompt}\nUser follow-up request: ${message}\nCurrent preview URL: ${build.previewUrl || 'not running'}\nRequested look/mode: ${uiLook}\n\nBuild brain:\n- Mode: ${brain.mode}\n- Provider: ${brain.provider}\n- Model: ${brain.model || 'default'}\n- Executor: ${brain.executor}\n${brain.notes.map((note) => `- ${note}`).join('\n')}\n\nProject memory:\n${memory.entries.slice(-20).map((entry) => `- [${entry.type}] ${entry.summary}`).join('\n') || '- No memory yet.'}\n\n${latestCreative ? `Creative direction to preserve and improve:\n${latestCreative.prompt.slice(0, 6000)}` : 'No creative direction exists yet. Create a distinct, anti-template design direction before changing UI.'}\n\n${latestRoute ? `Relevant expert routing context:\n${latestRoute.selectedExperts.map((expert) => `- ${expert.name}: ${expert.reasons.join('; ')}`).join('\n')}` : 'No expert route exists yet. Infer needed experts from package.json, files, and errors.'}\n\nRecent preview log:\n${previewLog || 'No preview log yet.'}\n\nUpdate rules:\n- Treat the user message as a modification to the existing app, not a request to start over.\n- Inspect files before editing.\n- Make the smallest complete code changes that satisfy the request.\n- If UI changes are requested, make them visually distinctive and avoid generic templates.\n- Preserve existing working functionality unless the user explicitly asks to replace it.\n- Update related loading, empty, error, hover, focus, mobile, and reduced-motion states when relevant.\n- Run npm install only if dependencies change.\n- Run npm run build and fix any failures.\n- Leave a concise summary in .nexus/memory/project-memory.md if you learn a durable decision.\n`;
   }
 
   private stagingDevicePresets(): StagingDevicePreset[] {
@@ -1163,6 +1205,7 @@ export class BuilderPlatform {
       logPath: path.join(root, 'opencode-build.log'),
       previewLogPath: path.join(root, 'preview.log'),
       previewCommand: 'npm install && npm run dev',
+      brain: this.createBuildBrain('hybrid', process.env.LLM_PROVIDER || 'openai'),
       createdAt: new Date(fs.statSync(root).birthtimeMs || Date.now()).toISOString(),
     };
     this.builds.set(id, build);
@@ -1258,8 +1301,8 @@ export class BuilderPlatform {
     return `*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--paper);color:var(--ink)}button{font:inherit}.app-shell{min-height:100vh;overflow:hidden;background:radial-gradient(circle at 12% 10%,color-mix(in srgb,var(--accent),transparent 72%),transparent 30%),linear-gradient(135deg,var(--paper),color-mix(in srgb,var(--accent),white 88%))}.nav{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:14px clamp(16px,4vw,52px);backdrop-filter:blur(18px);background:color-mix(in srgb,var(--paper),transparent 14%);border-bottom:1px solid color-mix(in srgb,var(--ink),transparent 86%)}.nav strong{margin-right:auto;font-size:18px;letter-spacing:-.04em}.nav button{border:1px solid color-mix(in srgb,var(--ink),transparent 82%);border-radius:999px;background:transparent;color:inherit;padding:9px 12px;cursor:pointer}.nav button.active{background:var(--ink);color:var(--paper)}.hero{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:34px;align-items:center;padding:clamp(44px,8vw,118px) clamp(18px,5vw,72px)}.eyebrow{text-transform:uppercase;letter-spacing:.18em;color:var(--accent);font-weight:900}.hero h1{max-width:980px;font-size:clamp(42px,8vw,104px);line-height:.86;letter-spacing:-.08em;margin:10px 0 18px}.hero p{max-width:720px;font-size:clamp(17px,2vw,23px);line-height:1.45;color:color-mix(in srgb,var(--ink),transparent 28%)}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}.actions button{border:0;border-radius:18px;background:var(--accent);color:white;padding:14px 19px;font-weight:900;box-shadow:0 18px 40px color-mix(in srgb,var(--accent),transparent 64%)}.actions .ghost{background:transparent;color:var(--ink);border:1px solid color-mix(in srgb,var(--ink),transparent 78%);box-shadow:none}.artifact{min-height:360px;border:1px solid color-mix(in srgb,var(--ink),transparent 80%);border-radius:34px;padding:24px;display:grid;align-content:end;background:linear-gradient(160deg,color-mix(in srgb,var(--accent),transparent 12%),color-mix(in srgb,var(--ink),transparent 8%));color:white;box-shadow:0 40px 90px color-mix(in srgb,var(--ink),transparent 82%);transform:rotate(2deg)}.artifact span{font-size:13px;text-transform:uppercase;letter-spacing:.2em}.artifact b{font-size:72px;line-height:.9;letter-spacing:-.08em}.artifact small{font-size:15px;opacity:.82}.feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:0 clamp(18px,5vw,72px) 28px}.feature-grid article,.workflow,.updates{border:1px solid color-mix(in srgb,var(--ink),transparent 84%);border-radius:28px;background:color-mix(in srgb,var(--paper),white 55%);padding:24px;box-shadow:0 18px 54px color-mix(in srgb,var(--ink),transparent 92%)}.feature-grid span{color:var(--accent);font-weight:900}.feature-grid h2{font-size:24px;letter-spacing:-.05em}.feature-grid p,.updates p{color:color-mix(in srgb,var(--ink),transparent 35%);line-height:1.55}.workflow,.updates{margin:14px clamp(18px,5vw,72px)}.workflow div{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid color-mix(in srgb,var(--ink),transparent 88%)}.workflow div span{width:11px;height:11px;border-radius:99px;background:var(--accent);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent),transparent 82%)}@media(max-width:880px){.hero{grid-template-columns:1fr}.artifact{min-height:220px;transform:none}.feature-grid{grid-template-columns:1fr}.nav{overflow:auto}.nav strong{position:sticky;left:0;background:var(--paper)}}@media(prefers-reduced-motion:no-preference){.artifact{animation:float 7s ease-in-out infinite}@keyframes float{50%{transform:translateY(-12px) rotate(-1deg)}}}`;
   }
 
-  private buildOpenCodeAppPrompt(prompt: string, uiLook: string): string {
-    return `You are OpenCode inside a NexusBrowser generated app workspace.\n\nUser request: ${prompt}\n\nUI look: ${uiLook}\n\nBuild a real working application, not just notes. Use the starter files already created in this workspace. Improve the landing page/application with clean React, production-quality CSS, responsive layout, accessible components, and clear project structure.\n\nRequired work:\n- Inspect the current files.\n- Replace the starter with a polished implementation matching the request.\n- Keep the app runnable with npm install and npm run dev.\n- Add clear README usage instructions.\n- Do not hardcode secrets.\n- Run or explain build verification.\n`;
+  private buildOpenCodeAppPrompt(prompt: string, uiLook: string, brain: BuildBrainProfile): string {
+    return `You are OpenCode inside a NexusBrowser generated app workspace.\n\nUser request: ${prompt}\n\nUI look: ${uiLook}\n\nBuild brain:\n- Mode: ${brain.mode}\n- Provider: ${brain.provider}\n- Model: ${brain.model || 'default'}\n- Executor: ${brain.executor}\n${brain.notes.map((note) => `- ${note}`).join('\n')}\n\nBuild a real working application, not just notes. Use the generated files already created in this workspace. Improve the application with clean React, production-quality CSS, responsive layout, accessible components, and clear project structure.\n\nRequired work:\n- Inspect the current files.\n- Replace generated placeholder sections with a polished implementation matching the request.\n- Use the selected brain mode: OpenCode-only, hybrid local/cloud reasoning, Ollama-assisted, or cloud-assisted as requested.\n- Keep the app runnable with npm install and npm run dev.\n- Add clear README usage instructions.\n- Do not hardcode secrets.\n- Run or explain build verification.\n`;
   }
 
   private escapeHtml(value: string): string {

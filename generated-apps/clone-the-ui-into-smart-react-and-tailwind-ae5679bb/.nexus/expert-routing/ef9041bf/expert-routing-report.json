@@ -1,0 +1,340 @@
+{
+  "id": "ef9041bf",
+  "buildId": "ae5679bb",
+  "createdAt": "2026-09-08T17:43:25.810Z",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\clone-the-ui-into-smart-react-and-tailwind-ae5679bb",
+  "selectedExperts": [
+    {
+      "expertId": "vite",
+      "name": "Vite Expert Agent",
+      "category": "build-tool",
+      "officialGithub": "vitejs/vite",
+      "score": 74,
+      "reasons": [
+        "Dependency signal: vite",
+        "Dependency signal: @vitejs/plugin-react",
+        "File signal: index.html",
+        "Log/prompt signal: build"
+      ],
+      "checks": [
+        "dev script",
+        "build script",
+        "entry module",
+        "plugin config",
+        "env naming"
+      ],
+      "repairSkills": [
+        "fix Vite config",
+        "repair index.html entry",
+        "resolve transform errors"
+      ]
+    },
+    {
+      "expertId": "react",
+      "name": "React Expert Agent",
+      "category": "frontend",
+      "officialGithub": "facebook/react",
+      "score": 56,
+      "reasons": [
+        "Dependency signal: react",
+        "Dependency signal: react-dom",
+        "Log/prompt signal: react"
+      ],
+      "checks": [
+        "invalid hooks",
+        "root render",
+        "hydration risks",
+        "accessibility"
+      ],
+      "repairSkills": [
+        "fix render errors",
+        "repair component boundaries",
+        "wire loading/error states"
+      ]
+    },
+    {
+      "expertId": "boilerplates",
+      "name": "Boilerplate Selection Expert Agent",
+      "category": "boilerplate",
+      "officialGithub": "vercel/next.js",
+      "score": 36,
+      "reasons": [
+        "File signal: package.json",
+        "File signal: src/**",
+        "File signal: app/**"
+      ],
+      "checks": [
+        "template fit",
+        "routing model",
+        "database/auth/payment needs",
+        "deployment target"
+      ],
+      "repairSkills": [
+        "select starter architecture",
+        "repair generated file layout",
+        "add missing baseline scripts",
+        "document chosen stack"
+      ]
+    },
+    {
+      "expertId": "esbuild",
+      "name": "esbuild Expert Agent",
+      "category": "build-tool",
+      "officialGithub": "evanw/esbuild",
+      "score": 30,
+      "reasons": [
+        "File signal: package.json",
+        "File signal: build.*",
+        "Log/prompt signal: build"
+      ],
+      "checks": [
+        "target/platform config",
+        "loader errors",
+        "bundle output"
+      ],
+      "repairSkills": [
+        "fix esbuild config",
+        "repair loaders",
+        "align target/platform"
+      ]
+    },
+    {
+      "expertId": "c",
+      "name": "C Expert Agent",
+      "category": "language",
+      "officialGithub": "gcc-mirror/gcc",
+      "score": 30,
+      "reasons": [
+        "File signal: **/*.c",
+        "File signal: **/*.h",
+        "Log/prompt signal: build"
+      ],
+      "checks": [
+        "compiler flags",
+        "header paths",
+        "linker errors",
+        "memory safety"
+      ],
+      "repairSkills": [
+        "fix build flags",
+        "repair includes",
+        "stabilize linker setup"
+      ]
+    },
+    {
+      "expertId": "contentful",
+      "name": "Contentful Expert Agent",
+      "category": "cms",
+      "officialGithub": "contentful/contentful.js",
+      "score": 30,
+      "reasons": [
+        "File signal: src/**/*.{ts,js}",
+        "Log/prompt signal: space",
+        "Log/prompt signal: preview"
+      ],
+      "checks": [
+        "space/env/access tokens",
+        "content models",
+        "preview API"
+      ],
+      "repairSkills": [
+        "fix Contentful client",
+        "repair env docs",
+        "add preview fallback"
+      ]
+    },
+    {
+      "expertId": "soc2",
+      "name": "SOC 2 Readiness Expert Agent",
+      "category": "compliance",
+      "officialGithub": "strongdm/comply",
+      "score": 30,
+      "reasons": [
+        "File signal: README.md",
+        "File signal: src/**/*",
+        "Log/prompt signal: change"
+      ],
+      "checks": [
+        "audit logs",
+        "access controls",
+        "change management",
+        "incident response",
+        "vendor/security docs"
+      ],
+      "repairSkills": [
+        "add audit log guidance",
+        "document access controls",
+        "add security checklist",
+        "create compliance evidence map"
+      ]
+    },
+    {
+      "expertId": "typescript",
+      "name": "TypeScript Expert Agent",
+      "category": "language",
+      "officialGithub": "microsoft/TypeScript",
+      "score": 25,
+      "reasons": [
+        "Dependency signal: typescript"
+      ],
+      "checks": [
+        "tsconfig validity",
+        "strict-mode errors",
+        "module resolution",
+        "JSX config",
+        "missing @types packages"
+      ],
+      "repairSkills": [
+        "fix compiler options",
+        "add missing types",
+        "repair imports/exports",
+        "align framework type settings"
+      ]
+    },
+    {
+      "expertId": "r",
+      "name": "R Expert Agent",
+      "category": "language",
+      "officialGithub": "wch/r-source",
+      "score": 25,
+      "reasons": [
+        "Dependency signal: r"
+      ],
+      "checks": [
+        "package metadata",
+        "library paths",
+        "Shiny runtime"
+      ],
+      "repairSkills": [
+        "fix DESCRIPTION",
+        "repair dependencies",
+        "stabilize scripts"
+      ]
+    },
+    {
+      "expertId": "tailwind",
+      "name": "Tailwind CSS Expert Agent",
+      "category": "frontend",
+      "officialGithub": "tailwindlabs/tailwindcss",
+      "score": 24,
+      "reasons": [
+        "File signal: src/**/*.{ts,tsx,js,jsx,css}",
+        "Log/prompt signal: tailwind"
+      ],
+      "checks": [
+        "content paths",
+        "theme tokens",
+        "class generation",
+        "PostCSS/Vite plugin"
+      ],
+      "repairSkills": [
+        "fix Tailwind config",
+        "repair theme tokens",
+        "stabilize styling pipeline"
+      ]
+    },
+    {
+      "expertId": "prisma",
+      "name": "Prisma Expert Agent",
+      "category": "orm",
+      "officialGithub": "prisma/prisma",
+      "score": 24,
+      "reasons": [
+        "File signal: package.json",
+        "Log/prompt signal: generate"
+      ],
+      "checks": [
+        "schema validity",
+        "generate/migrate scripts",
+        "DATABASE_URL"
+      ],
+      "repairSkills": [
+        "fix Prisma schema",
+        "repair migrations",
+        "add generate scripts"
+      ]
+    },
+    {
+      "expertId": "pnpm",
+      "name": "pnpm Expert Agent",
+      "category": "package-manager",
+      "officialGithub": "pnpm/pnpm",
+      "score": 24,
+      "reasons": [
+        "File signal: package.json",
+        "Log/prompt signal: workspace"
+      ],
+      "checks": [
+        "workspace config",
+        "strict node_modules",
+        "lockfile"
+      ],
+      "repairSkills": [
+        "fix workspace config",
+        "repair dependency resolution",
+        "stabilize install"
+      ]
+    }
+  ],
+  "signals": {
+    "dependencies": [
+      "@vitejs/plugin-react",
+      "vite",
+      "typescript",
+      "react",
+      "react-dom"
+    ],
+    "scripts": {
+      "dev": "vite --host 0.0.0.0",
+      "build": "vite build",
+      "preview": "vite preview"
+    },
+    "files": [
+      "index.html",
+      "opencode-build.log",
+      "OPENCODE_BUILD_PROMPT.md",
+      "package.json",
+      "preview.log",
+      "README.md",
+      "src/app-data.js",
+      "src/main.jsx",
+      "src/styles.css"
+    ],
+    "logTerms": [
+      "build",
+      "gpt-5",
+      "fast",
+      "nexusbrowser",
+      "generated",
+      "workspace",
+      "ready",
+      "work",
+      "what",
+      "would",
+      "like",
+      "changed",
+      "investigated",
+      "starting",
+      "preview",
+      "clone-the-ui-into-smart-react-and-tailwind",
+      "install",
+      "host",
+      "port"
+    ],
+    "promptTerms": [
+      "clone",
+      "into",
+      "smart",
+      "react",
+      "tailwind",
+      "components",
+      "then",
+      "show",
+      "block-by-block",
+      "build",
+      "overlay"
+    ]
+  },
+  "prompt": "You are the NexusBrowser Full-Stack Expert Router.\n\nWorkspace: C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\clone-the-ui-into-smart-react-and-tailwind-ae5679bb\nBuild goal: Clone the UI into smart React and Tailwind components, then show the block-by-block build overlay.\n\nSelected official-source experts:\n- Vite Expert Agent (vite) score 74/100, official source https://github.com/vitejs/vite\n  Reasons: Dependency signal: vite; Dependency signal: @vitejs/plugin-react; File signal: index.html; Log/prompt signal: build\n- React Expert Agent (react) score 56/100, official source https://github.com/facebook/react\n  Reasons: Dependency signal: react; Dependency signal: react-dom; Log/prompt signal: react\n- Boilerplate Selection Expert Agent (boilerplates) score 36/100, official source https://github.com/vercel/next.js\n  Reasons: File signal: package.json; File signal: src/**; File signal: app/**\n- esbuild Expert Agent (esbuild) score 30/100, official source https://github.com/evanw/esbuild\n  Reasons: File signal: package.json; File signal: build.*; Log/prompt signal: build\n- C Expert Agent (c) score 30/100, official source https://github.com/gcc-mirror/gcc\n  Reasons: File signal: **/*.c; File signal: **/*.h; Log/prompt signal: build\n- Contentful Expert Agent (contentful) score 30/100, official source https://github.com/contentful/contentful.js\n  Reasons: File signal: src/**/*.{ts,js}; Log/prompt signal: space; Log/prompt signal: preview\n- SOC 2 Readiness Expert Agent (soc2) score 30/100, official source https://github.com/strongdm/comply\n  Reasons: File signal: README.md; File signal: src/**/*; Log/prompt signal: change\n- TypeScript Expert Agent (typescript) score 25/100, official source https://github.com/microsoft/TypeScript\n  Reasons: Dependency signal: typescript\n- R Expert Agent (r) score 25/100, official source https://github.com/wch/r-source\n  Reasons: Dependency signal: r\n- Tailwind CSS Expert Agent (tailwind) score 24/100, official source https://github.com/tailwindlabs/tailwindcss\n  Reasons: File signal: src/**/*.{ts,tsx,js,jsx,css}; Log/prompt signal: tailwind\n- Prisma Expert Agent (prisma) score 24/100, official source https://github.com/prisma/prisma\n  Reasons: File signal: package.json; Log/prompt signal: generate\n- pnpm Expert Agent (pnpm) score 24/100, official source https://github.com/pnpm/pnpm\n  Reasons: File signal: package.json; Log/prompt signal: workspace\n\nSignals:\n{\n  \"dependencies\": [\n    \"@vitejs/plugin-react\",\n    \"vite\",\n    \"typescript\",\n    \"react\",\n    \"react-dom\"\n  ],\n  \"scripts\": {\n    \"dev\": \"vite --host 0.0.0.0\",\n    \"build\": \"vite build\",\n    \"preview\": \"vite preview\"\n  },\n  \"files\": [\n    \"index.html\",\n    \"opencode-build.log\",\n    \"OPENCODE_BUILD_PROMPT.md\",\n    \"package.json\",\n    \"preview.log\",\n    \"README.md\",\n    \"src/app-data.js\",\n    \"src/main.jsx\",\n    \"src/styles.css\"\n  ],\n  \"logTerms\": [\n    \"build\",\n    \"gpt-5\",\n    \"fast\",\n    \"nexusbrowser\",\n    \"generated\",\n    \"workspace\",\n    \"ready\",\n    \"work\",\n    \"what\",\n    \"would\",\n    \"like\",\n    \"changed\",\n    \"investigated\",\n    \"starting\",\n    \"preview\",\n    \"clone-the-ui-into-smart-react-and-tailwind\",\n    \"install\",\n    \"host\",\n    \"port\"\n  ],\n  \"promptTerms\": [\n    \"clone\",\n    \"into\",\n    \"smart\",\n    \"react\",\n    \"tailwind\",\n    \"components\",\n    \"then\",\n    \"show\",\n    \"block-by-block\",\n    \"build\",\n    \"overlay\"\n  ]\n}\n\nRepair strategy:\n- Fetch official-source updates for the selected experts before making framework-specific assumptions.\n- Diagnose root cause across language, package manager, build tool, framework, database, API, auth, deployment, UI/UX, and security layers.\n- Use the smallest correct fix, then run build/tests/preview.\n- Persist lessons to .nexus/memory/project-memory.md.\n- Avoid generic template output; preserve the project's creative direction if present.\n",
+  "outputDir": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\clone-the-ui-into-smart-react-and-tailwind-ae5679bb\\.nexus\\expert-routing\\ef9041bf"
+}

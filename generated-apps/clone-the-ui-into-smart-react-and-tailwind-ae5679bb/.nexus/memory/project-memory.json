@@ -1,0 +1,54 @@
+{
+  "buildId": "ae5679bb",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\clone-the-ui-into-smart-react-and-tailwind-ae5679bb",
+  "updatedAt": "2026-09-08T17:43:25.815Z",
+  "entries": [
+    {
+      "type": "expert-routing",
+      "summary": "Routed to vite, react, boilerplates, esbuild, c, contentful, soc2, typescript, r, tailwind, prisma, pnpm",
+      "evidence": [
+        "Dependency signal: vite",
+        "Dependency signal: @vitejs/plugin-react",
+        "Dependency signal: react",
+        "Dependency signal: react-dom",
+        "File signal: package.json",
+        "File signal: src/**",
+        "File signal: package.json",
+        "File signal: build.*",
+        "File signal: **/*.c",
+        "File signal: **/*.h",
+        "File signal: src/**/*.{ts,js}",
+        "Log/prompt signal: space",
+        "File signal: README.md",
+        "File signal: src/**/*",
+        "Dependency signal: typescript",
+        "Dependency signal: r",
+        "File signal: src/**/*.{ts,tsx,js,jsx,css}",
+        "Log/prompt signal: tailwind",
+        "File signal: package.json",
+        "Log/prompt signal: generate",
+        "File signal: package.json",
+        "Log/prompt signal: workspace"
+      ],
+      "tags": [
+        "vite",
+        "react",
+        "boilerplates",
+        "esbuild",
+        "c",
+        "contentful",
+        "soc2",
+        "typescript",
+        "r",
+        "tailwind",
+        "prisma",
+        "pnpm"
+      ],
+      "id": "b8f6d18f",
+      "createdAt": "2026-09-08T17:43:25.815Z"
+    }
+  ],
+  "preferences": {},
+  "workingFixes": [],
+  "failedFixes": []
+}

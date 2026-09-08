@@ -23,6 +23,7 @@ function makeBuild(platform: BuilderPlatform, root: string, prompt = 'Build a Re
     logPath: path.join(root, 'opencode-build.log'),
     previewLogPath: path.join(root, 'preview.log'),
     previewCommand: 'npm run dev',
+    brain: { mode: 'hybrid', provider: 'openai', executor: 'opencode', notes: [] },
     createdAt: new Date().toISOString(),
   };
   fs.writeFileSync(build.previewLogPath, 'ready in 100ms');
