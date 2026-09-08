@@ -313,11 +313,16 @@ export class BuilderPlatform {
   }
 
   getBuilds(): BuildWorkspace[] {
+    this.hydrateGeneratedBuilds();
     return Array.from(this.builds.values());
   }
 
+  getBuild(buildId: string): BuildWorkspace | undefined {
+    return this.builds.get(buildId) || this.hydrateGeneratedBuild(buildId);
+  }
+
   updateBuildFromChat(buildId: string, message: string, options: { uiLook?: string; mode?: string; launch?: boolean } = {}): BuildUpdateRun {
-    const build = this.builds.get(buildId);
+    const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     const id = uuid().slice(0, 8);
     const outputDir = path.join(build.root, '.nexus', 'chat-updates', id);
@@ -372,7 +377,7 @@ export class BuilderPlatform {
   }
 
   startPreview(buildId: string): BuildWorkspace {
-    const build = this.builds.get(buildId);
+    const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     const existing = this.previewProcesses.get(buildId);
     if (existing && !existing.killed && build.previewUrl) return build;
@@ -421,7 +426,7 @@ export class BuilderPlatform {
   }
 
   stopPreview(buildId: string): BuildWorkspace {
-    const build = this.builds.get(buildId);
+    const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     const child = this.previewProcesses.get(buildId);
     if (child && !child.killed) {
@@ -434,7 +439,7 @@ export class BuilderPlatform {
   }
 
   getPreviewLog(buildId: string): { buildId: string; log: string } {
-    const build = this.builds.get(buildId);
+    const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     if (!fs.existsSync(build.previewLogPath)) return { buildId, log: '' };
     const log = fs.readFileSync(build.previewLogPath, 'utf8');
@@ -442,7 +447,7 @@ export class BuilderPlatform {
   }
 
   async runBuildDoctor(buildId: string, options: { runBuild?: boolean; autoHeal?: boolean } = {}): Promise<BuildDoctorReport> {
-    const build = this.builds.get(buildId);
+    const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     const issues: BuildDoctorIssue[] = [];
     const checks: Record<string, any> = { files: {}, scripts: {}, commands: {}, logs: {} };
@@ -514,13 +519,13 @@ export class BuilderPlatform {
   }
 
   getProjectMemory(buildId: string): ProjectMemory {
-    const build = this.builds.get(buildId);
+    const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     return this.loadProjectMemory(build);
   }
 
   addProjectMemory(buildId: string, entry: Omit<ProjectMemoryEntry, 'id' | 'createdAt'>): ProjectMemory {
-    const build = this.builds.get(buildId);
+    const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     const memory = this.loadProjectMemory(build);
     memory.entries.push({ ...entry, id: uuid().slice(0, 8), createdAt: new Date().toISOString() });
@@ -530,7 +535,7 @@ export class BuilderPlatform {
   }
 
   routeExperts(buildId: string): ExpertRoutingReport {
-    const build = this.builds.get(buildId);
+    const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     const packagePath = path.join(build.root, 'package.json');
     const pkg = fs.existsSync(packagePath) ? this.safeJson(packagePath) : {};
@@ -565,7 +570,7 @@ export class BuilderPlatform {
   }
 
   createCreativeDirection(buildId: string, styleSeed = ''): CreativeDirection {
-    const build = this.builds.get(buildId);
+    const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     const id = uuid().slice(0, 8);
     const seed = `${build.prompt} ${styleSeed}`.toLowerCase();
@@ -621,7 +626,7 @@ export class BuilderPlatform {
   }
 
   async runStagingStudio(buildId: string, options: { devices?: string[]; runDoctor?: boolean } = {}): Promise<StagingReport> {
-    const build = this.builds.get(buildId);
+    const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     if (!build.previewUrl || build.previewStatus === 'stopped' || build.previewStatus === 'failed') this.startPreview(buildId);
     const devices = this.stagingDevicePresets().filter((device) => !options.devices?.length || options.devices.includes(device.id));
@@ -673,7 +678,7 @@ export class BuilderPlatform {
   }
 
   async runAutoHealLoop(buildId: string, options: { threshold?: number; maxPasses?: number; timeoutMs?: number } = {}): Promise<AutoHealLoopRun> {
-    const build = this.builds.get(buildId);
+    const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     const id = uuid().slice(0, 8);
     const threshold = Math.max(50, Math.min(options.threshold || 90, 100));
@@ -726,7 +731,7 @@ export class BuilderPlatform {
       status,
       reports,
       healLogs,
-      preview: this.builds.get(buildId),
+      preview: this.getBuild(buildId),
       summary: `Auto-heal loop ${status}. Started at ${reports[0].score}/100, ended at ${finalReport.score}/100, best ${bestScore}/100.`,
     };
     this.autoHealLoops.set(id, run);
@@ -1118,6 +1123,50 @@ export class BuilderPlatform {
     };
     visit(root);
     return files;
+  }
+
+  private hydrateGeneratedBuilds(): void {
+    const generatedRoot = path.join(process.cwd(), 'generated-apps');
+    if (!fs.existsSync(generatedRoot)) return;
+    for (const entry of fs.readdirSync(generatedRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const id = entry.name.match(/-([a-f0-9]{8})$/i)?.[1];
+      if (id && !this.builds.has(id)) this.hydrateBuildFromRoot(id, path.join(generatedRoot, entry.name));
+    }
+  }
+
+  private hydrateGeneratedBuild(buildId: string): BuildWorkspace | undefined {
+    this.hydrateGeneratedBuilds();
+    if (this.builds.has(buildId)) return this.builds.get(buildId);
+    const generatedRoot = path.join(process.cwd(), 'generated-apps');
+    if (!fs.existsSync(generatedRoot)) return undefined;
+    const match = fs.readdirSync(generatedRoot, { withFileTypes: true })
+      .find((entry) => entry.isDirectory() && entry.name.endsWith(`-${buildId}`));
+    return match ? this.hydrateBuildFromRoot(buildId, path.join(generatedRoot, match.name)) : undefined;
+  }
+
+  private hydrateBuildFromRoot(id: string, root: string): BuildWorkspace | undefined {
+    const packagePath = path.join(root, 'package.json');
+    if (!fs.existsSync(packagePath)) return undefined;
+    const name = path.basename(root).replace(new RegExp(`-${id}$`, 'i'), '');
+    const readmePath = path.join(root, 'README.md');
+    const readme = fs.existsSync(readmePath) ? fs.readFileSync(readmePath, 'utf8') : '';
+    const prompt = readme.match(/Prompt:\s*\n([\s\S]*?)(?:\n\nRun locally:|$)/)?.[1]?.trim() || name.replace(/-/g, ' ');
+    const build: BuildWorkspace = {
+      id,
+      name,
+      root,
+      prompt,
+      status: 'created',
+      previewStatus: 'stopped',
+      opencodeCommand: 'opencode run OPENCODE_BUILD_PROMPT.md',
+      logPath: path.join(root, 'opencode-build.log'),
+      previewLogPath: path.join(root, 'preview.log'),
+      previewCommand: 'npm install && npm run dev',
+      createdAt: new Date(fs.statSync(root).birthtimeMs || Date.now()).toISOString(),
+    };
+    this.builds.set(id, build);
+    return build;
   }
 
   private allocatePreviewPort(): number {

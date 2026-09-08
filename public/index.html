@@ -262,7 +262,7 @@
     let overlayTimer = null;
     let pendingAutoBuild = null;
     let pendingNavigateUrl = null;
-    let activeBuildId = null;
+    let activeBuildId = localStorage.getItem('nexus-active-build-id') || null;
     let previewLogTimer = null;
 
     function initTheme() {
@@ -499,6 +499,7 @@
       let build = activeBuildId ? builds.find(item => item.id === activeBuildId) : null;
       if (!build) build = builds[builds.length - 1];
       if (build?.id) activeBuildId = build.id;
+      if (build?.id) localStorage.setItem('nexus-active-build-id', build.id);
       return build;
     }
 
@@ -776,6 +777,7 @@
 
     function showBuildStarted(build) {
       activeBuildId = build.id;
+      localStorage.setItem('nexus-active-build-id', build.id);
       document.getElementById('outputPath').textContent = build.root;
       document.getElementById('taskStream').textContent = `Build workspace created\n\n${build.root}\n\nOpenCode status: ${build.status}\n\nPreview command:\n${build.previewCommand}\n\nLog:\n${build.logPath}`;
       document.getElementById('qaStream').textContent = `OpenCode command:\n${build.opencodeCommand}\n\nStarting live app preview...`;
@@ -785,6 +787,7 @@
 
     function showBuildUpdateStarted(update) {
       activeBuildId = update.buildId;
+      localStorage.setItem('nexus-active-build-id', update.buildId);
       document.getElementById('outputPath').textContent = update.workspace;
       document.getElementById('taskStream').textContent = `Conversational app update started\n\nRequest:\n${update.userMessage}\n\nWorkspace:\n${update.workspace}\n\nSession: ${update.session.id}\nLog:\n${update.logPath}`;
       document.getElementById('qaStream').textContent = `OpenCode is updating the existing app from chat. Preview will restart when the update command exits. Use Build Doctor or Staging Studio after it completes.`;

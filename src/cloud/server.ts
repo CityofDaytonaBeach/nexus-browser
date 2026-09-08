@@ -325,7 +325,9 @@ export class CloudServer {
       let build = undefined;
       let update = undefined;
       if (activeBuildId && this.shouldUpdateBuild(message, mode)) {
-        update = this.builderPlatform.updateBuildFromChat(activeBuildId, message, { uiLook, mode });
+        const targetBuildId = this.builderPlatform.getBuild(activeBuildId)?.id || this.builderPlatform.getBuilds().slice(-1)[0]?.id;
+        if (!targetBuildId) throw new Error('No generated build workspace yet. Ask Build Mode to create one first.');
+        update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode });
         messages.push({
           role: 'assistant',
           content: `App update started.\n\nWorkspace: ${update.workspace}\nSession: ${update.session.id}\nLog: ${update.logPath}\nI will restart the preview when the update command finishes.`,

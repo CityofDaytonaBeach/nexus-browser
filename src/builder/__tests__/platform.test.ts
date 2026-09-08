@@ -70,6 +70,20 @@ describe('BuilderPlatform intelligence systems', () => {
     expect(memory.entries.some((entry) => entry.tags.includes('chat-update'))).toBe(true);
   });
 
+  test('rehydrates generated builds from disk after restart', () => {
+    const generatedRoot = path.join(process.cwd(), 'generated-apps');
+    const diskBuildRoot = path.join(generatedRoot, 'rehydrate-test-abcdef12');
+    fs.mkdirSync(path.join(diskBuildRoot, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(diskBuildRoot, 'package.json'), JSON.stringify({ scripts: { dev: 'vite', build: 'vite build' }, dependencies: {} }));
+    fs.writeFileSync(path.join(diskBuildRoot, 'README.md'), '# rehydrate-test\n\nPrompt:\nBuild a habitats app\n\nRun locally:');
+    const freshPlatform = new BuilderPlatform();
+    const hydrated = freshPlatform.getBuild('abcdef12');
+    expect(hydrated?.id).toBe('abcdef12');
+    const update = freshPlatform.updateBuildFromChat('abcdef12', 'add an additional education page about habitats', { launch: false });
+    expect(update.prompt).toContain('habitats');
+    fs.rmSync(diskBuildRoot, { recursive: true, force: true });
+  });
+
   test('guards staging screenshot access to report output directory', () => {
     const outputDir = path.join(root, '.nexus', 'staging', 'report');
     fs.mkdirSync(outputDir, { recursive: true });
