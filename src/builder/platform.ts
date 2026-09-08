@@ -148,6 +148,18 @@ export interface CreativeDirection {
   outputDir: string;
 }
 
+export interface BuildUpdateRun {
+  id: string;
+  buildId: string;
+  createdAt: string;
+  workspace: string;
+  userMessage: string;
+  status: 'running' | 'completed' | 'failed';
+  prompt: string;
+  logPath: string;
+  session: OpenCodeSessionStub;
+}
+
 export interface StagingDevicePreset {
   id: 'desktop' | 'laptop' | 'tablet' | 'mobile' | 'game' | 'app-store-mobile';
   name: string;
@@ -208,6 +220,7 @@ export class BuilderPlatform {
   private expertRoutes: Map<string, ExpertRoutingReport> = new Map();
   private creativeDirections: Map<string, CreativeDirection> = new Map();
   private stagingReports: Map<string, StagingReport> = new Map();
+  private buildUpdates: Map<string, BuildUpdateRun> = new Map();
 
   getProviders(): AiProviderProfile[] {
     return [
@@ -303,6 +316,60 @@ export class BuilderPlatform {
     return Array.from(this.builds.values());
   }
 
+  updateBuildFromChat(buildId: string, message: string, options: { uiLook?: string; mode?: string; launch?: boolean } = {}): BuildUpdateRun {
+    const build = this.builds.get(buildId);
+    if (!build) throw new Error('Build not found');
+    const id = uuid().slice(0, 8);
+    const outputDir = path.join(build.root, '.nexus', 'chat-updates', id);
+    fs.mkdirSync(outputDir, { recursive: true });
+    this.createSnapshot(build.root, `chat update ${id}: ${message.slice(0, 120)}`);
+    const prompt = this.buildChatUpdatePrompt(build, message, options.uiLook || 'modern-saas');
+    const logPath = path.join(outputDir, 'opencode-update.log');
+    fs.writeFileSync(path.join(outputDir, 'opencode-update-prompt.md'), prompt);
+    const session = this.createOpenCodeSession(build.root, prompt, options.mode || 'update');
+    session.status = 'running';
+    const run: BuildUpdateRun = { id, buildId, createdAt: new Date().toISOString(), workspace: build.root, userMessage: message, status: 'running', prompt, logPath, session };
+    this.buildUpdates.set(id, run);
+    if (options.launch === false) {
+      run.status = 'completed';
+      session.status = 'completed';
+      fs.writeFileSync(logPath, 'Chat update launch skipped.\n');
+      this.addProjectMemory(buildId, { type: 'decision', summary: `Chat update requested: ${message}`, evidence: [outputDir], tags: ['chat-update', options.uiLook || 'modern-saas'] });
+      return run;
+    }
+    const commandParts = process.platform === 'win32'
+      ? { command: 'cmd.exe', args: ['/c', 'opencode', 'run', prompt] }
+      : { command: 'opencode', args: ['run', prompt] };
+    try {
+      const child = spawn(commandParts.command, commandParts.args, { cwd: build.root, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], shell: false, windowsHide: true });
+      const log = fs.createWriteStream(logPath, { flags: 'a' });
+      child.stdout.pipe(log);
+      child.stderr.pipe(log);
+      child.on('exit', (code) => {
+        log.write(`\nChat update exited with code ${code}\n`);
+        run.status = code === 0 ? 'completed' : 'failed';
+        session.status = run.status;
+        this.stopPreview(buildId);
+        this.startPreview(buildId);
+      });
+      child.on('error', (error) => {
+        log.write(`\nChat update failed to start: ${error.message}\n`);
+        run.status = 'failed';
+        session.status = 'failed';
+      });
+    } catch (error: any) {
+      fs.writeFileSync(logPath, `Chat update could not launch: ${error.message}\n`);
+      run.status = 'failed';
+      session.status = 'failed';
+    }
+    this.addProjectMemory(buildId, { type: 'decision', summary: `Chat update requested: ${message}`, evidence: [outputDir], tags: ['chat-update', options.uiLook || 'modern-saas'] });
+    return run;
+  }
+
+  getBuildUpdates(): BuildUpdateRun[] {
+    return Array.from(this.buildUpdates.values());
+  }
+
   startPreview(buildId: string): BuildWorkspace {
     const build = this.builds.get(buildId);
     if (!build) throw new Error('Build not found');
@@ -311,7 +378,7 @@ export class BuilderPlatform {
 
     const port = build.previewPort || this.allocatePreviewPort();
     build.previewPort = port;
-    build.previewUrl = `http://localhost:${port}`;
+    build.previewUrl = `http://127.0.0.1:${port}`;
     build.previewStatus = 'starting';
     build.previewCommand = `npm install && npm run dev -- --host 0.0.0.0 --port ${port}`;
 
@@ -757,6 +824,14 @@ export class BuilderPlatform {
 
   private buildCreativePrompt(build: BuildWorkspace, direction: CreativeDirection): string {
     return `You are the NexusBrowser Creative Mind Builder.\n\nWorkspace: ${build.root}\nProduct request: ${build.prompt}\nCreative direction: ${direction.name}\nThesis: ${direction.thesis}\n\nAnti-template rules:\n${direction.antiTemplateRules.map((rule) => `- ${rule}`).join('\n')}\n\nVisual language:\n${direction.visualLanguage.map((item) => `- ${item}`).join('\n')}\n\nLayout moves:\n${direction.layoutMoves.map((item) => `- ${item}`).join('\n')}\n\nInteraction and animation moves:\n${direction.interactionMoves.map((item) => `- ${item}`).join('\n')}\n\nTypography:\n${direction.typography.map((item) => `- ${item}`).join('\n')}\n\nColor system:\n${direction.colorSystem.map((item) => `- ${item}`).join('\n')}\n\nSignature details:\n${direction.signatureDetails.map((item) => `- ${item}`).join('\n')}\n\nBuild rules:\n- Do not make this look like a stock SaaS template.\n- Every screen needs a distinct reason for its layout, spacing, typography, and motion.\n- Use design-system consistency without making every section visually identical.\n- Include accessible focus states, reduced-motion handling, empty states, loading states, and error states.\n- If using an existing component library, restyle it until the app has its own identity.\n`;
+  }
+
+  private buildChatUpdatePrompt(build: BuildWorkspace, message: string, uiLook: string): string {
+    const memory = this.loadProjectMemory(build);
+    const latestCreative = Array.from(this.creativeDirections.values()).filter((item) => item.buildId === build.id).slice(-1)[0];
+    const latestRoute = Array.from(this.expertRoutes.values()).filter((item) => item.buildId === build.id).slice(-1)[0];
+    const previewLog = fs.existsSync(build.previewLogPath) ? fs.readFileSync(build.previewLogPath, 'utf8').slice(-5000) : '';
+    return `You are OpenCode updating an existing NexusBrowser generated app from a conversational user request.\n\nWorkspace: ${build.root}\nOriginal app goal: ${build.prompt}\nUser follow-up request: ${message}\nCurrent preview URL: ${build.previewUrl || 'not running'}\nRequested look/mode: ${uiLook}\n\nProject memory:\n${memory.entries.slice(-20).map((entry) => `- [${entry.type}] ${entry.summary}`).join('\n') || '- No memory yet.'}\n\n${latestCreative ? `Creative direction to preserve and improve:\n${latestCreative.prompt.slice(0, 6000)}` : 'No creative direction exists yet. Create a distinct, anti-template design direction before changing UI.'}\n\n${latestRoute ? `Relevant expert routing context:\n${latestRoute.selectedExperts.map((expert) => `- ${expert.name}: ${expert.reasons.join('; ')}`).join('\n')}` : 'No expert route exists yet. Infer needed experts from package.json, files, and errors.'}\n\nRecent preview log:\n${previewLog || 'No preview log yet.'}\n\nUpdate rules:\n- Treat the user message as a modification to the existing app, not a request to start over.\n- Inspect files before editing.\n- Make the smallest complete code changes that satisfy the request.\n- If UI changes are requested, make them visually distinctive and avoid generic templates.\n- Preserve existing working functionality unless the user explicitly asks to replace it.\n- Update related loading, empty, error, hover, focus, mobile, and reduced-motion states when relevant.\n- Run npm install only if dependencies change.\n- Run npm run build and fix any failures.\n- Leave a concise summary in .nexus/memory/project-memory.md if you learn a durable decision.\n`;
   }
 
   private stagingDevicePresets(): StagingDevicePreset[] {

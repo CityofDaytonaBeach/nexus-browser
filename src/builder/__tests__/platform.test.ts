@@ -60,6 +60,16 @@ describe('BuilderPlatform intelligence systems', () => {
     expect(fs.existsSync(path.join(direction.outputDir, 'creative-build-prompt.md'))).toBe(true);
   });
 
+  test('creates bounded conversational update runs for existing builds', () => {
+    const update = platform.updateBuildFromChat(build.id, 'make the homepage feel more cinematic and add a mobile empty state', { uiLook: 'dark-neon', mode: 'build', launch: false });
+    const memory = platform.getProjectMemory(build.id);
+    expect(update.buildId).toBe(build.id);
+    expect(update.prompt).toContain('User follow-up request');
+    expect(update.prompt).toContain('make the homepage feel more cinematic');
+    expect(fs.existsSync(path.join(path.dirname(update.logPath), 'opencode-update-prompt.md'))).toBe(true);
+    expect(memory.entries.some((entry) => entry.tags.includes('chat-update'))).toBe(true);
+  });
+
   test('guards staging screenshot access to report output directory', () => {
     const outputDir = path.join(root, '.nexus', 'staging', 'report');
     fs.mkdirSync(outputDir, { recursive: true });

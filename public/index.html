@@ -566,7 +566,7 @@
       }).join('');
       document.getElementById('browserView').innerHTML = `
         <div class="hud"><span class="pill">Staging Studio</span><span class="pill">${report.health.status}</span><span class="pill">${report.previewUrl}</span></div>
-        <div class="preview-actions"><button class="btn" onclick="runStagingStudio()">Refresh</button><button class="btn amber" onclick="startActiveBuildPreview()">Live Preview</button></div>
+        <div class="preview-actions"><button class="btn" onclick="openActiveBuildExternal()">Open App</button><button class="btn" onclick="runStagingStudio()">Refresh</button><button class="btn amber" onclick="startActiveBuildPreview()">Live Preview</button></div>
         <div class="staging-studio">
           <aside class="staging-panel">
             <div class="label">Health</div><div class="staging-score">${report.health.score}</div>
@@ -681,9 +681,10 @@
       addMessage('user', message);
       try {
         applyModeFromMessage(message);
-        const result = await api('/api/builder/chat', { sessionId: currentSessionId, message, mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value });
+        const result = await api('/api/builder/chat', { sessionId: currentSessionId, activeBuildId, message, mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value });
         addMessage('assistant', result.response);
         if (result.build) showBuildStarted(result.build);
+        if (result.update) showBuildUpdateStarted(result.update);
         if (pendingAutoBuild !== message) executeChatIntent(message);
       } catch (error) {
         addMessage('system', `Builder chat failed: ${error.message}`);
@@ -782,6 +783,14 @@
       startActiveBuildPreview();
     }
 
+    function showBuildUpdateStarted(update) {
+      activeBuildId = update.buildId;
+      document.getElementById('outputPath').textContent = update.workspace;
+      document.getElementById('taskStream').textContent = `Conversational app update started\n\nRequest:\n${update.userMessage}\n\nWorkspace:\n${update.workspace}\n\nSession: ${update.session.id}\nLog:\n${update.logPath}`;
+      document.getElementById('qaStream').textContent = `OpenCode is updating the existing app from chat. Preview will restart when the update command exits. Use Build Doctor or Staging Studio after it completes.`;
+      addMessage('assistant', `Updating existing app from chat. Log: ${update.logPath}`);
+    }
+
     async function startActiveBuildPreview() {
       if (!activeBuildId) {
         const builds = await getApi('/api/builder/builds').catch(() => []);
@@ -798,6 +807,12 @@
       }
     }
 
+    async function openActiveBuildExternal() {
+      const build = await getActiveBuild();
+      if (!build?.previewUrl) return addMessage('system', 'No live generated preview URL yet. Start Live App Preview first.');
+      window.open(build.previewUrl, '_blank', 'noopener,noreferrer');
+    }
+
     async function stopActiveBuildPreview() {
       if (!activeBuildId) return;
       try {
@@ -812,7 +827,7 @@
     function showAppPreview(build) {
       document.getElementById('browserView').innerHTML = `
         <div class="hud"><span class="pill">Live App</span><span class="pill">${build.previewStatus}</span><span class="pill">${build.previewUrl || 'starting'}</span></div>
-        <div class="preview-actions"><button class="btn" onclick="startActiveBuildPreview()">Restart</button><button class="btn amber" onclick="stopActiveBuildPreview()">Stop</button></div>
+        <div class="preview-actions"><button class="btn" onclick="openActiveBuildExternal()">Open App</button><button class="btn" onclick="startActiveBuildPreview()">Restart</button><button class="btn amber" onclick="stopActiveBuildPreview()">Stop</button></div>
         <iframe class="app-frame" src="${build.previewUrl || 'about:blank'}" title="Generated app preview"></iframe>`;
       document.getElementById('pageStatus').textContent = `Generated app preview - ${build.previewUrl || 'starting'}`;
     }

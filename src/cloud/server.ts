@@ -316,13 +316,22 @@ export class CloudServer {
       const message = String(req.body?.message || '').trim();
       const mode = this.detectBuilderMode(message, req.body?.mode || 'ui-builder');
       const uiLook = req.body?.uiLook || 'faithful-clone';
+      const activeBuildId = String(req.body?.activeBuildId || '');
       const messages = this.builderChats.get(sessionId) || [];
       if (message) messages.push({ role: 'user', content: message, timestamp: Date.now() });
       const response = this.buildBuilderResponse(message, mode, uiLook);
       messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
       this.builderChats.set(sessionId, messages.slice(-100));
       let build = undefined;
-      if (this.shouldStartBuild(message, mode)) {
+      let update = undefined;
+      if (activeBuildId && this.shouldUpdateBuild(message, mode)) {
+        update = this.builderPlatform.updateBuildFromChat(activeBuildId, message, { uiLook, mode });
+        messages.push({
+          role: 'assistant',
+          content: `App update started.\n\nWorkspace: ${update.workspace}\nSession: ${update.session.id}\nLog: ${update.logPath}\nI will restart the preview when the update command finishes.`,
+          timestamp: Date.now(),
+        });
+      } else if (this.shouldStartBuild(message, mode)) {
         build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode });
         messages.push({
           role: 'assistant',
@@ -330,7 +339,7 @@ export class CloudServer {
           timestamp: Date.now(),
         });
       }
-      res.json({ response, messages: this.builderChats.get(sessionId), build });
+      res.json({ response, messages: this.builderChats.get(sessionId), build, update });
     });
 
     router.get('/api/sessions', this.authenticate, (_req, res) => {
@@ -563,6 +572,14 @@ export class CloudServer {
     const text = message.toLowerCase();
     if (!message.trim()) return false;
     return mode === 'build' || /\b(build|create|make|generate|code)\b/.test(text) && /\b(app|application|landing page|website|dashboard|saas|ui|page)\b/.test(text);
+  }
+
+  private shouldUpdateBuild(message: string, mode: string): boolean {
+    const text = message.toLowerCase();
+    if (!message.trim()) return false;
+    if (/\b(staging studio|multi-device preview|device wall|preview wall|expert router|route experts|creative mind|project memory|stack experts|build doctor|auto heal|heal loop)\b/.test(text)) return false;
+    if (mode === 'build' && !this.shouldStartBuild(message, 'chat')) return true;
+    return /\b(change|update|edit|modify|fix|improve|add|remove|replace|move|resize|restyle|make it|make this|turn this|connect|wire|debug|repair)\b/.test(text);
   }
 
   private buildBuilderResponse(message: string, mode: string, uiLook: string): string {
