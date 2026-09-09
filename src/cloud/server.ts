@@ -159,6 +159,7 @@ export class CloudServer {
 
   private setupRoutes(): void {
     const router = express.Router();
+    router.use(this.verifyUnsafeRequest);
 
     router.get('/health', (_req, res) => {
       res.json({
@@ -168,6 +169,10 @@ export class CloudServer {
         sessions: this.engine.getAllSessions().length,
         uptime: process.uptime(),
       });
+    });
+
+    router.get('/api/security/csrf', this.authenticate, (_req, res) => {
+      res.json({ token: this.csrfToken() });
     });
 
     router.get('/api/integrations', this.authenticate, (_req, res) => {
@@ -254,7 +259,27 @@ export class CloudServer {
       try {
         const root = this.resolveWorkspaceRoot(String(req.query.buildId || ''), String(req.query.root || ''));
         const diff = await this.runSystemCommand(root, process.platform === 'win32' ? 'cmd.exe' : 'git', process.platform === 'win32' ? ['/c', 'git', 'diff', '--', '.'] : ['diff', '--', '.'], 30000);
-        res.json({ root, diff: diff.stdout || diff.stderr || 'No git diff available. Initialize git or make changes first.', code: diff.code });
+        const visual = String(req.query.visual || '') === 'true' ? await this.createBrowserNativeDiffPackage(root, String(req.query.sessionId || ''), String(req.query.pageId || '')) : undefined;
+        res.json({ root, diff: diff.stdout || diff.stderr || 'No git diff available. Initialize git or make changes first.', files: this.parseDiffFiles(diff.stdout || ''), visual, code: diff.code });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/builder/image-prompt', this.authenticate, (req, res) => {
+      try {
+        const image = String(req.body?.image || '');
+        if (!image.startsWith('data:image/')) return res.status(400).json({ error: 'image data URL required' });
+        const root = this.resolveWorkspaceRoot(String(req.body?.buildId || ''), String(req.body?.root || ''));
+        const outputDir = path.join(root, '.nexus', 'image-prompts');
+        fs.mkdirSync(outputDir, { recursive: true });
+        const id = uuid().slice(0, 8);
+        const ext = image.includes('image/jpeg') ? 'jpg' : 'png';
+        const base64 = image.split(',')[1] || '';
+        const filePath = path.join(outputDir, `${id}.${ext}`);
+        fs.writeFileSync(filePath, Buffer.from(base64, 'base64'));
+        const prompt = `Use this browser-captured image as visual context for the next build/edit.\n\nImage artifact: ${filePath}\nUser intent: ${String(req.body?.message || 'Improve the UI based on this screenshot.')}\n\nBrowser-first rules:\n- Compare visible layout, hierarchy, color, typography, spacing, and component states.\n- Map visual observations to concrete source edits.\n- Re-run browser screenshot and visual QA after editing.`;
+        res.json({ id, filePath, prompt });
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
@@ -375,6 +400,24 @@ export class CloudServer {
 
     router.get('/api/connectors/supabase/status', this.authenticate, (_req, res) => {
       res.json({ connected: Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ACCESS_TOKEN)), url: process.env.SUPABASE_URL || '', features: ['schema planning', 'env sync', 'migration prompts', 'browser/API evidence mapping'] });
+    });
+
+    router.get('/api/connectors/supabase/schema-plan', this.authenticate, (req, res) => {
+      const browserContext = this.buildGathererContext(String(req.query.sessionId || 'default'), String(req.query.pageId || ''));
+      res.json(this.createSupabaseSchemaPlan(browserContext));
+    });
+
+    router.post('/api/connectors/supabase/query', this.authenticate, async (req, res) => {
+      try {
+        const table = String(req.body?.table || '').replace(/[^a-zA-Z0-9_]/g, '');
+        if (!table) return res.status(400).json({ error: 'table required' });
+        const select = String(req.body?.select || '*');
+        const limit = Math.max(1, Math.min(Number(req.body?.limit || 25), 100));
+        const rows = await this.supabaseRestFetch(`/${table}?select=${encodeURIComponent(select)}&limit=${limit}`);
+        res.json({ table, rows, browserUse: 'Map returned rows to visible UI states, empty states, loading states, and API-driven QA checks.' });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
     });
 
     router.get('/api/chats', this.authenticate, (_req, res) => {
@@ -951,6 +994,31 @@ export class CloudServer {
       }
     });
 
+    router.post('/api/sessions/:sid/pages/:pid/browser-shakedown', this.authenticate, async (req, res) => {
+      try {
+        const report = await this.createBrowserShakedown(req.params.sid, req.params.pid, String(req.body?.buildId || ''));
+        res.json(report);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/sessions/:sid/pages/:pid/side-by-side-visual-diff', this.authenticate, async (req, res) => {
+      try {
+        const build = req.body?.buildId ? this.builderPlatform.getBuild(String(req.body.buildId)) : undefined;
+        const localUrl = req.body?.localUrl || build?.previewUrl;
+        if (!localUrl) return res.status(400).json({ error: 'localUrl or buildId with running preview required' });
+        const run = await this.engine.runVisualQaRepair(req.params.sid, req.params.pid, localUrl, req.body?.outputDir || build?.root);
+        res.json({ ...run, sideBySide: this.createSideBySideVisualDiff(run) });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/builder/vision-routes', this.authenticate, (_req, res) => {
+      res.json(this.getVisionRoutes());
+    });
+
     router.post('/api/sessions/:sid/pages/:pid/research-project', this.authenticate, async (req, res) => {
       try {
         const result = await this.engine.createResearchProject(req.params.sid, req.params.pid, req.body || {});
@@ -1150,6 +1218,62 @@ export class CloudServer {
     return root;
   }
 
+  private verifyUnsafeRequest = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+    if (req.path === '/api/auth/token') return next();
+    const apiKey = req.headers['x-api-key'];
+    const csrf = req.headers['x-csrf-token'];
+    if (apiKey === config.get().auth.apiKey && csrf === this.csrfToken()) return next();
+    res.status(403).json({ error: 'Unsafe request missing valid CSRF token' });
+  };
+
+  private csrfToken(): string {
+    return crypto.createHmac('sha256', config.get().auth.jwtSecret).update(config.get().auth.apiKey).digest('hex');
+  }
+
+  private parseDiffFiles(diff: string): Array<{ path: string; additions: number; deletions: number }> {
+    const files: Array<{ path: string; additions: number; deletions: number }> = [];
+    let current: { path: string; additions: number; deletions: number } | undefined;
+    for (const line of diff.split('\n')) {
+      const header = line.match(/^diff --git a\/(.+?) b\/(.+)$/);
+      if (header) {
+        current = { path: header[2], additions: 0, deletions: 0 };
+        files.push(current);
+      } else if (current && line.startsWith('+') && !line.startsWith('+++')) current.additions++;
+      else if (current && line.startsWith('-') && !line.startsWith('---')) current.deletions++;
+    }
+    return files;
+  }
+
+  private async createBrowserNativeDiffPackage(root: string, sessionId: string, pageId: string): Promise<any> {
+    const id = uuid().slice(0, 8);
+    const outputDir = path.join(root, '.nexus', 'diff-review', id);
+    fs.mkdirSync(outputDir, { recursive: true });
+    let screenshotPath = '';
+    if (sessionId && pageId) {
+      try {
+        const screenshot = await this.engine.getPageScreenshot(sessionId, pageId);
+        screenshotPath = path.join(outputDir, 'browser-after.png');
+        fs.writeFileSync(screenshotPath, Buffer.from(String(screenshot).replace(/^data:image\/\w+;base64,/, ''), 'base64'));
+      } catch {}
+    }
+    const pkg = {
+      id,
+      root,
+      outputDir,
+      screenshotPath,
+      reviewChecklist: [
+        'Read source diff file-by-file',
+        'Compare rendered browser screenshot against target/product intent',
+        'Run Build Doctor for code/runtime health',
+        'Run Visual QA or Staging Studio before approval',
+        'Approve only if source diff and browser behavior both match the request',
+      ],
+    };
+    fs.writeFileSync(path.join(outputDir, 'browser-native-diff.json'), JSON.stringify(pkg, null, 2));
+    return pkg;
+  }
+
   private createWorkspaceZip(root: string): string {
     const zip = new AdmZip();
     const outputDir = path.join(root, '.nexus', 'exports');
@@ -1242,6 +1366,65 @@ export class CloudServer {
         'Sync failures to GitHub Project as launch-blocking issues',
       ],
     };
+  }
+
+  private async createBrowserShakedown(sessionId: string, pageId: string, buildId: string): Promise<any> {
+    const startedAt = new Date().toISOString();
+    const [gatherer, screenshot, content] = await Promise.all([
+      this.collectGathererObservation(sessionId, pageId).catch((error: any) => ({ error: error.message })),
+      this.engine.getPageScreenshot(sessionId, pageId).catch(() => null),
+      this.engine.getPageContent(sessionId, pageId).catch(() => ''),
+    ]);
+    const build = buildId ? this.builderPlatform.getBuild(buildId) : undefined;
+    const backend = build ? this.collectBackendObservation(build.id) : undefined;
+    const seoSecurity = this.createSeoSecurityAudit(this.buildGathererContext(sessionId, pageId), build ? this.buildBackendObserverContext(build.id) : '');
+    const outputDir = path.join(build?.root || process.cwd(), '.nexus', 'browser-shakedown', startedAt.replace(/[:.]/g, '-'));
+    fs.mkdirSync(outputDir, { recursive: true });
+    const screenshotPath = screenshot ? path.join(outputDir, 'active-browser.png') : '';
+    if (screenshotPath && screenshot) fs.writeFileSync(screenshotPath, screenshot);
+    const report = {
+      startedAt,
+      sessionId,
+      pageId,
+      buildId: build?.id || '',
+      outputDir,
+      screenshotPath,
+      browser: gatherer,
+      backend,
+      seoSecurity,
+      checks: {
+        contentLength: content.length,
+        hasRenderedContent: content.length > 200,
+        hasScreenshot: Boolean(screenshotPath),
+        hasConsoleErrors: Boolean((gatherer as any).signals?.hasConsoleErrors),
+        hasPreview: Boolean(build?.previewUrl),
+      },
+      next: ['Run side-by-side visual diff if a preview exists', 'Run Build Doctor', 'Approve diff only after browser checks pass', 'Sync failures to GitHub Project'],
+    };
+    fs.writeFileSync(path.join(outputDir, 'browser-shakedown.json'), JSON.stringify(report, null, 2));
+    return report;
+  }
+
+  private createSideBySideVisualDiff(run: any): any {
+    return {
+      targetScreenshot: run.artifacts?.targetScreenshot,
+      localScreenshot: run.artifacts?.localScreenshot,
+      diffJson: run.artifacts?.diffJson,
+      scores: run.scores,
+      reviewOrder: ['targetScreenshot', 'localScreenshot', 'scores', 'findings', 'repairPrompt'],
+      browserFirstApprovalRule: 'Approve source changes only when generated preview matches the target browser evidence and Build Doctor is healthy.',
+    };
+  }
+
+  private getVisionRoutes(): any[] {
+    return this.builderPlatform.getProviders()
+      .filter((provider) => provider.capabilities.includes('vision'))
+      .map((provider) => ({
+        id: provider.id,
+        name: provider.name,
+        configured: provider.env.some((key) => Boolean(process.env[key])) || Boolean(this.providerSettings.get(provider.id)),
+        browserUse: 'Use active browser screenshots, target/preview visual diff images, and image prompt artifacts for UI repair and clone quality.',
+      }));
   }
 
   private async validateProviderLive(id: string): Promise<{ ok: boolean; detail: string }> {
@@ -1371,6 +1554,33 @@ export class CloudServer {
       security: securityIssues,
       opencodePrompt: `Improve SEO and security for this app using browser/backend evidence.\n\nEvidence:\n${context.slice(0, 12000)}\n\nTasks:\n- Add/verify title, meta description, canonical URL, Open Graph, Twitter cards, sitemap, robots, and semantic headings.\n- Add security headers/config appropriate to the framework.\n- Ensure secrets stay server-side and .env.example documents required variables.\n- Validate forms/API inputs and document deployment security checks.\n- Run build/tests and summarize remaining launch risks.`,
     };
+  }
+
+  private createSupabaseSchemaPlan(browserContext: string): any {
+    const terms = Array.from(new Set((browserContext.match(/\b[a-z][a-z0-9_ -]{2,24}\b/gi) || [])
+      .map((item) => item.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''))
+      .filter((item) => item.length > 3))).slice(0, 24);
+    const tables = ['profiles', 'projects', 'tasks', 'events', 'files'].map((name, index) => ({
+      name,
+      reason: index < terms.length ? `Derived from browser signal: ${terms[index]}` : 'Default app data structure',
+      columns: ['id uuid primary key', 'created_at timestamptz default now()', index === 0 ? 'name text' : 'title text', 'metadata jsonb'],
+    }));
+    return {
+      connected: Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ACCESS_TOKEN)),
+      tables,
+      prompt: `Create Supabase schema and migrations from browser evidence.\n\nBrowser evidence:\n${browserContext.slice(0, 10000)}\n\nTables:\n${tables.map((table) => `- ${table.name}: ${table.columns.join(', ')}`).join('\n')}\n\nRules:\n- Match visible UI states and network/API evidence.\n- Add RLS policies for user-owned data.\n- Generate seed data for browser QA.\n- Keep service role keys server-side only.`,
+    };
+  }
+
+  private async supabaseRestFetch(pathname: string): Promise<any> {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ACCESS_TOKEN;
+    if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ACCESS_TOKEN are required');
+    const response = await fetch(`${url.replace(/\/$/, '')}/rest/v1${pathname}`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: 'application/json' },
+    });
+    if (!response.ok) throw new Error(`Supabase REST ${response.status}: ${await response.text()}`);
+    return response.json();
   }
 
   private resolveGitHubConnection(owner?: string, repo?: string): GitHubProjectConnection {

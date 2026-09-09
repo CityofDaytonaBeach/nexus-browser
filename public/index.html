@@ -241,6 +241,8 @@
           <div class="tool" onclick="runApiCrawl()"><strong>API / MCP</strong><span>Endpoints, SDKs, MCP tools, response samples.</span></div>
           <div class="tool" onclick="createVisualQaPlan()"><strong>QA Plan</strong><span>Target vs local preview checks and repair prompt.</span></div>
           <div class="tool" onclick="runVisualQaRepair()"><strong>Auto Repair QA</strong><span>Compare target to live app and generate OpenCode repair tasks.</span></div>
+          <div class="tool" onclick="runBrowserShakedown()"><strong>Browser Shakedown</strong><span>Smoke test the real browser, preview, backend, SEO, security, and artifacts.</span></div>
+          <div class="tool" onclick="runSideBySideVisualDiff()"><strong>Side-by-Side Diff</strong><span>Compare target browser screenshot to generated preview before approval.</span></div>
           <div class="tool" onclick="showConnectorHub()"><strong>Connectors</strong><span>Login-style integrations for GitHub, deploy, database, payments, SEO, and security.</span></div>
           <div class="tool" onclick="showGitHubProjectManager()"><strong>GitHub Projects</strong><span>Connect repo/project, create issues, and sync build tasks.</span></div>
           <div class="tool" onclick="runSeoSecurityAudit()"><strong>SEO / Security</strong><span>Launch audit for metadata, social cards, headers, secrets, and risks.</span></div>
@@ -251,6 +253,7 @@
           <div class="tool" onclick="showProviderSettings()"><strong>Provider Settings</strong><span>Enable models, inspect keys, and select task-specific providers.</span></div>
           <div class="tool" onclick="showDeployPanel()"><strong>Deploy</strong><span>Vercel, Netlify, GitHub Pages plans plus browser QA after deploy.</span></div>
           <div class="tool" onclick="showImportMobilePanel()"><strong>Git / Expo</strong><span>Clone repos, import projects, and create Expo mobile apps.</span></div>
+          <div class="tool" onclick="showSupabaseCockpit()"><strong>Supabase</strong><span>Schema plan and REST query runner from browser evidence.</span></div>
           <div class="tool" onclick="startVoicePrompt()"><strong>Voice Prompt</strong><span>Use browser speech input for grounded chat commands.</span></div>
           <div class="tool" onclick="attachScreenshotPrompt()"><strong>Image Prompt</strong><span>Attach the current browser screenshot as prompt context.</span></div>
           <div class="tool" onclick="showChatManager()"><strong>Chats</strong><span>List, rename, delete, and bulk-clear build chats.</span></div>
@@ -360,6 +363,7 @@
     let lastBackendObservation = '';
     let lastBackendObservationCount = 0;
     let activeTabId = 'home';
+    let csrfToken = '';
     const browserTabs = [{ id: 'home', title: 'Home', kind: 'home', url: '' }];
 
     function upsertBrowserTab(tab) {
@@ -427,7 +431,12 @@
       }
     }
 
-    function headers() { return { 'x-api-key': apiKey, 'Content-Type': 'application/json' }; }
+    function headers() { return { 'x-api-key': apiKey, 'x-csrf-token': csrfToken, 'Content-Type': 'application/json' }; }
+
+    async function loadSecurityToken() {
+      const res = await fetch('/api/security/csrf', { headers: { 'x-api-key': apiKey } });
+      if (res.ok) csrfToken = (await res.json()).token || '';
+    }
 
     function buildBrainOptions() {
       return {
@@ -751,10 +760,12 @@
 
     async function showDiffReview() {
       try {
-        const query = activeBuildId ? `?buildId=${encodeURIComponent(activeBuildId)}` : '';
+        const params = new URLSearchParams({ visual: 'true', sessionId: currentSessionId || '', pageId: currentPageId || '' });
+        if (activeBuildId) params.set('buildId', activeBuildId);
+        const query = `?${params.toString()}`;
         const result = await getApi(`/api/builder/diff${query}`);
-        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Diff Review</span><span class="pill">${escapeHtml(result.root)}</span></div><div class="search-page"><div class="preview-actions"><button class="btn primary" onclick="approveDiff()">Approve Diff</button><button class="btn" onclick="createRollbackPlan()">Rollback Plan</button><button class="btn" onclick="runVisualQaRepair()">Visual QA</button></div><pre>${escapeHtml(result.diff)}</pre></div>`;
-        document.getElementById('taskStream').textContent = result.diff;
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Diff Review</span><span class="pill">${escapeHtml(result.root)}</span></div><div class="search-page"><div class="preview-actions"><button class="btn primary" onclick="approveDiff()">Approve Diff</button><button class="btn" onclick="createRollbackPlan()">Rollback Plan</button><button class="btn" onclick="runVisualQaRepair()">Visual QA</button></div><h2>Changed files</h2>${(result.files || []).map(file => `<article class="search-result"><b>${escapeHtml(file.path)}</b><small>+${file.additions} / -${file.deletions}</small></article>`).join('') || '<p>No changed files detected.</p>'}<h2>Browser review package</h2><pre>${escapeHtml(JSON.stringify(result.visual || {}, null, 2))}</pre><h2>Raw diff</h2><pre>${escapeHtml(result.diff)}</pre></div>`;
+        document.getElementById('taskStream').textContent = `${JSON.stringify(result.visual || {}, null, 2)}\n\n${result.diff}`;
         addMessage('assistant', 'Loaded source diff. Pair this with Visual QA before approving changes.');
       } catch (error) {
         addMessage('system', `Diff review failed: ${error.message}`);
@@ -905,9 +916,42 @@
     }
 
     function attachScreenshotPrompt() {
-      const note = lastScreenshot ? 'Use the current browser screenshot as visual context for this request: ' : 'Take a screenshot first, then use it as visual context: ';
-      document.getElementById('chatInput').value = note;
-      document.getElementById('chatInput').focus();
+      if (!lastScreenshot) {
+        document.getElementById('chatInput').value = 'Take a screenshot first, then use it as visual context: ';
+        document.getElementById('chatInput').focus();
+        return;
+      }
+      api('/api/builder/image-prompt', { buildId: activeBuildId, image: lastScreenshot, message: 'Improve the app from this browser screenshot.' })
+        .then(result => {
+          document.getElementById('chatInput').value = result.prompt;
+          document.getElementById('taskStream').textContent = result.prompt;
+          addMessage('assistant', `Attached browser screenshot artifact: ${result.filePath}`);
+        })
+        .catch(error => addMessage('system', `Image prompt failed: ${error.message}`));
+    }
+
+    async function showSupabaseCockpit() {
+      try {
+        const [status, plan] = await Promise.all([
+          getApi('/api/connectors/supabase/status'),
+          getApi(`/api/connectors/supabase/schema-plan?sessionId=${encodeURIComponent(currentSessionId || 'default')}&pageId=${encodeURIComponent(currentPageId || '')}`),
+        ]);
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Supabase</span><span class="pill">${status.connected ? 'connected' : 'missing env'}</span></div><div class="search-page"><h1>Supabase Browser Data Cockpit</h1><p>Turn browser/API evidence into schema, RLS, seed data, and UI state checks.</p><div class="landing-builder"><div class="label">Table</div><input id="supabaseTable" class="input" placeholder="profiles"><div class="label">Select</div><input id="supabaseSelect" class="input" value="*"><div class="preview-actions"><button class="btn primary" onclick="querySupabaseTable()">Query Table</button></div></div><h2>Schema Plan</h2>${plan.tables.map(table => `<article class="search-result"><b>${escapeHtml(table.name)}</b><small>${escapeHtml(table.reason)}</small><p>${escapeHtml(table.columns.join(', '))}</p></article>`).join('')}</div>`;
+        document.getElementById('taskStream').textContent = plan.prompt;
+        addMessage('assistant', 'Generated Supabase schema plan from browser evidence.');
+      } catch (error) {
+        addMessage('system', `Supabase cockpit failed: ${error.message}`);
+      }
+    }
+
+    async function querySupabaseTable() {
+      try {
+        const result = await api('/api/connectors/supabase/query', { table: document.getElementById('supabaseTable').value.trim(), select: document.getElementById('supabaseSelect').value.trim(), limit: 25 });
+        document.getElementById('researchStream').textContent = JSON.stringify(result.rows, null, 2);
+        addMessage('assistant', `Loaded ${Array.isArray(result.rows) ? result.rows.length : 0} Supabase rows for browser/UI mapping.`);
+      } catch (error) {
+        addMessage('system', `Supabase query failed: ${error.message}`);
+      }
     }
 
     async function showChatManager() {
@@ -1055,6 +1099,35 @@
       if (build?.id) activeBuildId = build.id;
       if (build?.id) localStorage.setItem('nexus-active-build-id', build.id);
       return build;
+    }
+
+    async function runBrowserShakedown() {
+      if (!currentSessionId || !currentPageId) return addMessage('system', 'Open a real browser target or preview first.');
+      try {
+        const report = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/browser-shakedown`, { buildId: activeBuildId });
+        document.getElementById('outputPath').textContent = report.outputDir;
+        document.getElementById('researchStream').textContent = JSON.stringify(report.checks, null, 2);
+        document.getElementById('qaStream').textContent = `Browser Shakedown\nScreenshot: ${report.screenshotPath || 'none'}\nSEO/Security: ${report.seoSecurity.score}/100\n\nNext:\n${report.next.map(item => `- ${item}`).join('\n')}`;
+        addMessage('assistant', `Browser shakedown complete. Evidence saved to ${report.outputDir}`);
+      } catch (error) {
+        addMessage('system', `Browser shakedown failed: ${error.message}`);
+      }
+    }
+
+    async function runSideBySideVisualDiff() {
+      if (!currentSessionId || !currentPageId) return addMessage('system', 'Open the target page first.');
+      try {
+        let build = await getActiveBuild();
+        if (!build?.previewUrl && activeBuildId) build = await api(`/api/builder/builds/${activeBuildId}/preview`, {});
+        if (!build?.previewUrl) return addMessage('system', 'Start a generated app preview first.');
+        const run = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/side-by-side-visual-diff`, { buildId: activeBuildId, localUrl: build.previewUrl });
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Side-by-Side Visual Diff</span><span class="pill">${run.scores.overall}/100</span></div><div class="search-page"><h1>Browser target vs generated preview</h1><p>${escapeHtml(run.sideBySide.browserFirstApprovalRule)}</p><div class="build-stream"><div class="stream-card"><h3>Target</h3><pre>${escapeHtml(run.sideBySide.targetScreenshot)}</pre></div><div class="stream-card"><h3>Preview</h3><pre>${escapeHtml(run.sideBySide.localScreenshot)}</pre></div><div class="stream-card"><h3>Findings</h3><pre>${escapeHtml(run.findings.map(f => `[${f.severity}] ${f.area}: ${f.issue}`).join('\n\n'))}</pre></div></div></div>`;
+        document.getElementById('taskStream').textContent = run.repairPrompt;
+        document.getElementById('qaStream').textContent = JSON.stringify(run.scores, null, 2);
+        addMessage('assistant', `Side-by-side visual diff complete. Score: ${run.scores.overall}/100`);
+      } catch (error) {
+        addMessage('system', `Side-by-side visual diff failed: ${error.message}`);
+      }
     }
 
     async function runBuildDoctor(autoHeal) {
@@ -1623,7 +1696,7 @@
     }
 
     function escapeJs(value) {
-      return String(value || '').replace(/[\\']/g, char => char === '\\' ? '\\\\' : "\\'");
+      return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     }
 
     function setStatus(ok, text) {
@@ -1652,8 +1725,10 @@
     initWindowMode();
     renderBrowserTabs();
     detectWebGpu();
-    connect();
-    startBrowserIntelligenceLoop();
+    loadSecurityToken().finally(() => {
+      connect();
+      startBrowserIntelligenceLoop();
+    });
   </script>
 </body>
 </html>
