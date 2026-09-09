@@ -312,17 +312,18 @@ export class CloudServer {
         if (!provider) return res.status(404).json({ error: 'provider not found' });
         const missing = provider.env.filter((key) => !process.env[key]);
         const configured = missing.length < provider.env.length;
-        res.json({ id, configured, missing, checkedAt: new Date().toISOString(), browserUse: `Use ${provider.name} for browser-grounded ${provider.recommendedFor.join(', ')} when configured.` });
+        const live = configured ? await this.validateProviderLive(id).catch((error: any) => ({ ok: false, error: error.message })) : { ok: false, error: 'No configured credential or endpoint found.' };
+        res.json({ id, configured, missing, live, checkedAt: new Date().toISOString(), browserUse: `Use ${provider.name} for browser-grounded ${provider.recommendedFor.join(', ')} when configured.` });
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
     });
 
-    router.get('/api/builder/deploy/status', this.authenticate, (_req, res) => {
+    router.get('/api/builder/deploy/status', this.authenticate, async (_req, res) => {
       res.json({
-        vercel: { connected: Boolean(process.env.VERCEL_TOKEN), env: ['VERCEL_TOKEN'], command: 'npx vercel' },
-        netlify: { connected: Boolean(process.env.NETLIFY_AUTH_TOKEN), env: ['NETLIFY_AUTH_TOKEN', 'NETLIFY_SITE_ID'], command: 'npx netlify deploy' },
-        githubPages: { connected: Boolean(this.githubAccessToken()), env: ['GitHub connector or GITHUB_TOKEN'], command: 'npm run deploy' },
+        vercel: { connected: Boolean(process.env.VERCEL_TOKEN), env: ['VERCEL_TOKEN'], command: this.deployCommand('vercel').display, cli: await this.checkCommandAvailable('npx') },
+        netlify: { connected: Boolean(process.env.NETLIFY_AUTH_TOKEN), env: ['NETLIFY_AUTH_TOKEN', 'NETLIFY_SITE_ID'], command: this.deployCommand('netlify').display, cli: await this.checkCommandAvailable('npx') },
+        githubPages: { connected: Boolean(this.githubAccessToken()), env: ['GitHub connector or GITHUB_TOKEN'], command: this.deployCommand('github-pages').display, cli: await this.checkCommandAvailable('npm') },
         browserQa: ['Open deployed URL in Nexus', 'Run Staging Studio', 'Run SEO/Security', 'Sync launch issues to GitHub Project'],
       });
     });
@@ -334,7 +335,7 @@ export class CloudServer {
         const launch = Boolean(req.body?.launch);
         const plan = this.deployCommand(target);
         const result = launch ? await this.runSystemCommand(root, plan.command, plan.args, 180000) : undefined;
-        res.json({ target, root, command: [plan.command, ...plan.args].join(' '), launched: launch, result, browserQa: 'After deployment, open the deployed URL in Nexus and run Staging Studio plus SEO/Security.' });
+        res.json({ target, root, command: plan.display, launched: launch, result, browserQa: 'After deployment, open the deployed URL in Nexus and run Staging Studio plus SEO/Security.' });
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
@@ -1170,11 +1171,45 @@ export class CloudServer {
     return files.slice(0, 5000);
   }
 
-  private deployCommand(target: string): { command: string; args: string[] } {
+  private async validateProviderLive(id: string): Promise<{ ok: boolean; detail: string }> {
+    const setting = this.providerSettings.get(id);
+    if (id === 'openai' && process.env.OPENAI_API_KEY) return this.validateJsonEndpoint('https://api.openai.com/v1/models', { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` });
+    if (id === 'anthropic' && process.env.ANTHROPIC_API_KEY) return this.validateJsonEndpoint('https://api.anthropic.com/v1/models?limit=1', { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' });
+    if (id === 'github-models' && this.githubAccessToken()) return this.validateJsonEndpoint('https://models.inference.ai.azure.com/models', { Authorization: `Bearer ${this.githubAccessToken()}` });
+    if (id === 'ollama') return this.validateJsonEndpoint(`${process.env.OLLAMA_BASE_URL || setting?.baseUrl || 'http://127.0.0.1:11434'}/api/tags`, {});
+    if (id === 'lmstudio') return this.validateJsonEndpoint(`${process.env.LMSTUDIO_BASE_URL || setting?.baseUrl || 'http://127.0.0.1:1234'}/v1/models`, {});
+    if (id === 'openrouter' && process.env.OPENROUTER_API_KEY) return this.validateJsonEndpoint('https://openrouter.ai/api/v1/models', { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}` });
+    if (id === 'groq' && process.env.GROQ_API_KEY) return this.validateJsonEndpoint('https://api.groq.com/openai/v1/models', { Authorization: `Bearer ${process.env.GROQ_API_KEY}` });
+    if (id === 'deepseek' && process.env.DEEPSEEK_API_KEY) return this.validateJsonEndpoint('https://api.deepseek.com/models', { Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}` });
+    if (id === 'openai-compatible' && process.env.OPENAI_COMPATIBLE_BASE_URL && process.env.OPENAI_COMPATIBLE_API_KEY) return this.validateJsonEndpoint(`${process.env.OPENAI_COMPATIBLE_BASE_URL.replace(/\/$/, '')}/models`, { Authorization: `Bearer ${process.env.OPENAI_COMPATIBLE_API_KEY}` });
+    return { ok: true, detail: 'Configuration present. Live validation for this provider is not implemented yet; route through OpenAI-compatible settings if available.' };
+  }
+
+  private async validateJsonEndpoint(url: string, headers: Record<string, string>): Promise<{ ok: boolean; detail: string }> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      const response = await fetch(url, { headers: { Accept: 'application/json', ...headers }, signal: controller.signal });
+      return { ok: response.ok, detail: response.ok ? `Validated ${url}` : `${response.status}: ${(await response.text()).slice(0, 500)}` };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  private async checkCommandAvailable(command: string): Promise<{ available: boolean; detail: string }> {
+    const result = await this.runSystemCommand(process.cwd(), process.platform === 'win32' ? 'cmd.exe' : command, process.platform === 'win32' ? ['/c', command, '--version'] : ['--version'], 8000);
+    return { available: result.code === 0, detail: (result.stdout || result.stderr || '').split('\n')[0] || `exit ${result.code}` };
+  }
+
+  private deployCommand(target: string): { command: string; args: string[]; display: string } {
     const normalized = target.toLowerCase();
-    if (normalized === 'netlify') return process.platform === 'win32' ? { command: 'cmd.exe', args: ['/c', 'npx', 'netlify', 'deploy'] } : { command: 'npx', args: ['netlify', 'deploy'] };
-    if (normalized === 'github-pages') return process.platform === 'win32' ? { command: 'cmd.exe', args: ['/c', 'npm', 'run', 'deploy'] } : { command: 'npm', args: ['run', 'deploy'] };
-    return process.platform === 'win32' ? { command: 'cmd.exe', args: ['/c', 'npx', 'vercel'] } : { command: 'npx', args: ['vercel'] };
+    if (normalized === 'netlify') {
+      const args = ['netlify', 'deploy', ...(process.env.NETLIFY_AUTH_TOKEN ? ['--auth', process.env.NETLIFY_AUTH_TOKEN] : []), ...(process.env.NETLIFY_SITE_ID ? ['--site', process.env.NETLIFY_SITE_ID] : [])];
+      return process.platform === 'win32' ? { command: 'cmd.exe', args: ['/c', 'npx', ...args], display: `npx ${args.map((arg) => arg === process.env.NETLIFY_AUTH_TOKEN ? '$NETLIFY_AUTH_TOKEN' : arg).join(' ')}` } : { command: 'npx', args, display: `npx ${args.map((arg) => arg === process.env.NETLIFY_AUTH_TOKEN ? '$NETLIFY_AUTH_TOKEN' : arg).join(' ')}` };
+    }
+    if (normalized === 'github-pages') return process.platform === 'win32' ? { command: 'cmd.exe', args: ['/c', 'npm', 'run', 'deploy'], display: 'npm run deploy' } : { command: 'npm', args: ['run', 'deploy'], display: 'npm run deploy' };
+    const args = ['vercel', '--yes', ...(process.env.VERCEL_TOKEN ? ['--token', process.env.VERCEL_TOKEN] : [])];
+    return process.platform === 'win32' ? { command: 'cmd.exe', args: ['/c', 'npx', ...args], display: `npx ${args.map((arg) => arg === process.env.VERCEL_TOKEN ? '$VERCEL_TOKEN' : arg).join(' ')}` } : { command: 'npx', args, display: `npx ${args.map((arg) => arg === process.env.VERCEL_TOKEN ? '$VERCEL_TOKEN' : arg).join(' ')}` };
   }
 
   private runSystemCommand(cwd: string, command: string, args: string[], timeoutMs: number): Promise<{ code: number | null; stdout: string; stderr: string; timedOut: boolean }> {

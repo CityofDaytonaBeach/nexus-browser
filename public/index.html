@@ -840,7 +840,7 @@
     async function validateProvider(id) {
       try {
         const result = await api(`/api/builder/provider-settings/${encodeURIComponent(id)}/validate`, {});
-        addMessage('assistant', `${id} validation: ${result.configured ? 'configured' : 'missing env'}${result.missing.length ? `\nMissing: ${result.missing.join(', ')}` : ''}`);
+        addMessage('assistant', `${id} validation: ${result.configured ? 'configured' : 'missing env'} / live ${result.live?.ok ? 'ok' : 'failed'}${result.missing.length ? `\nMissing: ${result.missing.join(', ')}` : ''}\n${result.live?.detail || result.live?.error || ''}`);
       } catch (error) {
         addMessage('system', `Provider validation failed: ${error.message}`);
       }
