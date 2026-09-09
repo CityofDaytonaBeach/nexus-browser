@@ -17,6 +17,7 @@ import { getCompetitiveBlueprint } from '../competitive/blueprint';
 import { BuilderPlatform } from '../builder/platform';
 import { getProjectAgentSwarm } from '../project-agents/registry';
 import { fetchLanguageUpdate, getLanguageExperts } from '../languages/registry';
+import { LLMClient, LLMMessage } from '../ai/llm';
 
 const log = createLogger('Cloud');
 
@@ -32,6 +33,28 @@ interface BuilderMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
+}
+
+interface BuilderChatAction {
+  id: string;
+  label: string;
+  description: string;
+  prompt: string;
+}
+
+interface BuilderChatResult {
+  response: string;
+  actions: BuilderChatAction[];
+  source: 'ai' | 'fallback';
+}
+
+interface GitHubProjectConnection {
+  owner: string;
+  repo: string;
+  projectId?: string;
+  projectNumber?: number;
+  projectUrl?: string;
+  connectedAt: string;
 }
 
 interface GathererObservation {
@@ -75,16 +98,19 @@ export class CloudServer {
   private engine: BrowserEngine;
   private agent: AIAgent;
   private automation: AutomationEngine;
+  private llm: LLMClient;
   private builderChats: Map<string, BuilderMessage[]> = new Map();
   private gathererObservations: Map<string, GathererObservation[]> = new Map();
   private backendObservations: Map<string, BackendObservation[]> = new Map();
   private builderPlatform: BuilderPlatform;
+  private githubProjectConnection?: GitHubProjectConnection;
   private pingInterval?: NodeJS.Timeout;
 
   constructor() {
     this.engine = BrowserEngine.getInstance();
     this.agent = new AIAgent();
     this.automation = new AutomationEngine();
+    this.llm = new LLMClient();
     this.builderPlatform = new BuilderPlatform();
 
     this.app = express();
@@ -115,6 +141,84 @@ export class CloudServer {
 
     router.get('/api/integrations', this.authenticate, (_req, res) => {
       res.json(getAllIntegrationProfiles());
+    });
+
+    router.get('/api/github/status', this.authenticate, (_req, res) => {
+      res.json({
+        configured: Boolean(process.env.GITHUB_TOKEN),
+        owner: this.githubProjectConnection?.owner || process.env.GITHUB_OWNER || '',
+        repo: this.githubProjectConnection?.repo || process.env.GITHUB_REPO || '',
+        projectId: this.githubProjectConnection?.projectId || process.env.GITHUB_PROJECT_ID || '',
+        projectNumber: this.githubProjectConnection?.projectNumber || Number(process.env.GITHUB_PROJECT_NUMBER || 0) || undefined,
+        projectUrl: this.githubProjectConnection?.projectUrl || process.env.GITHUB_PROJECT_URL || '',
+      });
+    });
+
+    router.get('/api/github/project-connection', this.authenticate, (_req, res) => {
+      res.json(this.resolveGitHubConnection());
+    });
+
+    router.post('/api/github/project-connection', this.authenticate, (req, res) => {
+      const owner = String(req.body?.owner || '').trim();
+      const repo = String(req.body?.repo || '').trim();
+      if (!owner || !repo) return res.status(400).json({ error: 'owner and repo are required' });
+      this.githubProjectConnection = {
+        owner,
+        repo,
+        projectId: String(req.body?.projectId || '').trim() || undefined,
+        projectNumber: req.body?.projectNumber ? Number(req.body.projectNumber) : undefined,
+        projectUrl: String(req.body?.projectUrl || '').trim() || undefined,
+        connectedAt: new Date().toISOString(),
+      };
+      res.json(this.githubProjectConnection);
+    });
+
+    router.get('/api/github/repos', this.authenticate, async (req, res) => {
+      try {
+        const owner = String(req.query.owner || '').trim();
+        const path = owner ? `/orgs/${encodeURIComponent(owner)}/repos?per_page=100` : '/user/repos?per_page=100&sort=updated';
+        const repos = await this.githubFetch(path);
+        res.json(repos.map((repo: any) => ({ name: repo.name, fullName: repo.full_name, private: repo.private, url: repo.html_url, defaultBranch: repo.default_branch })));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/github/issues', this.authenticate, async (req, res) => {
+      try {
+        const connection = this.resolveGitHubConnection(req.query.owner as string, req.query.repo as string);
+        const issues = await this.githubFetch(`/repos/${encodeURIComponent(connection.owner)}/${encodeURIComponent(connection.repo)}/issues?state=all&per_page=50`);
+        res.json(issues.filter((issue: any) => !issue.pull_request).map((issue: any) => this.githubIssueSummary(issue)));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/github/issues', this.authenticate, async (req, res) => {
+      try {
+        const connection = this.resolveGitHubConnection(req.body?.owner, req.body?.repo);
+        const issue = await this.createGitHubIssue(connection, String(req.body?.title || ''), String(req.body?.body || ''), Array.isArray(req.body?.labels) ? req.body.labels : ['nexus']);
+        res.json(issue);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/github/sync-build-tasks', this.authenticate, async (req, res) => {
+      try {
+        const connection = this.resolveGitHubConnection(req.body?.owner, req.body?.repo);
+        const tasks = Array.isArray(req.body?.tasks) ? req.body.tasks : [];
+        if (!tasks.length) return res.status(400).json({ error: 'tasks array is required' });
+        const created = [];
+        for (const task of tasks.slice(0, 25)) {
+          const title = String(task.title || task.goal || task.description || task).trim().slice(0, 240);
+          const body = [`Created by NexusBrowser from project/build management.`, '', String(task.goal || task.description || task.body || '').trim()].join('\n');
+          created.push(await this.createGitHubIssue(connection, title, body, ['nexus', 'build-task']));
+        }
+        res.json({ connection, created });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
     });
 
     router.get('/api/builder/capabilities', this.authenticate, (_req, res) => {
@@ -424,12 +528,21 @@ export class CloudServer {
         })()
         : 'Backend Observer has no active generated workspace yet. Start or select a build to inspect server/API/data functionality.';
       const browserContext = `${gathererContext}\n\n${backendContext}`;
-      const response = this.buildBuilderResponse(message, mode, uiLook, browserContext);
+      const chat = await this.runBuilderConductor(message, mode, uiLook, browserContext, messages, activeBuildId);
+      let response = chat.response;
       messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
-      this.builderChats.set(sessionId, messages.slice(-100));
       let build = undefined;
       let update = undefined;
-      if (activeBuildId && this.shouldUpdateBuild(message, mode)) {
+      const needsBrowserGrounding = this.shouldRequireBrowserGrounding(message, mode, gathererContext);
+      if (needsBrowserGrounding) {
+        chat.actions = this.browserGroundingActions(message, chat.actions);
+        response = `${response}\n\nBrowser grounding required before build. Open a target page, run Research Project, then build from the captured DOM, styles, network, console, screenshots, and API evidence.`;
+        messages.push({
+          role: 'assistant',
+          content: 'Browser grounding required before build. Open a target page, run Research Project, then build from the captured DOM, styles, network, console, screenshots, and API evidence.',
+          timestamp: Date.now(),
+        });
+      } else if (activeBuildId && this.shouldUpdateBuild(message, mode)) {
         const targetBuildId = this.builderPlatform.getBuild(activeBuildId)?.id || this.builderPlatform.getBuilds().slice(-1)[0]?.id;
         if (!targetBuildId) throw new Error('No generated build workspace yet. Ask Build Mode to create one first.');
         update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode, browserContext, ...brainOptions });
@@ -446,7 +559,8 @@ export class CloudServer {
           timestamp: Date.now(),
         });
       }
-      res.json({ response, messages: this.builderChats.get(sessionId), build, update });
+      this.builderChats.set(sessionId, messages.slice(-100));
+      res.json({ response, messages: this.builderChats.get(sessionId), build, update, actions: chat.actions, source: chat.source });
     });
 
     router.get('/api/sessions', this.authenticate, (_req, res) => {
@@ -706,6 +820,85 @@ export class CloudServer {
     return value.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
   }
 
+  private resolveGitHubConnection(owner?: string, repo?: string): GitHubProjectConnection {
+    const resolved: GitHubProjectConnection = {
+      owner: String(owner || this.githubProjectConnection?.owner || process.env.GITHUB_OWNER || '').trim(),
+      repo: String(repo || this.githubProjectConnection?.repo || process.env.GITHUB_REPO || '').trim(),
+      projectId: this.githubProjectConnection?.projectId || process.env.GITHUB_PROJECT_ID || undefined,
+      projectNumber: this.githubProjectConnection?.projectNumber || Number(process.env.GITHUB_PROJECT_NUMBER || 0) || undefined,
+      projectUrl: this.githubProjectConnection?.projectUrl || process.env.GITHUB_PROJECT_URL || undefined,
+      connectedAt: this.githubProjectConnection?.connectedAt || new Date().toISOString(),
+    };
+    if (!resolved.owner || !resolved.repo) throw new Error('GitHub project connection requires owner and repo. Save a connection or set GITHUB_OWNER and GITHUB_REPO.');
+    return resolved;
+  }
+
+  private async githubFetch(pathname: string, init: RequestInit = {}): Promise<any> {
+    const token = process.env.GITHUB_TOKEN;
+    if (!token) throw new Error('GITHUB_TOKEN not configured');
+    const response = await fetch(`https://api.github.com${pathname}`, {
+      ...init,
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...(init.headers || {}),
+      },
+    });
+    if (!response.ok) throw new Error(`GitHub API ${response.status}: ${await response.text()}`);
+    return response.status === 204 ? {} : response.json();
+  }
+
+  private async githubGraphql<T = any>(query: string, variables: Record<string, any>): Promise<T> {
+    const token = process.env.GITHUB_TOKEN;
+    if (!token) throw new Error('GITHUB_TOKEN not configured');
+    const response = await fetch('https://api.github.com/graphql', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+    const data: any = await response.json();
+    if (!response.ok || data.errors?.length) throw new Error(`GitHub GraphQL error: ${JSON.stringify(data.errors || data)}`);
+    return data.data;
+  }
+
+  private async createGitHubIssue(connection: GitHubProjectConnection, title: string, body: string, labels: string[]): Promise<any> {
+    if (!title.trim()) throw new Error('Issue title is required');
+    const issue = await this.githubFetch(`/repos/${encodeURIComponent(connection.owner)}/${encodeURIComponent(connection.repo)}/issues`, {
+      method: 'POST',
+      body: JSON.stringify({ title, body, labels }),
+    });
+    const summary = this.githubIssueSummary(issue);
+    const projectId = connection.projectId || process.env.GITHUB_PROJECT_ID;
+    if (projectId && issue.node_id) {
+      try {
+        await this.githubGraphql(`mutation AddIssueToProject($projectId: ID!, $contentId: ID!) { addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } } }`, { projectId, contentId: issue.node_id });
+        summary.projectLinked = true;
+      } catch (error: any) {
+        summary.projectLinked = false;
+        summary.projectError = error.message;
+      }
+    }
+    return summary;
+  }
+
+  private githubIssueSummary(issue: any): any {
+    return {
+      id: issue.id,
+      number: issue.number,
+      title: issue.title,
+      state: issue.state,
+      url: issue.html_url,
+      labels: (issue.labels || []).map((label: any) => typeof label === 'string' ? label : label.name),
+      createdAt: issue.created_at,
+      updatedAt: issue.updated_at,
+    };
+  }
+
   private detectBuilderMode(message: string, fallback: string): string {
     const text = message.toLowerCase();
     if (/\bresearch\s+mode\b|\bswitch\s+to\s+research\b/.test(text)) return 'research';
@@ -726,6 +919,33 @@ export class CloudServer {
     if (/\b(staging studio|multi-device preview|device wall|preview wall|expert router|route experts|creative mind|project memory|stack experts|build doctor|auto heal|heal loop)\b/.test(text)) return false;
     if (mode === 'build' && !this.shouldStartBuild(message, 'chat')) return true;
     return /\b(change|update|edit|modify|fix|improve|add|remove|replace|move|resize|restyle|make it|make this|turn this|connect|wire|debug|repair)\b/.test(text);
+  }
+
+  private shouldRequireBrowserGrounding(message: string, mode: string, gathererContext: string): boolean {
+    if (!this.shouldStartBuild(message, mode)) return false;
+    if (this.hasBrowserEvidence(gathererContext)) return false;
+    const text = message.toLowerCase();
+    return mode === 'ui-builder'
+      || /\b(clone|recreate|copy|redesign|improve this|this site|this page|current page|current site|like\s+https?:\/\/|based on\s+https?:\/\/|website|landing page)\b/i.test(text)
+      || /https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i.test(message);
+  }
+
+  private hasBrowserEvidence(gathererContext: string): boolean {
+    return Boolean(gathererContext.trim()) && !/Browser intelligence unavailable|No active rendered browser session|No active page is available/i.test(gathererContext);
+  }
+
+  private browserGroundingActions(message: string, existing: BuilderChatAction[]): BuilderChatAction[] {
+    const url = message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i)?.[0];
+    const openPrompt = url
+      ? `Open ${url.startsWith('http') ? url : `https://${url}`} and run research before building.`
+      : 'Search the web for the best target/reference, open it in the browser, then run research before building.';
+    const required = [
+      { id: 'open-browser-target', label: url ? 'Open Target' : 'Find Target', description: 'Load the source/reference in the real browser first.', prompt: openPrompt },
+      { id: 'research-before-build', label: 'Research First', description: 'Capture DOM, styles, network, console, screenshots, APIs, and product signals.', prompt: 'Run research project and create a project brain from the current browser target before building.' },
+      { id: 'build-from-browser', label: 'Build From Browser', description: 'Build only after Nexus has live browser evidence.', prompt: 'Build mode start implementing with OpenCode using the browser evidence, project brain, and live preview.' },
+    ];
+    const seen = new Set(required.map((action) => action.id));
+    return [...required, ...existing.filter((action) => !seen.has(action.id))].slice(0, 5);
   }
 
   private async collectGathererObservation(sessionId?: string, pageId?: string): Promise<GathererObservation> {
@@ -993,6 +1213,83 @@ export class CloudServer {
     for (const match of text.matchAll(/process\.env\.([A-Z0-9_]+)/g)) keys.add(match[1]);
     for (const match of text.matchAll(/^([A-Z0-9_]+)=/gm)) keys.add(match[1]);
     return Array.from(keys).slice(0, 80);
+  }
+
+  private async runBuilderConductor(
+    message: string,
+    mode: string,
+    uiLook: string,
+    browserContext: string,
+    history: BuilderMessage[],
+    activeBuildId: string,
+  ): Promise<BuilderChatResult> {
+    const fallback = this.createFallbackBuilderChat(message, mode, uiLook, browserContext);
+    if (!message.trim()) return fallback;
+
+    const recentHistory = history.slice(-8).map((item) => `${item.role}: ${item.content}`).join('\n\n');
+    const system = `You are Nexus Command Chat, an elite app-building conductor designed to beat Lovable, Bolt, and other visual builders.
+
+You must be better in these areas:
+- Understand the live browser and generated preview before proposing code.
+- Convert vague ideas into shippable full-stack product decisions.
+- Start or update OpenCode builds when useful, but ask for missing essentials when risk is high.
+- Recommend browser-first verification: Build Doctor, visual QA, staging studio, mobile checks, backend/API mapping, and project memory.
+- Avoid generic SaaS output. Push distinctive product-specific UI direction.
+
+Return strict JSON only with this shape:
+{"response":"short useful chat reply in markdown","actions":[{"id":"kebab-id","label":"1-4 words","description":"short reason","prompt":"chat prompt to run if clicked"}]}
+
+Rules:
+- Keep response under 180 words unless the user explicitly asks for a long plan.
+- Mention concrete next build/QA steps, not generic encouragement.
+- Actions must be executable chat prompts for Nexus, max 5 actions.
+- If browser/backend context is unavailable, say what to open or run next.
+- Never claim files were changed unless OpenCode/build/update was started by the API after this response.`;
+    const messages: LLMMessage[] = [
+      { role: 'system', content: system },
+      {
+        role: 'user',
+        content: `Mode: ${mode}\nUI look: ${uiLook}\nActive build: ${activeBuildId || 'none'}\n\nRecent chat:\n${recentHistory || 'none'}\n\nLive browser/backend evidence:\n${browserContext || 'none'}\n\nUser message:\n${message}`,
+      },
+    ];
+
+    try {
+      const result = await this.llm.chat(messages, undefined, { temperature: 0.35, maxTokens: 1400 });
+      const parsed = this.parseBuilderConductorJson(result.content || '');
+      if (!parsed.response) return fallback;
+      return { response: parsed.response, actions: parsed.actions, source: 'ai' };
+    } catch (error: any) {
+      return {
+        ...fallback,
+        response: `${fallback.response}\n\nAI conductor unavailable: ${error.message}`,
+      };
+    }
+  }
+
+  private parseBuilderConductorJson(content: string): { response: string; actions: BuilderChatAction[] } {
+    const jsonText = content.match(/```(?:json)?\s*([\s\S]*?)```/)?.[1] || content.match(/\{[\s\S]*\}/)?.[0] || '{}';
+    const parsed = JSON.parse(jsonText);
+    return {
+      response: String(parsed.response || '').trim(),
+      actions: Array.isArray(parsed.actions) ? parsed.actions.slice(0, 5).map((action: any, index: number) => ({
+        id: String(action.id || `action-${index + 1}`).toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, ''),
+        label: String(action.label || `Action ${index + 1}`).slice(0, 32),
+        description: String(action.description || '').slice(0, 140),
+        prompt: String(action.prompt || action.description || '').slice(0, 500),
+      })).filter((action: BuilderChatAction) => action.prompt) : [],
+    };
+  }
+
+  private createFallbackBuilderChat(message: string, mode: string, uiLook: string, browserContext: string): BuilderChatResult {
+    const response = this.buildBuilderResponse(message, mode, uiLook, browserContext);
+    const actions: BuilderChatAction[] = [
+      { id: 'research-project', label: 'Research Project', description: 'Capture browser evidence, APIs, UI structure, and build tasks.', prompt: 'Run research project and create a project brain from the current target.' },
+      { id: 'build-opencode', label: 'Build', description: 'Start an OpenCode implementation from the current prompt and browser evidence.', prompt: 'Build mode start implementing with OpenCode using the project brain and live browser preview.' },
+      { id: 'build-doctor', label: 'Build Doctor', description: 'Inspect generated app setup, logs, dependencies, and build errors.', prompt: 'Run Build Doctor and auto heal the generated app.' },
+      { id: 'staging-studio', label: 'Staging', description: 'Verify desktop, tablet, mobile, and app-store/mobile surfaces.', prompt: 'Run Staging Studio multi-device preview and report issues.' },
+      { id: 'creative-mind', label: 'Creative Mind', description: 'Create a non-generic visual direction before or during implementation.', prompt: 'Run Creative Mind and make this app not look like a generic template.' },
+    ];
+    return { response, actions, source: 'fallback' };
   }
 
   private buildBuilderResponse(message: string, mode: string, uiLook: string, browserContext = ''): string {

@@ -136,6 +136,12 @@
     .msg.user { align-self: flex-end; background: var(--text); color: var(--bg); border-color: var(--text); }
     .msg.assistant { align-self: flex-start; background: var(--panel-2); }
     .msg.system { align-self: center; color: var(--muted); background: transparent; border: 0; font-size: 12px; }
+    .chat-actions { align-self: flex-start; display: grid; gap: 6px; width: 94%; }
+    .chat-action { border: 1px solid var(--line); border-radius: 13px; padding: 8px 10px; background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
+    .chat-action:hover { border-color: var(--text); background: var(--blue-soft); }
+    .chat-action b { display: block; font-size: 12px; margin-bottom: 2px; }
+    .chat-action span { display: block; color: var(--muted); font-size: 11px; line-height: 1.35; }
+    .chat-source { color: var(--muted); font-size: 10px; padding-left: 2px; }
     .composer { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
     .composer textarea { min-height: 74px; resize: none; border: 1px solid var(--line); border-radius: 16px; padding: 10px; color: var(--text); background: var(--panel-2); outline: none; font-size: 13px; }
     .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -235,6 +241,7 @@
           <div class="tool" onclick="runApiCrawl()"><strong>API / MCP</strong><span>Endpoints, SDKs, MCP tools, response samples.</span></div>
           <div class="tool" onclick="createVisualQaPlan()"><strong>QA Plan</strong><span>Target vs local preview checks and repair prompt.</span></div>
           <div class="tool" onclick="runVisualQaRepair()"><strong>Auto Repair QA</strong><span>Compare target to live app and generate OpenCode repair tasks.</span></div>
+          <div class="tool" onclick="showGitHubProjectManager()"><strong>GitHub Projects</strong><span>Connect repo/project, create issues, and sync build tasks.</span></div>
           <div class="tool" onclick="showBuilderPlatform()"><strong>Platform</strong><span>Providers, deploys, snapshots, locks, sessions.</span></div>
           <div class="tool" onclick="showAgentSwarm()"><strong>Agents</strong><span>Project/app agents, skills, memory, routing, automations.</span></div>
           <div class="tool" onclick="showCompetitiveBlueprint()"><strong>Roadmap</strong><span>Palot/Bolt-inspired priorities for Nexus.</span></div>
@@ -856,16 +863,38 @@
       addMessage('user', message);
       try {
         applyModeFromMessage(message);
+        if (prepareBrowserGrounding(message)) return;
         await refreshBrowserIntelligence(true);
         await refreshBackendObserver(true);
         const result = await api('/api/builder/chat', { sessionId: currentSessionId, pageId: currentPageId, activeBuildId, message, browserContext: `${lastBrowserIntelligence}\n\n${lastBackendObservation}`.trim(), mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value, ...buildBrainOptions() });
         addMessage('assistant', result.response);
+        addActionMessage(result.actions || [], result.source);
         if (result.build) showBuildStarted(result.build);
         if (result.update) showBuildUpdateStarted(result.update);
         if (pendingAutoBuild !== message) executeChatIntent(message);
       } catch (error) {
         addMessage('system', `Builder chat failed: ${error.message}`);
       }
+    }
+
+    function prepareBrowserGrounding(message) {
+      const urlMatch = message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i);
+      const browserFirst = shouldAutoBuildFromMessage(message) || /\b(clone|recreate|copy|redesign|this site|this page|current site|current page|like|based on)\b/i.test(message);
+      if (urlMatch && browserFirst) {
+        const url = urlMatch[0].startsWith('http') ? urlMatch[0] : `https://${urlMatch[0]}`;
+        document.getElementById('urlInput').value = url;
+        pendingAutoBuild = message;
+        addMessage('system', `Opening ${url} first so the build is based on real browser evidence.`);
+        navigate();
+        return true;
+      }
+      if (!currentPageId && shouldWebSearch(message) && browserFirst) {
+        pendingAutoBuild = message;
+        addMessage('system', 'Searching first so Nexus can choose a real browser target before building. Open a result to continue.');
+        runBrowserSearch(cleanSearchQuery(message));
+        return true;
+      }
+      return false;
     }
 
     function sendBuilderPrompt(message) {
@@ -1183,6 +1212,32 @@
       div.className = `msg ${role}`;
       div.textContent = content;
       messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function addActionMessage(actions, source) {
+      if (!actions.length) return;
+      const messages = document.getElementById('messages');
+      const wrap = document.createElement('div');
+      wrap.className = 'chat-actions';
+      const sourceLine = document.createElement('div');
+      sourceLine.className = 'chat-source';
+      sourceLine.textContent = source === 'ai' ? 'AI conductor next moves' : 'Fallback next moves';
+      wrap.appendChild(sourceLine);
+      actions.slice(0, 5).forEach((action) => {
+        const button = document.createElement('button');
+        button.className = 'chat-action';
+        button.type = 'button';
+        const title = document.createElement('b');
+        title.textContent = action.label || 'Run';
+        const desc = document.createElement('span');
+        desc.textContent = action.description || action.prompt || '';
+        button.appendChild(title);
+        button.appendChild(desc);
+        button.onclick = () => sendBuilderPrompt(action.prompt || action.description || action.label || 'Continue');
+        wrap.appendChild(button);
+      });
+      messages.appendChild(wrap);
       messages.scrollTop = messages.scrollHeight;
     }
 
