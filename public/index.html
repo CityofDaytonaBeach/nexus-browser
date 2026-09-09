@@ -855,6 +855,10 @@
       try {
         const result = await api('/api/builder/deploy', { target, buildId: activeBuildId, launch });
         document.getElementById('qaStream').textContent = JSON.stringify(result, null, 2);
+        if (result.deployedUrls?.[0]) {
+          document.getElementById('urlInput').value = result.deployedUrls[0];
+          addMessage('system', `Captured deployed URL. Open it in Nexus, then run Staging Studio and SEO/Security: ${result.deployedUrls[0]}`);
+        }
         addMessage('assistant', `${launch ? 'Ran' : 'Prepared'} ${target} deploy: ${result.command}`);
       } catch (error) {
         addMessage('system', `Deploy failed: ${error.message}`);

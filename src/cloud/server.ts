@@ -5,6 +5,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { createServer, Server as HttpServer } from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { spawn } from 'child_process';
 import { v4 as uuid } from 'uuid';
 import jwt from 'jsonwebtoken';
@@ -141,6 +142,7 @@ export class CloudServer {
     this.automation = new AutomationEngine();
     this.llm = new LLMClient();
     this.builderPlatform = new BuilderPlatform();
+    this.loadSecureState();
 
     this.app = express();
     this.app.use(cors({ origin: config.get().server.corsOrigin }));
@@ -196,6 +198,7 @@ export class CloudServer {
         if (!code || !saved || saved.provider !== 'github' || Date.now() - saved.createdAt > 10 * 60 * 1000) throw new Error('Invalid or expired GitHub login state');
         const connection = await this.exchangeGitHubOAuthCode(code, req);
         this.connectorConnections.set('github', connection);
+        this.saveSecureState();
         res.type('html').send(`<script>window.opener?.postMessage({type:'nexus:connector',provider:'github',status:'connected'}, '*'); window.location.href='${this.escapeHtml(saved.returnTo || '/')}';</script><p>GitHub connected. You can close this window.</p>`);
       } catch (error: any) {
         res.status(400).type('html').send(`<p>GitHub connection failed: ${this.escapeHtml(error.message)}</p>`);
@@ -204,6 +207,7 @@ export class CloudServer {
 
     router.delete('/api/connectors/github', this.authenticate, (_req, res) => {
       this.connectorConnections.delete('github');
+      this.saveSecureState();
       res.json({ success: true });
     });
 
@@ -302,6 +306,7 @@ export class CloudServer {
       if (!id) return res.status(400).json({ error: 'provider id required' });
       const setting: ProviderSetting = { id, enabled: req.body?.enabled !== false, model: req.body?.model, baseUrl: req.body?.baseUrl, updatedAt: new Date().toISOString() };
       this.providerSettings.set(id, setting);
+      this.saveSecureState();
       res.json(setting);
     });
 
@@ -335,7 +340,8 @@ export class CloudServer {
         const launch = Boolean(req.body?.launch);
         const plan = this.deployCommand(target);
         const result = launch ? await this.runSystemCommand(root, plan.command, plan.args, 180000) : undefined;
-        res.json({ target, root, command: plan.display, launched: launch, result, browserQa: 'After deployment, open the deployed URL in Nexus and run Staging Studio plus SEO/Security.' });
+        const deployedUrls = result ? this.extractDeployUrls(`${result.stdout}\n${result.stderr}`) : [];
+        res.json({ target, root, command: plan.display, launched: launch, result, deployedUrls, postDeployQa: this.postDeployQaPlan(deployedUrls[0]) });
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
@@ -422,6 +428,7 @@ export class CloudServer {
         projectUrl: String(req.body?.projectUrl || '').trim() || undefined,
         connectedAt: new Date().toISOString(),
       };
+      this.saveSecureState();
       res.json(this.githubProjectConnection);
     });
 
@@ -1169,6 +1176,72 @@ export class CloudServer {
     };
     walk(root);
     return files.slice(0, 5000);
+  }
+
+  private secureStatePath(): string {
+    return path.join(process.cwd(), '.nexus', 'secure-state.enc');
+  }
+
+  private secureStateKey(): Buffer {
+    return crypto.createHash('sha256').update(process.env.NEXUS_SECRET_KEY || config.get().auth.jwtSecret || 'nexus-dev-secret').digest();
+  }
+
+  private loadSecureState(): void {
+    const filePath = this.secureStatePath();
+    if (!fs.existsSync(filePath)) return;
+    try {
+      const payload = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      const decipher = crypto.createDecipheriv('aes-256-gcm', this.secureStateKey(), Buffer.from(payload.iv, 'base64'));
+      decipher.setAuthTag(Buffer.from(payload.tag, 'base64'));
+      const text = `${decipher.update(payload.data, 'base64', 'utf8')}${decipher.final('utf8')}`;
+      const state = JSON.parse(text);
+      this.connectorConnections = new Map(Object.entries(state.connectorConnections || {}) as Array<[string, ConnectorConnection]>);
+      this.providerSettings = new Map(Object.entries(state.providerSettings || {}) as Array<[string, ProviderSetting]>);
+      this.githubProjectConnection = state.githubProjectConnection;
+    } catch (error: any) {
+      log.warn(`Secure state could not be loaded: ${error.message}`);
+    }
+  }
+
+  private saveSecureState(): void {
+    try {
+      const filePath = this.secureStatePath();
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      const iv = crypto.randomBytes(12);
+      const cipher = crypto.createCipheriv('aes-256-gcm', this.secureStateKey(), iv);
+      const state = {
+        savedAt: new Date().toISOString(),
+        connectorConnections: Object.fromEntries(this.connectorConnections),
+        providerSettings: Object.fromEntries(this.providerSettings),
+        githubProjectConnection: this.githubProjectConnection,
+      };
+      const data = `${cipher.update(JSON.stringify(state), 'utf8', 'base64')}${cipher.final('base64')}`;
+      fs.writeFileSync(filePath, JSON.stringify({ version: 1, iv: iv.toString('base64'), tag: cipher.getAuthTag().toString('base64'), data }, null, 2));
+    } catch (error: any) {
+      log.warn(`Secure state could not be saved: ${error.message}`);
+    }
+  }
+
+  private extractDeployUrls(output: string): string[] {
+    const urls = new Set<string>();
+    for (const match of output.matchAll(/https:\/\/[^\s)>'"]+/g)) {
+      const url = match[0].replace(/[.,;]+$/, '');
+      if (/vercel\.app|netlify\.app|github\.io|pages\.dev|onrender\.com|railway\.app/i.test(url)) urls.add(url);
+    }
+    return Array.from(urls);
+  }
+
+  private postDeployQaPlan(url?: string): any {
+    return {
+      url: url || '',
+      steps: [
+        url ? `Open ${url} in Nexus browser` : 'Paste deployed URL into Nexus browser',
+        'Run browser intelligence to capture DOM, network, console, storage, and screenshot evidence',
+        'Run Staging Studio across desktop, tablet, mobile, game, and app-store mobile presets',
+        'Run SEO/Security audit for metadata, social cards, headers, secret exposure, and launch risks',
+        'Sync failures to GitHub Project as launch-blocking issues',
+      ],
+    };
   }
 
   private async validateProviderLive(id: string): Promise<{ ok: boolean; detail: string }> {
