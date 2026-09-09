@@ -7,7 +7,7 @@ export default {
     "paper": "#f7fbf8"
   },
   "signature": "Web App Command Surface",
-  "metric": "09",
+  "metric": "12",
   "metricLabel": "live product systems",
   "primaryCta": "Run workflow",
   "pages": [
@@ -58,6 +58,9 @@ export default {
     "Run staging and repair loops"
   ],
   "updates": [
-    "Build mode start implementing with OpenCode using the project brain and live browser preview."
+    "Build mode start implementing with OpenCode using the project brain and live browser preview.",
+    "build mode start implementing with OpenCode using the project brain and live browser preview.",
+    "build mode start implementing with OpenCode using the project brain and live browser preview.",
+    "daytona bike wekk"
   ]
 };
