@@ -20,6 +20,8 @@
     "setup": "node scripts/setup.js"
   },
   "dependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "adm-zip": "^0.6.0",
     "async-mutex": "^0.5.0",
     "chalk": "^4.1.2",
     "chokidar": "^3.6.0",

@@ -5,8 +5,10 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { createServer, Server as HttpServer } from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawn } from 'child_process';
 import { v4 as uuid } from 'uuid';
 import jwt from 'jsonwebtoken';
+import AdmZip from 'adm-zip';
 import { config } from '../core/config';
 import { createLogger } from '../core/logger';
 import { BrowserEngine } from '../browser/engine';
@@ -72,6 +74,14 @@ interface OAuthState {
   returnTo: string;
 }
 
+interface ProviderSetting {
+  id: string;
+  enabled: boolean;
+  model?: string;
+  baseUrl?: string;
+  updatedAt: string;
+}
+
 interface GathererObservation {
   id: string;
   sessionId: string;
@@ -121,6 +131,8 @@ export class CloudServer {
   private githubProjectConnection?: GitHubProjectConnection;
   private connectorConnections: Map<string, ConnectorConnection> = new Map();
   private oauthStates: Map<string, OAuthState> = new Map();
+  private providerSettings: Map<string, ProviderSetting> = new Map();
+  private chatTitles: Map<string, string> = new Map();
   private pingInterval?: NodeJS.Timeout;
 
   constructor() {
@@ -206,6 +218,178 @@ export class CloudServer {
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
+    });
+
+    router.get('/api/builder/stream', (req, res) => {
+      if (req.query.apiKey !== config.get().auth.apiKey) return res.status(401).json({ error: 'Unauthorized' });
+      res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+      const send = (type: string, data: any) => res.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);
+      const buildId = String(req.query.buildId || '');
+      const steps = [
+        { label: 'Browser evidence', detail: 'Collect DOM, console, network, screenshots, and backend observations before edits.' },
+        { label: 'OpenCode build', detail: 'Route implementation through OpenCode and stream logs from generated workspace.' },
+        { label: 'QA loop', detail: 'Run Build Doctor, visual QA, staging devices, SEO, and security checks.' },
+      ];
+      steps.forEach((step) => send('step', step));
+      let ticks = 0;
+      const timer = setInterval(() => {
+        ticks++;
+        const build = buildId ? this.builderPlatform.getBuild(buildId) : undefined;
+        const logTail = build?.logPath && fs.existsSync(build.logPath) ? fs.readFileSync(build.logPath, 'utf8').slice(-3000) : '';
+        send('tick', { ticks, buildId, status: build?.status || 'no-active-build', previewStatus: build?.previewStatus, logTail });
+        if (ticks >= 12) {
+          clearInterval(timer);
+          send('done', { ok: true, message: 'Streaming timeline finished.' });
+          res.end();
+        }
+      }, 1500);
+      req.on('close', () => clearInterval(timer));
+    });
+
+    router.get('/api/builder/diff', this.authenticate, async (req, res) => {
+      try {
+        const root = this.resolveWorkspaceRoot(String(req.query.buildId || ''), String(req.query.root || ''));
+        const diff = await this.runSystemCommand(root, process.platform === 'win32' ? 'cmd.exe' : 'git', process.platform === 'win32' ? ['/c', 'git', 'diff', '--', '.'] : ['diff', '--', '.'], 30000);
+        res.json({ root, diff: diff.stdout || diff.stderr || 'No git diff available. Initialize git or make changes first.', code: diff.code });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/builder/diff/approve', this.authenticate, async (req, res) => {
+      try {
+        const root = this.resolveWorkspaceRoot(String(req.body?.buildId || ''), String(req.body?.root || ''));
+        const diff = await this.runSystemCommand(root, process.platform === 'win32' ? 'cmd.exe' : 'git', process.platform === 'win32' ? ['/c', 'git', 'diff', '--', '.'] : ['diff', '--', '.'], 30000);
+        const approvalDir = path.join(root, '.nexus', 'approvals');
+        fs.mkdirSync(approvalDir, { recursive: true });
+        const id = uuid().slice(0, 8);
+        const approval = { id, root, approvedAt: new Date().toISOString(), reason: req.body?.reason || 'manual approval', diff: diff.stdout || '' };
+        fs.writeFileSync(path.join(approvalDir, `${id}.json`), JSON.stringify(approval, null, 2));
+        res.json({ id, root, approvedAt: approval.approvedAt, path: path.join(approvalDir, `${id}.json`) });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/builder/diff/rollback-plan', this.authenticate, async (req, res) => {
+      try {
+        const root = this.resolveWorkspaceRoot(String(req.body?.buildId || ''), String(req.body?.root || ''));
+        const diff = await this.runSystemCommand(root, process.platform === 'win32' ? 'cmd.exe' : 'git', process.platform === 'win32' ? ['/c', 'git', 'diff', '--', '.'] : ['diff', '--', '.'], 30000);
+        const prompt = `Create a safe rollback plan for this workspace without deleting unrelated user work.\n\nWorkspace: ${root}\n\nDiff to review:\n${(diff.stdout || diff.stderr).slice(0, 20000)}\n\nRules:\n- Identify files changed.\n- Explain what would be reverted.\n- Prefer targeted edits over destructive git reset/checkout.\n- Preserve unrelated user changes.\n- Run build/tests after rollback.`;
+        res.json({ root, prompt, command: 'Review this prompt with OpenCode before applying any rollback.', diff: diff.stdout || diff.stderr });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/builder/export-zip', this.authenticate, (req, res) => {
+      try {
+        const root = this.resolveWorkspaceRoot(String(req.body?.buildId || ''), String(req.body?.root || ''));
+        const zipPath = this.createWorkspaceZip(root);
+        res.download(zipPath);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/builder/provider-settings', this.authenticate, (_req, res) => {
+      const providers = this.builderPlatform.getProviders().map((provider) => ({ ...provider, setting: this.providerSettings.get(provider.id), configured: provider.env.some((key) => Boolean(process.env[key])) }));
+      res.json(providers);
+    });
+
+    router.post('/api/builder/provider-settings', this.authenticate, (req, res) => {
+      const id = String(req.body?.id || '').trim();
+      if (!id) return res.status(400).json({ error: 'provider id required' });
+      const setting: ProviderSetting = { id, enabled: req.body?.enabled !== false, model: req.body?.model, baseUrl: req.body?.baseUrl, updatedAt: new Date().toISOString() };
+      this.providerSettings.set(id, setting);
+      res.json(setting);
+    });
+
+    router.post('/api/builder/provider-settings/:id/validate', this.authenticate, async (req, res) => {
+      try {
+        const id = req.params.id;
+        const provider = this.builderPlatform.getProviders().find((item) => item.id === id);
+        if (!provider) return res.status(404).json({ error: 'provider not found' });
+        const missing = provider.env.filter((key) => !process.env[key]);
+        const configured = missing.length < provider.env.length;
+        res.json({ id, configured, missing, checkedAt: new Date().toISOString(), browserUse: `Use ${provider.name} for browser-grounded ${provider.recommendedFor.join(', ')} when configured.` });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/builder/deploy/status', this.authenticate, (_req, res) => {
+      res.json({
+        vercel: { connected: Boolean(process.env.VERCEL_TOKEN), env: ['VERCEL_TOKEN'], command: 'npx vercel' },
+        netlify: { connected: Boolean(process.env.NETLIFY_AUTH_TOKEN), env: ['NETLIFY_AUTH_TOKEN', 'NETLIFY_SITE_ID'], command: 'npx netlify deploy' },
+        githubPages: { connected: Boolean(this.githubAccessToken()), env: ['GitHub connector or GITHUB_TOKEN'], command: 'npm run deploy' },
+        browserQa: ['Open deployed URL in Nexus', 'Run Staging Studio', 'Run SEO/Security', 'Sync launch issues to GitHub Project'],
+      });
+    });
+
+    router.post('/api/builder/deploy', this.authenticate, async (req, res) => {
+      try {
+        const target = String(req.body?.target || 'vercel');
+        const root = this.resolveWorkspaceRoot(String(req.body?.buildId || ''), String(req.body?.root || ''));
+        const launch = Boolean(req.body?.launch);
+        const plan = this.deployCommand(target);
+        const result = launch ? await this.runSystemCommand(root, plan.command, plan.args, 180000) : undefined;
+        res.json({ target, root, command: [plan.command, ...plan.args].join(' '), launched: launch, result, browserQa: 'After deployment, open the deployed URL in Nexus and run Staging Studio plus SEO/Security.' });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/builder/git-import', this.authenticate, async (req, res) => {
+      try {
+        const repoUrl = String(req.body?.repoUrl || '').trim();
+        if (!repoUrl) return res.status(400).json({ error: 'repoUrl required' });
+        const root = path.resolve(req.body?.root || path.join(process.cwd(), 'imported-projects', this.safeName(path.basename(repoUrl, '.git'))));
+        fs.mkdirSync(path.dirname(root), { recursive: true });
+        const result = await this.runSystemCommand(path.dirname(root), process.platform === 'win32' ? 'cmd.exe' : 'git', process.platform === 'win32' ? ['/c', 'git', 'clone', repoUrl, root] : ['clone', repoUrl, root], 180000);
+        res.json({ repoUrl, root, result, next: 'Open this workspace in the IDE, start preview, then let Nexus inspect it in the browser.' });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/builder/expo-create', this.authenticate, async (req, res) => {
+      try {
+        const name = this.safeName(String(req.body?.name || 'nexus-mobile-app'));
+        const root = path.resolve(req.body?.root || path.join(process.cwd(), 'generated-apps'));
+        fs.mkdirSync(root, { recursive: true });
+        const args = ['create-expo-app@latest', name, '--yes'];
+        const result = req.body?.launch === false ? undefined : await this.runSystemCommand(root, process.platform === 'win32' ? 'cmd.exe' : 'npx', process.platform === 'win32' ? ['/c', 'npx', ...args] : args, 240000);
+        res.json({ name, root: path.join(root, name), command: `npx ${args.join(' ')}`, launched: req.body?.launch !== false, result, browserConcept: 'Use Staging Studio mobile/app-store presets and browser screenshots as the mobile QA wall.' });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/connectors/supabase/status', this.authenticate, (_req, res) => {
+      res.json({ connected: Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ACCESS_TOKEN)), url: process.env.SUPABASE_URL || '', features: ['schema planning', 'env sync', 'migration prompts', 'browser/API evidence mapping'] });
+    });
+
+    router.get('/api/chats', this.authenticate, (_req, res) => {
+      res.json(Array.from(this.builderChats.entries()).map(([id, messages]) => ({ id, title: this.chatTitles.get(id) || id, messages: messages.length, updatedAt: messages[messages.length - 1]?.timestamp || 0 })));
+    });
+
+    router.put('/api/chats/:id', this.authenticate, (req, res) => {
+      this.chatTitles.set(req.params.id, String(req.body?.title || req.params.id));
+      res.json({ id: req.params.id, title: this.chatTitles.get(req.params.id) });
+    });
+
+    router.delete('/api/chats/:id', this.authenticate, (req, res) => {
+      this.builderChats.delete(req.params.id);
+      this.chatTitles.delete(req.params.id);
+      res.json({ success: true });
+    });
+
+    router.delete('/api/chats', this.authenticate, (_req, res) => {
+      const count = this.builderChats.size;
+      this.builderChats.clear();
+      this.chatTitles.clear();
+      res.json({ success: true, deleted: count });
     });
 
     router.get('/api/github/status', this.authenticate, (_req, res) => {
@@ -949,6 +1133,75 @@ export class CloudServer {
       features,
       gaps: features.filter((item) => item.nexusStatus !== 'live'),
     };
+  }
+
+  private resolveWorkspaceRoot(buildId: string, requestedRoot: string): string {
+    const build = buildId ? this.builderPlatform.getBuild(buildId) : undefined;
+    const root = path.resolve(build?.root || requestedRoot || process.cwd());
+    if (!fs.existsSync(root)) throw new Error(`Workspace not found: ${root}`);
+    return root;
+  }
+
+  private createWorkspaceZip(root: string): string {
+    const zip = new AdmZip();
+    const outputDir = path.join(root, '.nexus', 'exports');
+    fs.mkdirSync(outputDir, { recursive: true });
+    const zipPath = path.join(outputDir, `${path.basename(root)}-${Date.now()}.zip`);
+    for (const file of this.listExportFiles(root)) {
+      zip.addLocalFile(file.fullPath, path.dirname(file.relativePath));
+    }
+    zip.addFile('.nexus/export-manifest.json', Buffer.from(JSON.stringify({ root, exportedAt: new Date().toISOString(), browserFirst: true }, null, 2)));
+    zip.writeZip(zipPath);
+    return zipPath;
+  }
+
+  private listExportFiles(root: string): Array<{ fullPath: string; relativePath: string }> {
+    const files: Array<{ fullPath: string; relativePath: string }> = [];
+    const walk = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (['node_modules', '.git', 'dist', 'release'].includes(entry.name)) continue;
+        const fullPath = path.join(dir, entry.name);
+        const relativePath = path.relative(root, fullPath);
+        if (entry.isDirectory()) walk(fullPath);
+        else if (fs.statSync(fullPath).size < 10 * 1024 * 1024) files.push({ fullPath, relativePath });
+      }
+    };
+    walk(root);
+    return files.slice(0, 5000);
+  }
+
+  private deployCommand(target: string): { command: string; args: string[] } {
+    const normalized = target.toLowerCase();
+    if (normalized === 'netlify') return process.platform === 'win32' ? { command: 'cmd.exe', args: ['/c', 'npx', 'netlify', 'deploy'] } : { command: 'npx', args: ['netlify', 'deploy'] };
+    if (normalized === 'github-pages') return process.platform === 'win32' ? { command: 'cmd.exe', args: ['/c', 'npm', 'run', 'deploy'] } : { command: 'npm', args: ['run', 'deploy'] };
+    return process.platform === 'win32' ? { command: 'cmd.exe', args: ['/c', 'npx', 'vercel'] } : { command: 'npx', args: ['vercel'] };
+  }
+
+  private runSystemCommand(cwd: string, command: string, args: string[], timeoutMs: number): Promise<{ code: number | null; stdout: string; stderr: string; timedOut: boolean }> {
+    return new Promise((resolve) => {
+      const child = spawn(command, args, { cwd, env: process.env, shell: false, windowsHide: true });
+      let stdout = '';
+      let stderr = '';
+      let timedOut = false;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        child.kill();
+      }, timeoutMs);
+      child.stdout?.on('data', (chunk) => { stdout = `${stdout}${chunk}`.slice(-20000); });
+      child.stderr?.on('data', (chunk) => { stderr = `${stderr}${chunk}`.slice(-20000); });
+      child.on('error', (error) => {
+        clearTimeout(timer);
+        resolve({ code: -1, stdout, stderr: `${stderr}\n${error.message}`, timedOut });
+      });
+      child.on('exit', (code) => {
+        clearTimeout(timer);
+        resolve({ code, stdout, stderr, timedOut });
+      });
+    });
+  }
+
+  private safeName(value: string): string {
+    return value.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || `nexus-${uuid().slice(0, 8)}`;
   }
 
   private githubAccessToken(): string {

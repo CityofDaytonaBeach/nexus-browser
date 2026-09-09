@@ -245,6 +245,15 @@
           <div class="tool" onclick="showGitHubProjectManager()"><strong>GitHub Projects</strong><span>Connect repo/project, create issues, and sync build tasks.</span></div>
           <div class="tool" onclick="runSeoSecurityAudit()"><strong>SEO / Security</strong><span>Launch audit for metadata, social cards, headers, secrets, and risks.</span></div>
           <div class="tool" onclick="showBoltParity()"><strong>Bolt Parity</strong><span>Track bolt.diy features and convert gaps into browser-first Nexus workflows.</span></div>
+          <div class="tool" onclick="showDiffReview()"><strong>Diff Review</strong><span>Review source changes beside browser QA evidence.</span></div>
+          <div class="tool" onclick="startStreamingTimeline()"><strong>Live Timeline</strong><span>Stream build status, OpenCode log tail, and QA phases into chat.</span></div>
+          <div class="tool" onclick="exportActiveProject()"><strong>Export ZIP</strong><span>Download source, Nexus brain, screenshots, QA, and artifacts.</span></div>
+          <div class="tool" onclick="showProviderSettings()"><strong>Provider Settings</strong><span>Enable models, inspect keys, and select task-specific providers.</span></div>
+          <div class="tool" onclick="showDeployPanel()"><strong>Deploy</strong><span>Vercel, Netlify, GitHub Pages plans plus browser QA after deploy.</span></div>
+          <div class="tool" onclick="showImportMobilePanel()"><strong>Git / Expo</strong><span>Clone repos, import projects, and create Expo mobile apps.</span></div>
+          <div class="tool" onclick="startVoicePrompt()"><strong>Voice Prompt</strong><span>Use browser speech input for grounded chat commands.</span></div>
+          <div class="tool" onclick="attachScreenshotPrompt()"><strong>Image Prompt</strong><span>Attach the current browser screenshot as prompt context.</span></div>
+          <div class="tool" onclick="showChatManager()"><strong>Chats</strong><span>List, rename, delete, and bulk-clear build chats.</span></div>
           <div class="tool" onclick="showBuilderPlatform()"><strong>Platform</strong><span>Providers, deploys, snapshots, locks, sessions.</span></div>
           <div class="tool" onclick="showAgentSwarm()"><strong>Agents</strong><span>Project/app agents, skills, memory, routing, automations.</span></div>
           <div class="tool" onclick="showCompetitiveBlueprint()"><strong>Roadmap</strong><span>Palot/Bolt-inspired priorities for Nexus.</span></div>
@@ -738,6 +747,165 @@
       } catch (error) {
         addMessage('system', `Bolt parity failed: ${error.message}`);
       }
+    }
+
+    async function showDiffReview() {
+      try {
+        const query = activeBuildId ? `?buildId=${encodeURIComponent(activeBuildId)}` : '';
+        const result = await getApi(`/api/builder/diff${query}`);
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Diff Review</span><span class="pill">${escapeHtml(result.root)}</span></div><div class="search-page"><div class="preview-actions"><button class="btn primary" onclick="approveDiff()">Approve Diff</button><button class="btn" onclick="createRollbackPlan()">Rollback Plan</button><button class="btn" onclick="runVisualQaRepair()">Visual QA</button></div><pre>${escapeHtml(result.diff)}</pre></div>`;
+        document.getElementById('taskStream').textContent = result.diff;
+        addMessage('assistant', 'Loaded source diff. Pair this with Visual QA before approving changes.');
+      } catch (error) {
+        addMessage('system', `Diff review failed: ${error.message}`);
+      }
+    }
+
+    async function approveDiff() {
+      try {
+        const result = await api('/api/builder/diff/approve', { buildId: activeBuildId, reason: 'approved from Nexus diff review' });
+        addMessage('assistant', `Approved diff review ${result.id}. Record: ${result.path}`);
+      } catch (error) {
+        addMessage('system', `Diff approval failed: ${error.message}`);
+      }
+    }
+
+    async function createRollbackPlan() {
+      try {
+        const result = await api('/api/builder/diff/rollback-plan', { buildId: activeBuildId });
+        document.getElementById('taskStream').textContent = result.prompt;
+        addMessage('assistant', 'Created safe rollback plan prompt. Review with OpenCode before applying changes.');
+      } catch (error) {
+        addMessage('system', `Rollback plan failed: ${error.message}`);
+      }
+    }
+
+    async function exportActiveProject() {
+      try {
+        const res = await fetch('/api/builder/export-zip', { method: 'POST', headers: headers(), body: JSON.stringify({ buildId: activeBuildId }) });
+        if (!res.ok) throw new Error(await res.text());
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nexus-export-${Date.now()}.zip`;
+        a.click();
+        URL.revokeObjectURL(url);
+        addMessage('assistant', 'Exported active project ZIP with Nexus artifacts.');
+      } catch (error) {
+        addMessage('system', `Export failed: ${error.message}`);
+      }
+    }
+
+    async function showProviderSettings() {
+      try {
+        const providers = await getApi('/api/builder/provider-settings');
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Providers</span><span class="pill">${providers.length}</span></div><div class="search-page"><h1>Provider Settings</h1>${providers.map(p => `<article class="search-result"><b>${escapeHtml(p.name)} ${p.configured ? 'configured' : 'missing key'}</b><small>${escapeHtml(p.kind)} · ${escapeHtml(p.capabilities.join(', '))}</small><p>Env: ${escapeHtml(p.env.join(', '))}</p><div class="preview-actions"><button class="btn" onclick="validateProvider('${escapeJs(p.id)}')">Validate</button><button class="btn" onclick="saveProviderSetting('${escapeJs(p.id)}', true)">Enable</button><button class="btn" onclick="saveProviderSetting('${escapeJs(p.id)}', false)">Disable</button></div></article>`).join('')}</div>`;
+        document.getElementById('researchStream').textContent = providers.map(p => `${p.name}: ${p.configured ? 'configured' : 'missing'}\n${p.env.join(', ')}`).join('\n\n');
+      } catch (error) {
+        addMessage('system', `Provider settings failed: ${error.message}`);
+      }
+    }
+
+    async function saveProviderSetting(id, enabled) {
+      const model = prompt(`Optional model override for ${id}`) || '';
+      const setting = await api('/api/builder/provider-settings', { id, enabled, model });
+      addMessage('assistant', `${setting.enabled ? 'Enabled' : 'Disabled'} ${setting.id}${setting.model ? ` with ${setting.model}` : ''}.`);
+    }
+
+    async function validateProvider(id) {
+      try {
+        const result = await api(`/api/builder/provider-settings/${encodeURIComponent(id)}/validate`, {});
+        addMessage('assistant', `${id} validation: ${result.configured ? 'configured' : 'missing env'}${result.missing.length ? `\nMissing: ${result.missing.join(', ')}` : ''}`);
+      } catch (error) {
+        addMessage('system', `Provider validation failed: ${error.message}`);
+      }
+    }
+
+    async function showDeployPanel() {
+      const status = await getApi('/api/builder/deploy/status').catch(() => null);
+      document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Deploy</span><span class="pill">browser QA after deploy</span></div><div class="search-page"><h1>Deploy Connectors</h1><p>Select a target. Nexus returns the command and can launch it if the CLI/token is configured.</p><pre>${escapeHtml(JSON.stringify(status, null, 2))}</pre><div class="preview-actions"><button class="btn primary" onclick="runDeploy('vercel', false)">Vercel Plan</button><button class="btn" onclick="runDeploy('netlify', false)">Netlify Plan</button><button class="btn" onclick="runDeploy('github-pages', false)">GitHub Pages Plan</button></div><div class="preview-actions"><button class="btn green" onclick="runDeploy('vercel', true)">Launch Vercel</button><button class="btn green" onclick="runDeploy('netlify', true)">Launch Netlify</button></div></div>`;
+    }
+
+    async function runDeploy(target, launch) {
+      try {
+        const result = await api('/api/builder/deploy', { target, buildId: activeBuildId, launch });
+        document.getElementById('qaStream').textContent = JSON.stringify(result, null, 2);
+        addMessage('assistant', `${launch ? 'Ran' : 'Prepared'} ${target} deploy: ${result.command}`);
+      } catch (error) {
+        addMessage('system', `Deploy failed: ${error.message}`);
+      }
+    }
+
+    function showImportMobilePanel() {
+      document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Git / Expo</span></div><div class="search-page"><h1>Import or Create</h1><div class="landing-builder"><div class="label">Git repo URL</div><input id="gitRepoUrl" class="input" placeholder="https://github.com/owner/repo.git"><div class="preview-actions"><button class="btn primary" onclick="importGitRepo()">Clone Repo</button></div><div class="label">Expo app name</div><input id="expoName" class="input" placeholder="nexus-mobile-app"><div class="preview-actions"><button class="btn" onclick="createExpoApp(false)">Expo Plan</button><button class="btn green" onclick="createExpoApp(true)">Create Expo App</button></div></div></div>`;
+    }
+
+    async function importGitRepo() {
+      try {
+        const repoUrl = document.getElementById('gitRepoUrl').value.trim();
+        const result = await api('/api/builder/git-import', { repoUrl });
+        document.getElementById('taskStream').textContent = JSON.stringify(result, null, 2);
+        addMessage('assistant', `Imported repo to ${result.root}. Open IDE and start browser QA.`);
+      } catch (error) {
+        addMessage('system', `Git import failed: ${error.message}`);
+      }
+    }
+
+    async function createExpoApp(launch) {
+      try {
+        const name = document.getElementById('expoName').value.trim() || 'nexus-mobile-app';
+        const result = await api('/api/builder/expo-create', { name, launch });
+        document.getElementById('taskStream').textContent = JSON.stringify(result, null, 2);
+        addMessage('assistant', `${launch ? 'Created' : 'Prepared'} Expo app: ${result.root}`);
+      } catch (error) {
+        addMessage('system', `Expo failed: ${error.message}`);
+      }
+    }
+
+    function startVoicePrompt() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return addMessage('system', 'Speech recognition is not available in this browser.');
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.onresult = event => {
+        document.getElementById('chatInput').value = event.results[0][0].transcript;
+        sendChat();
+      };
+      recognition.start();
+      addMessage('system', 'Listening for voice prompt...');
+    }
+
+    function attachScreenshotPrompt() {
+      const note = lastScreenshot ? 'Use the current browser screenshot as visual context for this request: ' : 'Take a screenshot first, then use it as visual context: ';
+      document.getElementById('chatInput').value = note;
+      document.getElementById('chatInput').focus();
+    }
+
+    async function showChatManager() {
+      try {
+        const chats = await getApi('/api/chats');
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Chats</span><span class="pill">${chats.length}</span></div><div class="search-page"><h1>Chat Sessions</h1><div class="preview-actions"><button class="btn" onclick="clearAllChats()">Bulk Clear</button></div>${chats.map(chat => `<article class="search-result"><b>${escapeHtml(chat.title)}</b><small>${chat.id} · ${chat.messages} messages</small><div class="preview-actions"><button class="btn" onclick="renameChat('${escapeJs(chat.id)}')">Rename</button><button class="btn" onclick="deleteChat('${escapeJs(chat.id)}')">Delete</button></div></article>`).join('') || '<p>No chats yet.</p>'}</div>`;
+      } catch (error) {
+        addMessage('system', `Chat manager failed: ${error.message}`);
+      }
+    }
+
+    async function renameChat(id) {
+      const title = prompt('New chat title');
+      if (!title) return;
+      await fetch(`/api/chats/${encodeURIComponent(id)}`, { method: 'PUT', headers: headers(), body: JSON.stringify({ title }) });
+      showChatManager();
+    }
+
+    async function deleteChat(id) {
+      await deleteApi(`/api/chats/${encodeURIComponent(id)}`);
+      showChatManager();
+    }
+
+    async function clearAllChats() {
+      await deleteApi('/api/chats');
+      showChatManager();
     }
 
     async function saveGitHubConnection() {
