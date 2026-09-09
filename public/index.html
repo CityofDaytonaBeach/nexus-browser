@@ -123,6 +123,14 @@
     .stream-card h3 { font-size: 11px; margin-bottom: 5px; color: var(--muted); font-weight: 650; }
     .stream-card pre { white-space: pre-wrap; color: var(--muted); font-size: 10px; line-height: 1.35; }
     .chat { min-height: 0; display: flex; flex-direction: column; }
+    .chat-briefing { border-bottom: 1px solid var(--line); padding: 10px; display: grid; gap: 8px; background: linear-gradient(180deg,var(--panel-2),transparent); }
+    .agent-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .agent-chip { border: 1px solid var(--line); border-radius: 12px; padding: 7px; background: var(--panel-2); font-size: 11px; line-height: 1.25; }
+    .agent-chip b { display: block; font-size: 12px; color: var(--text); }
+    .agent-chip span { color: var(--muted); }
+    .command-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .command-grid button { border: 1px solid var(--line); border-radius: 11px; background: transparent; color: var(--text); padding: 7px 8px; cursor: pointer; font-size: 11px; text-align: left; }
+    .command-grid button:hover { border-color: var(--text); background: var(--blue-soft); }
     .messages { flex: 1; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
     .msg { max-width: 94%; border: 1px solid var(--line); border-radius: 14px; padding: 10px 11px; white-space: pre-wrap; font-size: 13px; line-height: 1.42; }
     .msg.user { align-self: flex-end; background: var(--text); color: var(--bg); border-color: var(--text); }
@@ -282,8 +290,23 @@
       <aside class="panel right" id="chatPanel">
         <div class="panel-title"><span>Chat</span><span><span id="wsBadge"><span class="dot bad"></span>offline</span> <button class="btn" onclick="popoutChat()">Popout</button> <button class="btn" onclick="toggleChat(false)">Hide</button></span></div>
         <div class="chat">
+          <div class="chat-briefing">
+            <div class="label">Nexus Developer Employees</div>
+            <div class="agent-strip">
+              <div class="agent-chip"><b>Gatherer</b><span id="gathererStatus">waiting for page</span></div>
+              <div class="agent-chip"><b>Backend Observer</b><span id="backendStatus">waiting for build</span></div>
+              <div class="agent-chip"><b>Mobile/Kiosk QA</b><span>desktop · tablet · phone</span></div>
+              <div class="agent-chip"><b>OpenCode</b><span>build · fix · verify</span></div>
+            </div>
+            <div class="command-grid">
+              <button onclick="smartCommand('diagnose')">Diagnose like DevTools</button>
+              <button onclick="smartCommand('mobile')">Test mobile/kiosk</button>
+              <button onclick="smartCommand('backend')">Map backend/API</button>
+              <button onclick="smartCommand('employee')">Hire dev employees</button>
+            </div>
+          </div>
           <div class="messages" id="messages">
-            <div class="msg system">Ask Nexus to build or change the active app.</div>
+            <div class="msg system">Nexus Command Chat watches the real browser, backend, logs, APIs, and previews before it builds.</div>
           </div>
           <div class="composer">
             <textarea id="chatInput" placeholder="Build an app, then say things like: add pages, change the style, fix the preview, run staging." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
@@ -312,6 +335,11 @@
     let pendingNavigateUrl = null;
     let activeBuildId = localStorage.getItem('nexus-active-build-id') || null;
     let previewLogTimer = null;
+    let browserIntelTimer = null;
+    let lastBrowserIntelligence = '';
+    let lastGathererObservationCount = 0;
+    let lastBackendObservation = '';
+    let lastBackendObservationCount = 0;
     let activeTabId = 'home';
     const browserTabs = [{ id: 'home', title: 'Home', kind: 'home', url: '' }];
 
@@ -444,6 +472,7 @@
       if (msg.type === 'page:navigated') document.getElementById('urlInput').value = msg.url;
       if (msg.type === 'page:loaded') {
         refreshScreenshot();
+        refreshBrowserIntelligence(true);
         if (pendingAutoBuild) {
           const message = pendingAutoBuild;
           pendingAutoBuild = null;
@@ -827,7 +856,9 @@
       addMessage('user', message);
       try {
         applyModeFromMessage(message);
-        const result = await api('/api/builder/chat', { sessionId: currentSessionId, activeBuildId, message, mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value, ...buildBrainOptions() });
+        await refreshBrowserIntelligence(true);
+        await refreshBackendObserver(true);
+        const result = await api('/api/builder/chat', { sessionId: currentSessionId, pageId: currentPageId, activeBuildId, message, browserContext: `${lastBrowserIntelligence}\n\n${lastBackendObservation}`.trim(), mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value, ...buildBrainOptions() });
         addMessage('assistant', result.response);
         if (result.build) showBuildStarted(result.build);
         if (result.update) showBuildUpdateStarted(result.update);
@@ -1013,10 +1044,60 @@
       sendLandingChat();
     }
 
+    function smartCommand(kind) {
+      const prompts = {
+        diagnose: 'Act as the senior DevTools debugger. Use the Gatherer Agent and Backend Observer context to diagnose what is rendered, what APIs are called, what console/network errors exist, what libraries are used, and what code should change first.',
+        mobile: 'Run mobile and kiosk QA thinking. Check desktop, tablet, mobile touch, fullscreen kiosk, app-store screenshot, accessibility, responsive overflow, touch targets, and visual regression risks for this app.',
+        backend: 'Map the backend and API functionality. Identify package scripts, dependencies, server routes, data models, env keys, auth/session behavior, API request shapes, storage, logs, and what must be duplicated.',
+        employee: 'Use the Twin-inspired developer employee model. Assign Browser Gatherer, Backend Observer, Full-Stack Architect, OpenCode Implementer, Mobile/Kiosk QA, Integration Builder, and Release Operator to this project with triggers and outputs.',
+      };
+      document.getElementById('chatInput').value = prompts[kind] || prompts.diagnose;
+      toggleChat(true);
+      sendChat();
+    }
+
     function updatePage(page) {
       document.getElementById('pageStatus').textContent = `${page.title || 'Page'} - ${page.url}`;
       document.getElementById('urlInput').value = page.url;
       refreshScreenshot();
+      refreshBrowserIntelligence(true);
+    }
+
+    async function refreshBrowserIntelligence(silent = false) {
+      if (!currentSessionId || !currentPageId) return;
+      try {
+        const result = await api('/api/builder/browser-intelligence', { sessionId: currentSessionId, pageId: currentPageId });
+        lastBrowserIntelligence = result.context || '';
+        lastGathererObservationCount = result.timeline?.length || lastGathererObservationCount;
+        const gathererStatus = document.getElementById('gathererStatus');
+        if (gathererStatus) gathererStatus.textContent = `${lastGathererObservationCount} observations`;
+        document.getElementById('pageStatus').textContent = `Gatherer Agent: ${lastGathererObservationCount} observations - ${document.getElementById('urlInput').value || 'active page'}`;
+        if (!silent) appendStream('researchStream', `Gatherer Agent refreshed (${lastGathererObservationCount} observations, ${lastBrowserIntelligence.length} chars).`);
+      } catch (error) {
+        if (!silent) addMessage('system', `Browser intelligence failed: ${error.message}`);
+      }
+    }
+
+    async function refreshBackendObserver(silent = false) {
+      if (!activeBuildId) return;
+      try {
+        const result = await api('/api/builder/backend-observer', { buildId: activeBuildId });
+        lastBackendObservation = result.context || '';
+        lastBackendObservationCount = result.timeline?.length || lastBackendObservationCount;
+        const backendStatus = document.getElementById('backendStatus');
+        if (backendStatus) backendStatus.textContent = `${lastBackendObservationCount} observations`;
+        if (!silent) appendStream('researchStream', `Backend Observer refreshed (${lastBackendObservationCount} observations, ${lastBackendObservation.length} chars).`);
+      } catch (error) {
+        if (!silent) addMessage('system', `Backend Observer failed: ${error.message}`);
+      }
+    }
+
+    function startBrowserIntelligenceLoop() {
+      if (browserIntelTimer) clearInterval(browserIntelTimer);
+      browserIntelTimer = setInterval(() => {
+        refreshBrowserIntelligence(true);
+        refreshBackendObserver(true);
+      }, 10000);
     }
 
     function refreshScreenshot() { if (currentPageId) sendWs('page:screenshot', { pageId: currentPageId }); }
@@ -1137,6 +1218,7 @@
     renderBrowserTabs();
     detectWebGpu();
     connect();
+    startBrowserIntelligenceLoop();
   </script>
 </body>
 </html>

@@ -34,6 +34,39 @@ interface BuilderMessage {
   timestamp: number;
 }
 
+interface GathererObservation {
+  id: string;
+  sessionId: string;
+  pageId: string;
+  url: string;
+  title: string;
+  collectedAt: string;
+  context: string;
+  signals: {
+    hasConsoleErrors: boolean;
+    networkSignalCount: number;
+    interactiveElementCount: number;
+    detectedLibraries: string[];
+  };
+}
+
+interface BackendObservation {
+  id: string;
+  buildId: string;
+  workspace: string;
+  collectedAt: string;
+  context: string;
+  signals: {
+    scripts: string[];
+    dependencies: string[];
+    apiRoutes: string[];
+    dataModels: string[];
+    envKeys: string[];
+    serverFiles: string[];
+    logErrors: string[];
+  };
+}
+
 export class CloudServer {
   private app: express.Application;
   private httpServer: HttpServer;
@@ -43,6 +76,8 @@ export class CloudServer {
   private agent: AIAgent;
   private automation: AutomationEngine;
   private builderChats: Map<string, BuilderMessage[]> = new Map();
+  private gathererObservations: Map<string, GathererObservation[]> = new Map();
+  private backendObservations: Map<string, BackendObservation[]> = new Map();
   private builderPlatform: BuilderPlatform;
   private pingInterval?: NodeJS.Timeout;
 
@@ -101,6 +136,38 @@ export class CloudServer {
         languageExperts: getLanguageExperts().map((expert) => ({ id: expert.id, category: expert.category, officialGithub: expert.officialGithub })),
         competitiveBlueprint: true,
       });
+    });
+
+    router.post('/api/builder/browser-intelligence', this.authenticate, async (req, res) => {
+      try {
+        const sessionId = req.body?.sessionId || 'default';
+        const pageId = req.body?.pageId || '';
+        const observation = await this.collectGathererObservation(sessionId, pageId);
+        res.json({ context: this.buildGathererContext(sessionId, observation.pageId), observation, timeline: this.getGathererTimeline(sessionId, observation.pageId), collectedAt: observation.collectedAt });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/builder/browser-intelligence', this.authenticate, (req, res) => {
+      const sessionId = String(req.query.sessionId || 'default');
+      const pageId = String(req.query.pageId || '');
+      res.json({ timeline: this.getGathererTimeline(sessionId, pageId), context: this.buildGathererContext(sessionId, pageId) });
+    });
+
+    router.post('/api/builder/backend-observer', this.authenticate, (req, res) => {
+      try {
+        const buildId = String(req.body?.buildId || '');
+        const observation = this.collectBackendObservation(buildId);
+        res.json({ context: this.buildBackendObserverContext(buildId), observation, timeline: this.getBackendObserverTimeline(buildId), collectedAt: observation.collectedAt });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.get('/api/builder/backend-observer', this.authenticate, (req, res) => {
+      const buildId = String(req.query.buildId || '');
+      res.json({ timeline: this.getBackendObserverTimeline(buildId), context: this.buildBackendObserverContext(buildId) });
     });
 
     router.get('/api/browser/search', this.authenticate, async (req, res) => {
@@ -332,8 +399,9 @@ export class CloudServer {
       }
     });
 
-    router.post('/api/builder/chat', this.authenticate, (req, res) => {
+    router.post('/api/builder/chat', this.authenticate, async (req, res) => {
       const sessionId = req.body?.sessionId || 'default';
+      const pageId = req.body?.pageId || '';
       const message = String(req.body?.message || '').trim();
       const mode = this.detectBuilderMode(message, req.body?.mode || 'ui-builder');
       const uiLook = req.body?.uiLook || 'faithful-clone';
@@ -341,7 +409,22 @@ export class CloudServer {
       const activeBuildId = String(req.body?.activeBuildId || '');
       const messages = this.builderChats.get(sessionId) || [];
       if (message) messages.push({ role: 'user', content: message, timestamp: Date.now() });
-      const response = this.buildBuilderResponse(message, mode, uiLook);
+      if (req.body?.browserContext) this.storeExternalGathererObservation(sessionId, pageId, String(req.body.browserContext));
+      const gathererContext = await this.collectGathererObservation(sessionId, pageId)
+        .then((observation) => this.buildGathererContext(sessionId, observation.pageId))
+        .catch((error) => this.buildGathererContext(sessionId, pageId) || `Browser intelligence unavailable: ${error.message}`);
+      const backendContext = activeBuildId
+        ? (() => {
+          try {
+            this.collectBackendObservation(activeBuildId);
+            return this.buildBackendObserverContext(activeBuildId);
+          } catch (error: any) {
+            return `Backend Observer unavailable: ${error.message}`;
+          }
+        })()
+        : 'Backend Observer has no active generated workspace yet. Start or select a build to inspect server/API/data functionality.';
+      const browserContext = `${gathererContext}\n\n${backendContext}`;
+      const response = this.buildBuilderResponse(message, mode, uiLook, browserContext);
       messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
       this.builderChats.set(sessionId, messages.slice(-100));
       let build = undefined;
@@ -349,14 +432,14 @@ export class CloudServer {
       if (activeBuildId && this.shouldUpdateBuild(message, mode)) {
         const targetBuildId = this.builderPlatform.getBuild(activeBuildId)?.id || this.builderPlatform.getBuilds().slice(-1)[0]?.id;
         if (!targetBuildId) throw new Error('No generated build workspace yet. Ask Build Mode to create one first.');
-        update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode, ...brainOptions });
+        update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode, browserContext, ...brainOptions });
         messages.push({
           role: 'assistant',
           content: `App update started.\n\nWorkspace: ${update.workspace}\nSession: ${update.session.id}\nLog: ${update.logPath}\nI will restart the preview when the update command finishes.`,
           timestamp: Date.now(),
         });
       } else if (this.shouldStartBuild(message, mode)) {
-        build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode, ...brainOptions });
+        build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode, browserContext, ...brainOptions });
         messages.push({
           role: 'assistant',
           content: `Build started.\n\nWorkspace: ${build.root}\nStatus: ${build.status}\nPreview command: ${build.previewCommand}\nOpenCode log: ${build.logPath}`,
@@ -645,27 +728,308 @@ export class CloudServer {
     return /\b(change|update|edit|modify|fix|improve|add|remove|replace|move|resize|restyle|make it|make this|turn this|connect|wire|debug|repair)\b/.test(text);
   }
 
-  private buildBuilderResponse(message: string, mode: string, uiLook: string): string {
+  private async collectGathererObservation(sessionId?: string, pageId?: string): Promise<GathererObservation> {
+    const session = sessionId && sessionId !== 'default' ? this.engine.getSession(sessionId) : undefined;
+    if (!session) throw new Error('No active rendered browser session yet. Open a target URL or generated preview so Nexus can collect DOM, network, console, storage, and screenshot evidence.');
+
+    const resolvedPageId = pageId || session.activePageId || Array.from(session.pages.keys())[0];
+    const page = resolvedPageId ? session.pages.get(resolvedPageId) : undefined;
+    const info = resolvedPageId ? session.pageInfos.get(resolvedPageId) : undefined;
+    if (!page || !resolvedPageId) throw new Error('No active page is available in the current browser session.');
+
+    const [elements, pageFacts] = await Promise.all([
+      this.engine.getInteractiveElements(session.id, resolvedPageId).catch(() => []),
+      page.evaluate(() => {
+        const scriptSrcs = Array.from(document.scripts).map((script) => script.src || script.type || 'inline').slice(0, 40);
+        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).map((item) => item.getAttribute('href') || item.textContent?.slice(0, 120) || 'inline-style').slice(0, 30);
+        const meta = Array.from(document.querySelectorAll('meta')).map((item) => `${item.getAttribute('name') || item.getAttribute('property') || 'meta'}=${item.getAttribute('content') || ''}`).slice(0, 30);
+        const text = (document.body?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 5000);
+        const storageKeys = {
+          localStorage: Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index)).filter(Boolean).slice(0, 40),
+          sessionStorage: Array.from({ length: sessionStorage.length }, (_, index) => sessionStorage.key(index)).filter(Boolean).slice(0, 40),
+        };
+        const libraries = [
+          ['React', Boolean((window as any).React || document.querySelector('[data-reactroot], #root'))],
+          ['Next.js', Boolean(document.querySelector('script[src*="/_next/"]') || (window as any).__NEXT_DATA__)],
+          ['Vite', Boolean(document.querySelector('script[type="module"][src*="/@vite/"]') || scriptSrcs.some((src) => src.includes('/src/')))],
+          ['Vue', Boolean((window as any).Vue || document.querySelector('[data-v-]'))],
+          ['Svelte', Boolean(document.querySelector('[class*="svelte-"]'))],
+          ['Tailwind-like utility CSS', Boolean(document.querySelector('[class*="flex"], [class*="grid"], [class*="text-"]'))],
+        ].filter(([, present]) => present).map(([name]) => name);
+        return {
+          title: document.title,
+          url: location.href,
+          viewport: { width: innerWidth, height: innerHeight, devicePixelRatio },
+          text,
+          meta,
+          scriptSrcs,
+          styles,
+          storageKeys,
+          libraries,
+        };
+      }).catch((error) => ({ error: error.message })),
+    ]);
+
+    const network = session.networkRequests
+      .filter((entry) => entry.pageId === resolvedPageId)
+      .slice(-60)
+      .map((entry) => `${entry.method} ${entry.status || 'pending'} ${entry.resourceType} ${entry.url}`)
+      .slice(-25);
+    const apiSignals = session.networkRequests
+      .filter((entry) => entry.pageId === resolvedPageId && /json|graphql|fetch|xhr|api|v1|v2/i.test(`${entry.contentType || ''} ${entry.resourceType} ${entry.url}`))
+      .slice(-25)
+      .map((entry) => `${entry.method} ${entry.status || 'pending'} ${entry.url}`);
+    const consoleSignals = session.consoleMessages
+      .filter((entry) => entry.pageId === resolvedPageId)
+      .slice(-20)
+      .map((entry) => `${entry.type}: ${entry.text}`);
+
+    const context = [
+      `Rendered page: ${(pageFacts as any).title || info?.title || 'unknown'} - ${(pageFacts as any).url || info?.url || page.url()}`,
+      `Viewport: ${JSON.stringify((pageFacts as any).viewport || page.viewportSize())}`,
+      `Detected libraries/frameworks: ${((pageFacts as any).libraries || []).join(', ') || 'unknown from current evidence'}`,
+      `Interactive elements (${elements.length}): ${JSON.stringify(elements.slice(0, 20))}`,
+      `Page text sample: ${(pageFacts as any).text || ''}`,
+      `Meta signals: ${JSON.stringify((pageFacts as any).meta || [])}`,
+      `Scripts: ${JSON.stringify((pageFacts as any).scriptSrcs || [])}`,
+      `Stylesheets/styles: ${JSON.stringify((pageFacts as any).styles || [])}`,
+      `Storage keys: ${JSON.stringify((pageFacts as any).storageKeys || {})}`,
+      `Console signals: ${consoleSignals.join('\n') || 'none captured'}`,
+      `Network/API signals: ${apiSignals.join('\n') || network.join('\n') || 'none captured yet'}`,
+      'Test surfaces Nexus should consider: desktop browser, tablet viewport, mobile touch viewport, kiosk/fullscreen viewport, API/network behavior, console/runtime errors, storage/auth state, accessibility, visual regression, and production build.',
+    ].join('\n\n').slice(0, 18000);
+
+    const observation: GathererObservation = {
+      id: uuid(),
+      sessionId: session.id,
+      pageId: resolvedPageId,
+      url: (pageFacts as any).url || info?.url || page.url(),
+      title: (pageFacts as any).title || info?.title || 'unknown',
+      collectedAt: new Date().toISOString(),
+      context,
+      signals: {
+        hasConsoleErrors: consoleSignals.some((line) => /error|exception|failed|cannot/i.test(line)),
+        networkSignalCount: apiSignals.length || network.length,
+        interactiveElementCount: elements.length,
+        detectedLibraries: (pageFacts as any).libraries || [],
+      },
+    };
+    this.storeGathererObservation(observation);
+    return observation;
+  }
+
+  private gathererKey(sessionId: string, pageId = ''): string {
+    return `${sessionId}:${pageId}`;
+  }
+
+  private storeGathererObservation(observation: GathererObservation): void {
+    const key = this.gathererKey(observation.sessionId, observation.pageId);
+    const timeline = this.gathererObservations.get(key) || [];
+    timeline.push(observation);
+    this.gathererObservations.set(key, timeline.slice(-30));
+  }
+
+  private storeExternalGathererObservation(sessionId: string, pageId: string, context: string): void {
+    if (!sessionId || sessionId === 'default' || !context.trim()) return;
+    const observation: GathererObservation = {
+      id: uuid(),
+      sessionId,
+      pageId,
+      url: context.match(/Rendered page:.*? - (.*)/)?.[1]?.split('\n')[0] || 'unknown',
+      title: context.match(/Rendered page: (.*?) - /)?.[1] || 'browser intelligence',
+      collectedAt: new Date().toISOString(),
+      context: context.slice(0, 18000),
+      signals: {
+        hasConsoleErrors: /Console signals:[\s\S]*(error|exception|failed|cannot)/i.test(context),
+        networkSignalCount: (context.match(/\b(GET|POST|PUT|PATCH|DELETE)\b/g) || []).length,
+        interactiveElementCount: Number(context.match(/Interactive elements \((\d+)\)/)?.[1] || 0),
+        detectedLibraries: context.match(/Detected libraries\/frameworks: ([^\n]+)/)?.[1]?.split(',').map((item) => item.trim()).filter(Boolean) || [],
+      },
+    };
+    this.storeGathererObservation(observation);
+  }
+
+  private getGathererTimeline(sessionId: string, pageId = ''): GathererObservation[] {
+    if (!sessionId || sessionId === 'default') return [];
+    if (pageId) return this.gathererObservations.get(this.gathererKey(sessionId, pageId)) || [];
+    return Array.from(this.gathererObservations.entries())
+      .filter(([key]) => key.startsWith(`${sessionId}:`))
+      .flatMap(([, timeline]) => timeline)
+      .sort((a, b) => a.collectedAt.localeCompare(b.collectedAt))
+      .slice(-30);
+  }
+
+  private buildGathererContext(sessionId: string, pageId = ''): string {
+    const timeline = this.getGathererTimeline(sessionId, pageId);
+    if (!timeline.length) return 'Gatherer Agent has no rendered browser observations yet. Navigate to a website or preview so it can collect live evidence.';
+    const latest = timeline[timeline.length - 1];
+    const summary = timeline.slice(-8).map((item) => [
+      `${item.collectedAt} ${item.title} ${item.url}`,
+      `Libraries: ${item.signals.detectedLibraries.join(', ') || 'unknown'}; interactive elements: ${item.signals.interactiveElementCount}; network/API signals: ${item.signals.networkSignalCount}; console errors: ${item.signals.hasConsoleErrors ? 'yes' : 'no'}`,
+    ].join('\n')).join('\n\n');
+    return [
+      'Gatherer Agent live browser timeline:',
+      summary,
+      '',
+      'Latest full observation:',
+      latest.context,
+    ].join('\n').slice(0, 22000);
+  }
+
+  private collectBackendObservation(buildId: string): BackendObservation {
+    const build = buildId ? this.builderPlatform.getBuild(buildId) : undefined;
+    if (!build) throw new Error('No active generated build workspace. Start a build before backend observation.');
+    const workspace = path.resolve(build.root);
+    const files = this.listObserverFiles(workspace);
+    const packagePath = path.join(workspace, 'package.json');
+    const pkg = fs.existsSync(packagePath) ? this.safeReadJson(packagePath) : {};
+    const dependencies = Object.keys({ ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) });
+    const scripts = Object.keys(pkg.scripts || {}).map((key) => `${key}: ${pkg.scripts[key]}`);
+    const serverFiles = files.filter((file) => /(?:server|api|route|controller|service|model|schema|db|database|prisma|drizzle|supabase|firebase|auth|stripe|webhook)/i.test(file));
+    const samples = serverFiles.slice(0, 80).map((relativePath) => {
+      const fullPath = path.join(workspace, relativePath);
+      return { path: relativePath, content: fs.existsSync(fullPath) ? fs.readFileSync(fullPath, 'utf8').slice(0, 12000) : '' };
+    });
+    const joined = samples.map((sample) => `FILE ${sample.path}\n${sample.content}`).join('\n\n');
+    const apiRoutes = this.extractApiRoutes(joined);
+    const dataModels = this.extractDataModels(joined);
+    const envKeys = this.extractEnvKeys(joined + '\n' + this.readIfExists(path.join(workspace, '.env.example')));
+    const logErrors = [build.logPath, build.previewLogPath]
+      .filter((file) => fs.existsSync(file))
+      .flatMap((file) => fs.readFileSync(file, 'utf8').split(/\r?\n/).filter((line) => /error|failed|exception|cannot find|module not found|syntaxerror|typeerror|referenceerror|eaddrinuse/i.test(line)).slice(-20))
+      .slice(-30);
+    const context = [
+      'Backend Observer Agent functionality map:',
+      `Workspace: ${workspace}`,
+      `Build: ${build.name} (${build.id})`,
+      `Scripts: ${scripts.join('; ') || 'none detected'}`,
+      `Dependencies/libraries: ${dependencies.join(', ') || 'none detected'}`,
+      `Server/API/data files: ${serverFiles.slice(0, 60).join(', ') || 'none detected yet'}`,
+      `API routes/actions: ${apiRoutes.join('; ') || 'none detected yet'}`,
+      `Data models/schemas: ${dataModels.join('; ') || 'none detected yet'}`,
+      `Env/config keys: ${envKeys.join(', ') || 'none detected yet'}`,
+      `Recent backend/build errors: ${logErrors.join('\n') || 'none detected'}`,
+      'Duplication guidance: recreate both visible behavior and hidden functionality. Match API routes, request/response shapes, auth/session assumptions, storage/database models, env keys, dependencies, background jobs, webhooks, and error/loading states before polishing UI.',
+    ].join('\n\n').slice(0, 18000);
+    const observation: BackendObservation = {
+      id: uuid(),
+      buildId: build.id,
+      workspace,
+      collectedAt: new Date().toISOString(),
+      context,
+      signals: { scripts, dependencies, apiRoutes, dataModels, envKeys, serverFiles, logErrors },
+    };
+    const timeline = this.backendObservations.get(build.id) || [];
+    timeline.push(observation);
+    this.backendObservations.set(build.id, timeline.slice(-30));
+    return observation;
+  }
+
+  private getBackendObserverTimeline(buildId: string): BackendObservation[] {
+    return buildId ? this.backendObservations.get(buildId) || [] : [];
+  }
+
+  private buildBackendObserverContext(buildId: string): string {
+    const timeline = this.getBackendObserverTimeline(buildId);
+    if (!timeline.length) return 'Backend Observer Agent has no workspace observations yet. Start or select a generated build so it can inspect package scripts, APIs, server code, data models, env keys, and logs.';
+    const latest = timeline[timeline.length - 1];
+    const summary = timeline.slice(-6).map((item) => `${item.collectedAt} scripts=${item.signals.scripts.length} deps=${item.signals.dependencies.length} routes=${item.signals.apiRoutes.length} models=${item.signals.dataModels.length} errors=${item.signals.logErrors.length}`).join('\n');
+    return ['Backend Observer Agent timeline:', summary, '', 'Latest full backend observation:', latest.context].join('\n').slice(0, 22000);
+  }
+
+  private listObserverFiles(root: string): string[] {
+    const results: string[] = [];
+    const walk = (dir: string) => {
+      if (results.length >= 1200) return;
+      let entries: fs.Dirent[] = [];
+      try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+      for (const entry of entries) {
+        if (results.length >= 1200) return;
+        if (entry.name.startsWith('.') && entry.name !== '.env.example') continue;
+        if (['node_modules', 'dist', 'build', '.git', '.next', 'coverage'].includes(entry.name)) continue;
+        const fullPath = path.join(dir, entry.name);
+        const relativePath = path.relative(root, fullPath);
+        if (entry.isDirectory()) walk(fullPath);
+        else if (/\.(ts|tsx|js|jsx|json|prisma|sql|env|md|yml|yaml)$/i.test(entry.name)) results.push(relativePath);
+      }
+    };
+    walk(root);
+    return results;
+  }
+
+  private safeReadJson(filePath: string): any {
+    try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch { return {}; }
+  }
+
+  private readIfExists(filePath: string): string {
+    try { return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : ''; } catch { return ''; }
+  }
+
+  private extractApiRoutes(text: string): string[] {
+    const patterns = [
+      /(?:app|router)\.(get|post|put|patch|delete)\(['"`]([^'"`]+)['"`]/gi,
+      /export\s+(?:async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE)\s*\(/g,
+      /fetch\(['"`]([^'"`]*(?:api|graphql|v\d)[^'"`]*)['"`]/gi,
+    ];
+    const routes = new Set<string>();
+    for (const pattern of patterns) {
+      for (const match of text.matchAll(pattern)) {
+        if (match.length >= 3) routes.add(`${match[1].toUpperCase()} ${match[2]}`);
+        else if (match[1]) routes.add(match[1]);
+      }
+    }
+    return Array.from(routes).slice(0, 80);
+  }
+
+  private extractDataModels(text: string): string[] {
+    const models = new Set<string>();
+    const patterns = [/model\s+(\w+)\s*{/g, /interface\s+(\w+)\s*{/g, /type\s+(\w+)\s*=/g, /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([\w_]+)/gi];
+    for (const pattern of patterns) for (const match of text.matchAll(pattern)) models.add(match[1]);
+    return Array.from(models).slice(0, 80);
+  }
+
+  private extractEnvKeys(text: string): string[] {
+    const keys = new Set<string>();
+    for (const match of text.matchAll(/process\.env\.([A-Z0-9_]+)/g)) keys.add(match[1]);
+    for (const match of text.matchAll(/^([A-Z0-9_]+)=/gm)) keys.add(match[1]);
+    return Array.from(keys).slice(0, 80);
+  }
+
+  private buildBuilderResponse(message: string, mode: string, uiLook: string, browserContext = ''): string {
     const intent = message.toLowerCase();
+    const persona = [
+      'Nexus Command Chat persona: senior full-stack developer, system engineer, browser automation engineer, DevTools debugger, QA lead, and product/graphic designer in one cockpit.',
+      'Operate like a developer-employee platform inspired by Twin: specialized agents can be hired for jobs, run from triggers/schedules, inspect tools and websites, report findings, and hand implementation to OpenCode.',
+      'Competitive goal: beat chat-only coding tools by knowing what is rendered, what APIs are called, what libraries are present, what server functionality exists, what breaks in real devices, and what code must change.',
+    ];
+    const browserAdvantage = [
+      'Use the browser as the source of truth: live page, generated preview, DOM, computed styles, screenshots, console logs, network requests, storage, and API discovery should drive code changes.',
+      'Turn DevTools evidence into code: map visible UI to React components, network traffic to API clients/MCP tools, console errors to fixes, and screenshot differences to CSS/layout repairs.',
+      'Keep the AI loop browser-first: research or open the target, inspect evidence, generate/update code with OpenCode, run preview, compare visually, diagnose logs, then repair until it works.',
+    ];
     const actions = mode === 'research'
       ? [
+        ...browserAdvantage,
         'Use the browser as a web researcher: search the web, open relevant sites, crawl resources, discover APIs, and capture UI intelligence.',
         'Collect sources, screenshots, links, endpoints, integrations, docs, and examples before writing code.',
         'Generate or update project-brain.json with every useful finding.',
       ]
       : mode === 'plan'
         ? [
+          ...browserAdvantage,
           'Convert research into an implementation plan for OpenCode.',
           'Create architecture, database schema, UI component plan, API/MCP plan, integration plan, test plan, and ordered tasks.',
           'Do not build yet; identify missing research and risks first.',
         ]
         : mode === 'build'
           ? [
+            ...browserAdvantage,
             'Hand the build plan to OpenCode and implement tasks in numeric order.',
             'Keep the browser live as the preview and use visual QA after each major UI step.',
             `Apply UI look mode: ${uiLook}.`,
           ]
           : [
+            ...browserAdvantage,
             'Research the current site with the browser crawler.',
             'Generate project-brain.json, build-plan.json, SDK agents, MCP tools, database schema, and Tailwind UI artifacts.',
             `Apply UI look mode: ${uiLook}.`,
@@ -678,9 +1042,19 @@ export class CloudServer {
     if (intent.includes('mcp')) actions.push('Expose discovered endpoints as MCP tools with env-based credentials and safe schemas.');
     if (intent.includes('ui') || intent.includes('figma') || intent.includes('tailwind')) actions.push('Use ui-intelligence output to generate design tokens, component variants, responsive Tailwind classes, and visual QA targets.');
     if (intent.includes('agent') || intent.includes('hermes') || intent.includes('skills') || intent.includes('memory')) actions.push('Use the project agent swarm: research, browser UI, API, database, MCP, OpenCode build, React, Tailwind, integration, QA, memory, and scheduler agents. Persist reusable lessons as skills.');
+    if (intent.includes('browser') || intent.includes('devtools') || intent.includes('vibe') || intent.includes('coding')) actions.push('Position Nexus as browser-native vibe coding: chat is the director, the browser is the evidence engine, DevTools signals explain what to build or fix, and OpenCode turns those findings into working files.');
+    if (intent.includes('twin') || intent.includes('employee') || intent.includes('autonomous')) actions.push('Use the Twin-inspired concept safely: create a library of developer employees such as Browser Gatherer, Backend Observer, Mobile QA, Build Doctor, Integration Builder, and Release Operator that can run on demand or schedule with human approval for risky actions.');
 
     const next = mode === 'research' ? 'search/open sites and run Research Project' : mode === 'plan' ? 'generate build-plan.json and tasks' : mode === 'build' ? 'start OpenCode implementation and live visual QA' : 'run Research Project, then Build With OpenCode, then Visual QA';
-    return `Builder mode: ${mode}\n\nRecommended actions:\n${actions.map((action) => `- ${action}`).join('\n')}\n\nNext: ${next}.`;
+    const agentJobs = [
+      'Browser Gatherer: watches rendered pages, DOM, styles, storage, console, network, and screenshots.',
+      'Backend Observer: maps dependencies, scripts, API routes, schemas, env keys, server logs, and hidden functionality.',
+      'Full-Stack Architect: turns browser/backend evidence into architecture, data models, integrations, and task order.',
+      'OpenCode Implementer: edits files, runs commands, fixes builds, and keeps changes minimal but complete.',
+      'Mobile/Kiosk QA: verifies desktop, tablet, mobile touch, fullscreen kiosk, game/canvas, accessibility, and visual regressions.',
+      'Release Operator: prepares env docs, deployment checks, monitoring, and handoff notes.',
+    ];
+    return `Nexus Command Chat\n\nPersona:\n${persona.map((item) => `- ${item}`).join('\n')}\n\nBuilder mode: ${mode}\n\nWhat I already know from live agents:\n${browserContext}\n\nDeveloper employees ready for this job:\n${agentJobs.map((job) => `- ${job}`).join('\n')}\n\nRecommended actions:\n${actions.map((action) => `- ${action}`).join('\n')}\n\nNext: ${next}.`;
   }
 
   private authenticate = (req: express.Request, res: express.Response, next: express.NextFunction) => {
