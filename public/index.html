@@ -108,9 +108,11 @@
     .empty { height: 100%; display: grid; place-items: center; color: var(--text); text-align: center; padding: 30px; }
     .empty h1 { font-size: clamp(24px, 4vw, 48px); line-height: .95; margin-bottom: 10px; }
     .landing-builder { width: min(720px, 94vw); border: 1px solid var(--line); border-radius: 24px; background: var(--panel); box-shadow: var(--shadow); padding: 22px; backdrop-filter: blur(18px); color: var(--text); text-align: left; }
+    .landing-minimal { width: min(760px, 92vw); padding: 10px; border-radius: 20px; }
     .landing-builder p { color: var(--muted); margin-bottom: 14px; font-size: 14px; }
     .landing-chat { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel-2); }
     .landing-chat textarea { min-height: 68px; resize: none; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 14px; line-height: 1.45; }
+    .landing-minimal .landing-chat textarea { min-height: 54px; font-size: 16px; padding: 8px; }
     .landing-chat button { align-self: end; }
     .quick-prompts { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
     .quick-prompts button { border: 1px solid var(--line); border-radius: 999px; background: var(--panel-2); color: var(--text); padding: 5px 8px; cursor: pointer; font-size: 11px; }
@@ -287,20 +289,10 @@
             <span class="pill" id="lookPill">Faithful Clone</span>
           </div>
           <div class="empty">
-            <div class="landing-builder">
-              <h1>Build in the browser</h1>
-              <p>Describe an app, open a site, or ask for a change. Nexus keeps preview, research, agents, and code in one loop.</p>
+            <div class="landing-builder landing-minimal">
               <div class="landing-chat">
-                <textarea id="landingChatInput" placeholder="Build a cinematic website about frogs with facts, gallery, habitat pages, and a playful mobile design." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLandingChat();}"></textarea>
+                <textarea id="landingChatInput" placeholder="What should Nexus build?" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLandingChat();}"></textarea>
                 <button class="btn primary" onclick="sendLandingChat()">Build</button>
-              </div>
-              <div class="quick-prompts">
-                <button onclick="quickStart('research mode find useful websites, API docs, UI examples, and resources for this application.')">Research</button>
-                <button onclick="quickStart('plan mode turn the research into architecture, tasks, database, UI, MCP, SDK, and integration plans.')">Plan</button>
-                <button onclick="quickStart('build mode start implementing with OpenCode using the project brain and live browser preview.')">Build</button>
-                <button onclick="quickStart('Clone the UI into smart React and Tailwind components, then show the block-by-block build overlay.')">Clone UI</button>
-                <button onclick="quickStart('Find all API endpoints, create SDKs, and generate a custom MCP server.')">API + MCP</button>
-                <button onclick="quickStart('Build a SaaS app with auth, Stripe billing, GitHub integration, database, and deployment tasks.')">SaaS App</button>
               </div>
             </div>
           </div>
@@ -1390,6 +1382,8 @@
       const input = document.getElementById('landingChatInput');
       const message = input?.value.trim();
       if (!message) return;
+      toggleChat(true);
+      document.getElementById('builderMode').value = 'build';
       applyModeFromMessage(message);
       const urlMatch = message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i);
       if (urlMatch) {
@@ -1399,7 +1393,7 @@
       } else if (shouldWebSearch(message)) {
         runBrowserSearch(cleanSearchQuery(message));
       }
-      document.getElementById('chatInput').value = message;
+      document.getElementById('chatInput').value = /\b(build|create|make|generate|code)\b/i.test(message) ? message : `Build ${message}`;
       sendChat();
       input.value = '';
     }

@@ -7,7 +7,7 @@ export default {
     "paper": "#f7fbf8"
   },
   "signature": "Web App Command Surface",
-  "metric": "12",
+  "metric": "13",
   "metricLabel": "live product systems",
   "primaryCta": "Run workflow",
   "pages": [
@@ -61,6 +61,7 @@ export default {
     "Build mode start implementing with OpenCode using the project brain and live browser preview.",
     "build mode start implementing with OpenCode using the project brain and live browser preview.",
     "build mode start implementing with OpenCode using the project brain and live browser preview.",
-    "daytona bike wekk"
+    "daytona bike wekk",
+    "Build asdASD"
   ]
 };
