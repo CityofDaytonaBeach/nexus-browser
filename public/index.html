@@ -780,6 +780,30 @@
       }
     }
 
+    function startStreamingTimeline() {
+      const query = new URLSearchParams({ apiKey, buildId: activeBuildId || '' });
+      const events = new EventSource(`/api/builder/stream?${query.toString()}`);
+      addMessage('system', 'Live timeline connected.');
+      events.addEventListener('step', event => {
+        const item = JSON.parse(event.data);
+        appendStream('qaStream', `${item.label}: ${item.detail}`);
+      });
+      events.addEventListener('tick', event => {
+        const item = JSON.parse(event.data);
+        if (item.logTail) document.getElementById('taskStream').textContent = item.logTail;
+        appendStream('qaStream', `Stream ${item.ticks}: ${item.status || 'running'} / ${item.previewStatus || 'preview unknown'}`);
+      });
+      events.addEventListener('done', event => {
+        const item = JSON.parse(event.data);
+        addMessage('assistant', item.message || 'Live timeline finished.');
+        events.close();
+      });
+      events.onerror = () => {
+        addMessage('system', 'Live timeline disconnected.');
+        events.close();
+      };
+    }
+
     async function exportActiveProject() {
       try {
         const res = await fetch('/api/builder/export-zip', { method: 'POST', headers: headers(), body: JSON.stringify({ buildId: activeBuildId }) });
