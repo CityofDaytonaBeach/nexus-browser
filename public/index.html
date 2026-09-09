@@ -47,6 +47,10 @@
     body.chat-first .topbar, body.chat-first #toolsPanel, body.chat-first .statusbar { display: none; }
     body.chat-first .shell { grid-template-rows: 1fr; }
     body.chat-first .workspace { grid-template-columns: 1fr; }
+    body.chat-first .mode-tabs, body.chat-first .build-stream { display: none; }
+    body.chat-first .center { grid-template-rows: 1fr; }
+    body.chat-first #chatPanel:not(.open) { display: none; }
+    body.chat-first #chatPanel.open { box-shadow: var(--shadow); }
     .brand { width: 132px; font-size: 12px; font-weight: 760; letter-spacing: .08em; color: var(--text); }
     .browser-tabs { display: flex; align-items: center; gap: 6px; max-width: 34vw; overflow: auto; }
     .browser-tab { display: inline-flex; align-items: center; gap: 6px; max-width: 180px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
@@ -363,6 +367,7 @@
     let lastBackendObservationCount = 0;
     let activeTabId = 'home';
     let csrfToken = '';
+    const nexusStatusLog = [];
     const browserTabs = [{ id: 'home', title: 'Home', kind: 'home', url: '' }];
 
     function upsertBrowserTab(tab) {
@@ -1342,6 +1347,7 @@
       addMessage('user', message);
       try {
         applyModeFromMessage(message);
+        if (maybeShowChatStatus(message)) return;
         if (maybeAskBuildIntake(message)) return;
         if (prepareBrowserGrounding(message)) return;
         await refreshBrowserIntelligence(true);
@@ -1355,6 +1361,20 @@
       } catch (error) {
         addMessage('system', `Builder chat failed: ${error.message}`);
       }
+    }
+
+    function maybeShowChatStatus(message) {
+      if (!/\b(status|progress|what happened|logs|research stream|tasks|qa stream|show details)\b/i.test(message)) return false;
+      addMessage('assistant', chatStatusSummary());
+      return true;
+    }
+
+    function chatStatusSummary() {
+      const research = document.getElementById('researchStream')?.textContent.trim() || 'No research updates yet.';
+      const tasks = document.getElementById('taskStream')?.textContent.trim() || 'No task updates yet.';
+      const qa = document.getElementById('qaStream')?.textContent.trim() || 'No QA updates yet.';
+      const recent = nexusStatusLog.slice(-8).map(item => `- ${item}`).join('\n') || '- No recent agent events.';
+      return `Current Nexus status\n\nRecent agent events:\n${recent}\n\nResearch:\n${research}\n\nTasks / OpenCode:\n${tasks}\n\nQA / Browser checks:\n${qa}`;
     }
 
     function maybeAskBuildIntake(message) {
@@ -1736,6 +1756,8 @@
     function appendStream(id, text) {
       const el = document.getElementById(id);
       el.textContent = `${el.textContent}\n${new Date().toLocaleTimeString()} ${text}`.trim();
+      nexusStatusLog.push(`${id}: ${text}`);
+      if (nexusStatusLog.length > 100) nexusStatusLog.shift();
     }
 
     function escapeHtml(value) {
