@@ -44,6 +44,9 @@
     button, input, select, textarea { font: inherit; }
     .shell { display: grid; grid-template-rows: 48px 1fr 24px; height: 100vh; }
     .topbar { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(18px); }
+    body.chat-first .topbar, body.chat-first #toolsPanel, body.chat-first .statusbar { display: none; }
+    body.chat-first .shell { grid-template-rows: 1fr; }
+    body.chat-first .workspace { grid-template-columns: 1fr; }
     .brand { width: 132px; font-size: 12px; font-weight: 760; letter-spacing: .08em; color: var(--text); }
     .browser-tabs { display: flex; align-items: center; gap: 6px; max-width: 34vw; overflow: auto; }
     .browser-tab { display: inline-flex; align-items: center; gap: 6px; max-width: 180px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
@@ -156,7 +159,7 @@
     @media (max-width: 720px) { .browser-tabs { max-width: 28vw; } .panel { width: calc(100vw - 24px); } .build-stream { display: none; } .center { grid-template-rows: 40px 1fr; } }
   </style>
 </head>
-<body>
+<body class="chat-first">
   <div class="shell">
     <header class="topbar">
       <div class="brand">NEXUS</div>
@@ -1339,6 +1342,7 @@
       addMessage('user', message);
       try {
         applyModeFromMessage(message);
+        if (maybeAskBuildIntake(message)) return;
         if (prepareBrowserGrounding(message)) return;
         await refreshBrowserIntelligence(true);
         await refreshBackendObserver(true);
@@ -1351,6 +1355,16 @@
       } catch (error) {
         addMessage('system', `Builder chat failed: ${error.message}`);
       }
+    }
+
+    function maybeAskBuildIntake(message) {
+      const text = message.toLowerCase();
+      if (!/\b(build|create|make|generate|app|website|dashboard|landing page|site)\b/.test(text)) return false;
+      if (/\b(decide and build|you decide|surprise me|auto decide|agent decide)\b/.test(text)) return false;
+      const hasSpecifics = /\b(page|auth|login|dashboard|database|stripe|github|supabase|mobile|style|design|api|admin|checkout|user|customer|content|blog|shop|saas|game)\b/.test(text);
+      if (hasSpecifics || message.length > 90) return false;
+      addMessage('assistant', `I can build that. To avoid a generic app, answer these in one message:\n\n1. Who is it for?\n2. What are the main pages or actions?\n3. What style should it feel like?\n4. Any data, login, payments, GitHub, or Supabase?\n5. Should I clone/reference a URL or invent from scratch?\n\nIf you want me to decide, say: "decide and build".`);
+      return true;
     }
 
     function prepareBrowserGrounding(message) {
