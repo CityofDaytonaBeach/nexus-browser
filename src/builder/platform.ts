@@ -243,6 +243,20 @@ export class BuilderPlatform {
       { id: 'ollama', name: 'Ollama', kind: 'local', env: ['OLLAMA_BASE_URL'], capabilities: ['local', 'privacy', 'offline'], recommendedFor: ['private research', 'cheap iteration'] },
       { id: 'lmstudio', name: 'LM Studio', kind: 'local', env: ['LMSTUDIO_BASE_URL'], capabilities: ['local', 'openai-compatible'], recommendedFor: ['local coding models'] },
       { id: 'github-models', name: 'GitHub Models', kind: 'cloud', env: ['GITHUB_TOKEN'], capabilities: ['chat', 'code'], recommendedFor: ['GitHub-native workflows'] },
+      { id: 'groq', name: 'Groq', kind: 'cloud', env: ['GROQ_API_KEY'], capabilities: ['fast-inference', 'chat', 'code'], recommendedFor: ['fast iteration', 'cheap retries'] },
+      { id: 'xai', name: 'xAI', kind: 'cloud', env: ['XAI_API_KEY'], capabilities: ['chat', 'vision', 'reasoning'], recommendedFor: ['planning', 'visual reasoning'] },
+      { id: 'deepseek', name: 'DeepSeek', kind: 'cloud', env: ['DEEPSEEK_API_KEY'], capabilities: ['code', 'chat', 'reasoning'], recommendedFor: ['codegen', 'repair'] },
+      { id: 'mistral', name: 'Mistral', kind: 'cloud', env: ['MISTRAL_API_KEY'], capabilities: ['chat', 'code'], recommendedFor: ['European-hosted tasks', 'code review'] },
+      { id: 'cohere', name: 'Cohere', kind: 'cloud', env: ['COHERE_API_KEY'], capabilities: ['chat', 'rag', 'embeddings'], recommendedFor: ['research synthesis', 'retrieval'] },
+      { id: 'together', name: 'Together AI', kind: 'cloud', env: ['TOGETHER_API_KEY'], capabilities: ['open-models', 'chat', 'code'], recommendedFor: ['open-source model routing'] },
+      { id: 'perplexity', name: 'Perplexity', kind: 'cloud', env: ['PERPLEXITY_API_KEY'], capabilities: ['search-grounded', 'chat'], recommendedFor: ['current web research'] },
+      { id: 'huggingface', name: 'Hugging Face', kind: 'cloud', env: ['HUGGINGFACE_API_KEY'], capabilities: ['model-hub', 'open-models'], recommendedFor: ['specialized models'] },
+      { id: 'moonshot', name: 'Moonshot Kimi', kind: 'cloud', env: ['MOONSHOT_API_KEY'], capabilities: ['long-context', 'chat', 'code'], recommendedFor: ['large research packets'] },
+      { id: 'hyperbolic', name: 'Hyperbolic', kind: 'cloud', env: ['HYPERBOLIC_API_KEY'], capabilities: ['open-models', 'inference'], recommendedFor: ['alternate model hosting'] },
+      { id: 'bedrock', name: 'Amazon Bedrock', kind: 'cloud', env: ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION'], capabilities: ['enterprise', 'model-router'], recommendedFor: ['AWS deployments', 'enterprise controls'] },
+      { id: 'azure-openai', name: 'Azure OpenAI', kind: 'openai-compatible', env: ['AZURE_OPENAI_API_KEY', 'AZURE_OPENAI_ENDPOINT'], capabilities: ['enterprise', 'chat', 'code'], recommendedFor: ['enterprise OpenAI deployments'] },
+      { id: 'vertex-ai', name: 'Vertex AI', kind: 'cloud', env: ['GOOGLE_APPLICATION_CREDENTIALS', 'VERTEX_AI_PROJECT'], capabilities: ['gemini', 'enterprise'], recommendedFor: ['Google Cloud deployments'] },
+      { id: 'openai-compatible', name: 'OpenAI Compatible', kind: 'openai-compatible', env: ['OPENAI_COMPATIBLE_BASE_URL', 'OPENAI_COMPATIBLE_API_KEY'], capabilities: ['custom-endpoint', 'chat', 'code'], recommendedFor: ['self-hosted gateways', 'new providers'] },
     ];
   }
 

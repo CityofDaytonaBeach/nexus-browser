@@ -57,6 +57,21 @@ interface GitHubProjectConnection {
   connectedAt: string;
 }
 
+interface ConnectorConnection {
+  id: string;
+  provider: string;
+  account: string;
+  accessToken: string;
+  scopes: string[];
+  connectedAt: string;
+}
+
+interface OAuthState {
+  provider: string;
+  createdAt: number;
+  returnTo: string;
+}
+
 interface GathererObservation {
   id: string;
   sessionId: string;
@@ -104,6 +119,8 @@ export class CloudServer {
   private backendObservations: Map<string, BackendObservation[]> = new Map();
   private builderPlatform: BuilderPlatform;
   private githubProjectConnection?: GitHubProjectConnection;
+  private connectorConnections: Map<string, ConnectorConnection> = new Map();
+  private oauthStates: Map<string, OAuthState> = new Map();
   private pingInterval?: NodeJS.Timeout;
 
   constructor() {
@@ -143,9 +160,59 @@ export class CloudServer {
       res.json(getAllIntegrationProfiles());
     });
 
+    router.get('/api/connectors', this.authenticate, (_req, res) => {
+      res.json(this.getConnectors());
+    });
+
+    router.get('/api/connectors/github/login', this.authenticate, (req, res) => {
+      const clientId = process.env.GITHUB_CLIENT_ID;
+      if (!clientId) return res.status(400).json({ error: 'GITHUB_CLIENT_ID not configured' });
+      const state = uuid();
+      const returnTo = String(req.query.returnTo || '/');
+      this.oauthStates.set(state, { provider: 'github', createdAt: Date.now(), returnTo });
+      const callback = this.githubOAuthCallbackUrl(req);
+      const scope = encodeURIComponent('repo read:org project workflow');
+      res.json({ url: `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(callback)}&scope=${scope}&state=${encodeURIComponent(state)}` });
+    });
+
+    router.get('/api/connectors/github/callback', async (req, res) => {
+      try {
+        const code = String(req.query.code || '');
+        const state = String(req.query.state || '');
+        const saved = this.oauthStates.get(state);
+        this.oauthStates.delete(state);
+        if (!code || !saved || saved.provider !== 'github' || Date.now() - saved.createdAt > 10 * 60 * 1000) throw new Error('Invalid or expired GitHub login state');
+        const connection = await this.exchangeGitHubOAuthCode(code, req);
+        this.connectorConnections.set('github', connection);
+        res.type('html').send(`<script>window.opener?.postMessage({type:'nexus:connector',provider:'github',status:'connected'}, '*'); window.location.href='${this.escapeHtml(saved.returnTo || '/')}';</script><p>GitHub connected. You can close this window.</p>`);
+      } catch (error: any) {
+        res.status(400).type('html').send(`<p>GitHub connection failed: ${this.escapeHtml(error.message)}</p>`);
+      }
+    });
+
+    router.delete('/api/connectors/github', this.authenticate, (_req, res) => {
+      this.connectorConnections.delete('github');
+      res.json({ success: true });
+    });
+
+    router.get('/api/builder/seo-security-audit', this.authenticate, async (req, res) => {
+      try {
+        const sessionId = String(req.query.sessionId || 'default');
+        const pageId = String(req.query.pageId || '');
+        const buildId = String(req.query.buildId || '');
+        const browserContext = this.buildGathererContext(sessionId, pageId);
+        const backendContext = buildId ? this.buildBackendObserverContext(buildId) : '';
+        res.json(this.createSeoSecurityAudit(browserContext, backendContext));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
     router.get('/api/github/status', this.authenticate, (_req, res) => {
       res.json({
-        configured: Boolean(process.env.GITHUB_TOKEN),
+        configured: Boolean(this.githubAccessToken()),
+        connected: this.connectorConnections.has('github'),
+        account: this.connectorConnections.get('github')?.account || '',
         owner: this.githubProjectConnection?.owner || process.env.GITHUB_OWNER || '',
         repo: this.githubProjectConnection?.repo || process.env.GITHUB_REPO || '',
         projectId: this.githubProjectConnection?.projectId || process.env.GITHUB_PROJECT_ID || '',
@@ -240,6 +307,10 @@ export class CloudServer {
         languageExperts: getLanguageExperts().map((expert) => ({ id: expert.id, category: expert.category, officialGithub: expert.officialGithub })),
         competitiveBlueprint: true,
       });
+    });
+
+    router.get('/api/builder/bolt-parity', this.authenticate, (_req, res) => {
+      res.json(this.getBoltParityMatrix());
     });
 
     router.post('/api/builder/browser-intelligence', this.authenticate, async (req, res) => {
@@ -820,6 +891,127 @@ export class CloudServer {
     return value.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
   }
 
+  private escapeHtml(value: string): string {
+    return value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] || char));
+  }
+
+  private getConnectors(): any[] {
+    const github = this.connectorConnections.get('github');
+    return [
+      {
+        id: 'github',
+        name: 'GitHub',
+        category: 'code-project-management',
+        connected: Boolean(github || process.env.GITHUB_TOKEN),
+        oauthReady: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
+        account: github?.account || (process.env.GITHUB_TOKEN ? 'token-env' : ''),
+        features: ['login', 'repos', 'issues', 'projects-v2', 'task-sync', 'actions'],
+        security: ['OAuth state protection', 'server-side token storage', 'no token returned to browser'],
+      },
+      { id: 'seo', name: 'SEO Auditor', category: 'launch-quality', connected: true, oauthReady: false, features: ['metadata', 'social cards', 'headings', 'robots', 'sitemap', 'performance checklist'], security: [] },
+      { id: 'security', name: 'Security Auditor', category: 'launch-quality', connected: true, oauthReady: false, features: ['headers', 'secret checks', 'auth risks', 'dependency risk prompts', 'form/API review'], security: [] },
+      { id: 'vercel', name: 'Vercel', category: 'deploy', connected: Boolean(process.env.VERCEL_TOKEN), oauthReady: false, features: ['deployments', 'env-vars', 'preview-links'], security: ['server-side token only'] },
+      { id: 'supabase', name: 'Supabase', category: 'database-auth', connected: Boolean(process.env.SUPABASE_ACCESS_TOKEN || process.env.SUPABASE_SERVICE_ROLE_KEY), oauthReady: false, features: ['database', 'auth', 'storage', 'edge-functions'], security: ['server-side service key only'] },
+      { id: 'stripe', name: 'Stripe', category: 'payments', connected: Boolean(process.env.STRIPE_SECRET_KEY), oauthReady: false, features: ['checkout', 'subscriptions', 'webhooks', 'customer portal'], security: ['server-side secret key only'] },
+    ];
+  }
+
+  private getBoltParityMatrix(): any {
+    const providerCount = this.builderPlatform.getProviders().length;
+    const feature = (area: string, boltFeature: string, nexusStatus: 'live' | 'partial' | 'planned', browserAdvantage: string, actions: string[]) => ({ area, boltFeature, nexusStatus, browserAdvantage, actions });
+    const features = [
+      feature('Models', '19+ provider integrations and OpenAI-like endpoints', providerCount >= 19 ? 'live' : 'partial', 'Route models by browser task: research, vision/UI, code repair, QA, SEO, security, and deployment.', ['Open Providers', 'Choose Build Brain']),
+      feature('Browser Build', 'Prompt, run, edit full-stack apps in browser', 'live', 'Nexus starts from real target pages, DOM, network, console, screenshots, and generated previews instead of prompt-only context.', ['Open target URL', 'Research Project', 'Build From Browser']),
+      feature('Images', 'Attach images to prompts', 'partial', 'Nexus captures screenshots from the browser and can use page evidence as the image/context source.', ['Take Screenshot', 'Visual QA Repair']),
+      feature('Terminal', 'Integrated terminal for commands', 'partial', 'Nexus has an IDE terminal surface plus browser preview/log observers; terminal wiring should be hardened next.', ['Open IDE', 'Build Doctor']),
+      feature('Snapshots/Revert', 'Restore previous project versions', 'live', 'Snapshots are tied to browser evidence, build logs, QA reports, and project memory.', ['Snapshot', 'Project Memory']),
+      feature('Export/Sync', 'Download projects as ZIP and sync folder', 'planned', 'Browser-first export should include source, screenshots, API discoveries, QA reports, and launch checklist.', ['Create Snapshot', 'Open IDE']),
+      feature('Docker', 'Docker support', 'partial', 'Nexus can generate Docker/deploy tasks and should verify containers through browser health checks.', ['Platform', 'SEO/Security']),
+      feature('Deploy', 'Deploy to Netlify, Vercel, GitHub Pages', 'partial', 'Deploy readiness is browser-verified with preview health, SEO/security, and staging device reports.', ['Connectors', 'Staging Studio']),
+      feature('Desktop', 'Electron app', 'live', 'Nexus desktop is a browser cockpit with popout chat, IDE, previews, and external target pages.', ['Desktop', 'Popout Chat']),
+      feature('Data Viz', 'Charts, graphs, analysis tools', 'partial', 'Nexus can derive charts from crawled APIs/network data and backend observations.', ['API/MCP', 'Research Project']),
+      feature('Git', 'Clone, import, deployment capabilities', 'partial', 'GitHub connector adds login, repo/project connection, issues, Projects v2 linking, and build task sync.', ['Connect GitHub', 'Sync Build Tasks']),
+      feature('MCP', 'Model Context Protocol support', 'live', 'Nexus discovers APIs from websites and turns them into MCP/server SDK tasks.', ['API/MCP', 'Research Project']),
+      feature('Search', 'Codebase search/navigation', 'live', 'Nexus combines code search with web search and live browser research.', ['Browser Search', 'Open IDE']),
+      feature('File Locks', 'Prevent AI edit conflicts', 'live', 'Locks can be paired with browser/visual diff approvals before risky edits.', ['Platform', 'Snapshot']),
+      feature('Diff View', 'Visual representation of AI changes', 'partial', 'Nexus advantage is source diff plus browser visual QA/diff; source diff panel remains next.', ['Visual QA Repair', 'Build Doctor']),
+      feature('Supabase', 'Database management and queries', 'partial', 'Supabase is a connector/integration target with browser-backed API and schema discovery.', ['Connectors', 'Database Architect']),
+      feature('Expo', 'React Native app creation', 'planned', 'Mobile output should use browser/device wall checks and app-store screenshot presets.', ['Staging Studio', 'Mobile First']),
+      feature('Voice', 'Voice prompting', 'partial', 'Browser-native speech input can feed the same grounded chat/build flow.', ['Voice Prompt', 'Chat']),
+      feature('Bulk Chat', 'Delete/manage chats in bulk', 'planned', 'Nexus should manage chats as research/build sessions with browser evidence and project memory.', ['Project Memory']),
+      feature('Docs/Planning', 'Generated project plans in markdown', 'live', 'Research Project creates project brain, build plan, OpenCode prompts, API outputs, and QA repair tasks.', ['Research Project', 'Plan Mode']),
+      feature('SEO/Security', 'Quality and security workflows', 'live', 'Nexus audits rendered pages/backend context for metadata, headers, secrets, console errors, and launch risks.', ['SEO/Security Audit']),
+    ];
+    return {
+      source: 'bolt.diy README public feature list',
+      providerCount,
+      summary: 'Nexus now tracks bolt.diy parity while translating each feature into a browser-first workflow: inspect live evidence, build with OpenCode, verify in preview, then manage/deploy through connectors.',
+      features,
+      gaps: features.filter((item) => item.nexusStatus !== 'live'),
+    };
+  }
+
+  private githubAccessToken(): string {
+    return this.connectorConnections.get('github')?.accessToken || process.env.GITHUB_TOKEN || '';
+  }
+
+  private githubOAuthCallbackUrl(req: express.Request): string {
+    const configured = process.env.GITHUB_CALLBACK_URL;
+    if (configured) return configured;
+    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
+    return `${proto}://${req.get('host')}/api/connectors/github/callback`;
+  }
+
+  private async exchangeGitHubOAuthCode(code: string, req: express.Request): Promise<ConnectorConnection> {
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+    if (!clientId || !clientSecret) throw new Error('GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are required for login');
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code, redirect_uri: this.githubOAuthCallbackUrl(req) }),
+    });
+    const tokenData: any = await tokenResponse.json();
+    if (!tokenResponse.ok || tokenData.error || !tokenData.access_token) throw new Error(tokenData.error_description || tokenData.error || 'GitHub did not return an access token');
+    const prior = this.connectorConnections.get('github');
+    this.connectorConnections.set('github', { id: 'github', provider: 'github', account: 'connecting', accessToken: tokenData.access_token, scopes: String(tokenData.scope || '').split(',').filter(Boolean), connectedAt: new Date().toISOString() });
+    try {
+      const user = await this.githubFetch('/user');
+      return { id: 'github', provider: 'github', account: user.login || 'github-user', accessToken: tokenData.access_token, scopes: String(tokenData.scope || '').split(',').filter(Boolean), connectedAt: new Date().toISOString() };
+    } catch (error) {
+      if (prior) this.connectorConnections.set('github', prior);
+      else this.connectorConnections.delete('github');
+      throw error;
+    }
+  }
+
+  private createSeoSecurityAudit(browserContext: string, backendContext: string): any {
+    const context = `${browserContext}\n${backendContext}`;
+    const hasTitle = /Title:|<title/i.test(context);
+    const hasConsoleErrors = /Console errors: [1-9]|error/i.test(context);
+    const hasEnvKeys = /Env keys:|[A-Z0-9_]+_KEY|SECRET|TOKEN/i.test(context);
+    const seoIssues = [
+      !hasTitle ? 'Missing or unknown page title from browser evidence.' : '',
+      !/description|meta/i.test(context) ? 'Verify meta description and social preview tags.' : '',
+      !/h1|heading/i.test(context) ? 'Verify one clear H1 and logical heading order.' : '',
+      'Generate sitemap.xml and robots.txt for deployable apps.',
+      'Add Open Graph and Twitter card metadata for share previews.',
+    ].filter(Boolean);
+    const securityIssues = [
+      hasConsoleErrors ? 'Resolve console/runtime errors before launch.' : '',
+      hasEnvKeys ? 'Document env keys in .env.example and keep secrets server-side.' : 'Check for required secrets and document them in .env.example.',
+      'Add security headers: CSP, X-Frame-Options/frame-ancestors, Referrer-Policy, Permissions-Policy, and HSTS on production HTTPS.',
+      'Validate all form/API inputs and avoid exposing service-role credentials to the client.',
+      'Run dependency audit and fix critical/high vulnerabilities before shipping.',
+    ].filter(Boolean);
+    return {
+      score: Math.max(0, 100 - seoIssues.length * 8 - securityIssues.length * 10),
+      seo: seoIssues,
+      security: securityIssues,
+      opencodePrompt: `Improve SEO and security for this app using browser/backend evidence.\n\nEvidence:\n${context.slice(0, 12000)}\n\nTasks:\n- Add/verify title, meta description, canonical URL, Open Graph, Twitter cards, sitemap, robots, and semantic headings.\n- Add security headers/config appropriate to the framework.\n- Ensure secrets stay server-side and .env.example documents required variables.\n- Validate forms/API inputs and document deployment security checks.\n- Run build/tests and summarize remaining launch risks.`,
+    };
+  }
+
   private resolveGitHubConnection(owner?: string, repo?: string): GitHubProjectConnection {
     const resolved: GitHubProjectConnection = {
       owner: String(owner || this.githubProjectConnection?.owner || process.env.GITHUB_OWNER || '').trim(),
@@ -834,8 +1026,8 @@ export class CloudServer {
   }
 
   private async githubFetch(pathname: string, init: RequestInit = {}): Promise<any> {
-    const token = process.env.GITHUB_TOKEN;
-    if (!token) throw new Error('GITHUB_TOKEN not configured');
+    const token = this.githubAccessToken();
+    if (!token) throw new Error('GitHub is not connected. Login with the GitHub connector or set GITHUB_TOKEN.');
     const response = await fetch(`https://api.github.com${pathname}`, {
       ...init,
       headers: {
@@ -851,8 +1043,8 @@ export class CloudServer {
   }
 
   private async githubGraphql<T = any>(query: string, variables: Record<string, any>): Promise<T> {
-    const token = process.env.GITHUB_TOKEN;
-    if (!token) throw new Error('GITHUB_TOKEN not configured');
+    const token = this.githubAccessToken();
+    if (!token) throw new Error('GitHub is not connected. Login with the GitHub connector or set GITHUB_TOKEN.');
     const response = await fetch('https://api.github.com/graphql', {
       method: 'POST',
       headers: {

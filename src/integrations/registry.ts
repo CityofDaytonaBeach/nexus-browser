@@ -16,10 +16,10 @@ const profiles: IntegrationProfile[] = [
   {
     name: 'github',
     category: 'developer-platform',
-    features: ['oauth', 'repo-create', 'issues', 'pull-requests', 'actions', 'release-automation'],
-    env: ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'GITHUB_TOKEN', 'GITHUB_WEBHOOK_SECRET'],
+    features: ['oauth', 'repo-create', 'issues', 'projects', 'project-task-sync', 'pull-requests', 'actions', 'release-automation'],
+    env: ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'GITHUB_TOKEN', 'GITHUB_WEBHOOK_SECRET', 'GITHUB_OWNER', 'GITHUB_REPO', 'GITHUB_PROJECT_ID'],
     files: ['github/env.example', 'github/tasks.md', 'github/client.ts', 'github/actions.yml', 'github/oauth-route.ts'],
-    tasks: ['Add GitHub OAuth', 'Create repo automation', 'Create issues from build tasks', 'Generate GitHub Actions CI', 'Support PR creation after OpenCode changes'],
+    tasks: ['Add GitHub OAuth', 'Create repo automation', 'Connect GitHub Projects', 'Create issues from build tasks', 'Sync Nexus build tasks to project issues', 'Generate GitHub Actions CI', 'Support PR creation after OpenCode changes'],
   },
   {
     name: 'stripe',

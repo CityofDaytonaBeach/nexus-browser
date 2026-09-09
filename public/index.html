@@ -241,7 +241,10 @@
           <div class="tool" onclick="runApiCrawl()"><strong>API / MCP</strong><span>Endpoints, SDKs, MCP tools, response samples.</span></div>
           <div class="tool" onclick="createVisualQaPlan()"><strong>QA Plan</strong><span>Target vs local preview checks and repair prompt.</span></div>
           <div class="tool" onclick="runVisualQaRepair()"><strong>Auto Repair QA</strong><span>Compare target to live app and generate OpenCode repair tasks.</span></div>
+          <div class="tool" onclick="showConnectorHub()"><strong>Connectors</strong><span>Login-style integrations for GitHub, deploy, database, payments, SEO, and security.</span></div>
           <div class="tool" onclick="showGitHubProjectManager()"><strong>GitHub Projects</strong><span>Connect repo/project, create issues, and sync build tasks.</span></div>
+          <div class="tool" onclick="runSeoSecurityAudit()"><strong>SEO / Security</strong><span>Launch audit for metadata, social cards, headers, secrets, and risks.</span></div>
+          <div class="tool" onclick="showBoltParity()"><strong>Bolt Parity</strong><span>Track bolt.diy features and convert gaps into browser-first Nexus workflows.</span></div>
           <div class="tool" onclick="showBuilderPlatform()"><strong>Platform</strong><span>Providers, deploys, snapshots, locks, sessions.</span></div>
           <div class="tool" onclick="showAgentSwarm()"><strong>Agents</strong><span>Project/app agents, skills, memory, routing, automations.</span></div>
           <div class="tool" onclick="showCompetitiveBlueprint()"><strong>Roadmap</strong><span>Palot/Bolt-inspired priorities for Nexus.</span></div>
@@ -622,6 +625,179 @@
         addMessage('assistant', `Loaded ${providers.length} providers and ${deploys.length} deploy targets.`);
       } catch (error) {
         addMessage('system', `Builder platform failed: ${error.message}`);
+      }
+    }
+
+    async function showConnectorHub() {
+      try {
+        const connectors = await getApi('/api/connectors');
+        document.getElementById('browserView').innerHTML = `
+          <div class="hud"><span class="pill">Connectors</span><span class="pill">${connectors.filter(c => c.connected).length}/${connectors.length} active</span></div>
+          <div class="search-page">
+            <h1>Connectors</h1>
+            <p>Connect project services like Lovable, but keep credentials server-side and route every connector through Nexus build, QA, SEO, and security workflows.</p>
+            ${connectors.map(connector => `<article class="search-result">
+              <b>${connector.name} ${connector.connected ? 'connected' : 'not connected'}</b>
+              <small>${connector.category} · ${connector.features.join(', ')}</small>
+              <p>${connector.security?.length ? connector.security.join(' · ') : 'Local Nexus capability.'}</p>
+              ${connector.id === 'github' ? `<div class="preview-actions"><button class="btn primary" onclick="loginGitHubConnector()">Login GitHub</button><button class="btn" onclick="disconnectGitHubConnector()">Disconnect</button><button class="btn" onclick="showGitHubProjectManager()">Manage Project</button></div>` : ''}
+              ${connector.id === 'seo' || connector.id === 'security' ? `<div class="preview-actions"><button class="btn" onclick="runSeoSecurityAudit()">Run Audit</button></div>` : ''}
+            </article>`).join('')}
+          </div>`;
+        document.getElementById('researchStream').textContent = connectors.map(c => `${c.name}: ${c.connected ? 'connected' : 'not connected'}\n${c.features.join(', ')}`).join('\n\n');
+        addMessage('assistant', `Loaded ${connectors.length} connectors. GitHub supports login, issues, Projects v2, and task sync.`);
+      } catch (error) {
+        addMessage('system', `Connector hub failed: ${error.message}`);
+      }
+    }
+
+    async function loginGitHubConnector() {
+      try {
+        const result = await getApi(`/api/connectors/github/login?returnTo=${encodeURIComponent(location.pathname)}`);
+        window.open(result.url, 'nexus-github-login', 'width=980,height=820,menubar=no,toolbar=no,location=yes,status=no');
+        addMessage('system', 'Opening GitHub login. Approve access, then return to Nexus.');
+      } catch (error) {
+        addMessage('system', `GitHub login failed: ${error.message}`);
+      }
+    }
+
+    async function disconnectGitHubConnector() {
+      try {
+        await deleteApi('/api/connectors/github');
+        addMessage('assistant', 'Disconnected GitHub connector for this Nexus session.');
+        showConnectorHub();
+      } catch (error) {
+        addMessage('system', `GitHub disconnect failed: ${error.message}`);
+      }
+    }
+
+    async function showGitHubProjectManager() {
+      try {
+        const [status, connection] = await Promise.all([
+          getApi('/api/github/status'),
+          getApi('/api/github/project-connection').catch(() => null),
+        ]);
+        document.getElementById('browserView').innerHTML = `
+          <div class="hud"><span class="pill">GitHub</span><span class="pill">${status.configured ? 'token ready' : 'token missing'}</span></div>
+          <div class="search-page">
+            <h1>GitHub Project Connection</h1>
+            <p>Connect Nexus to a repo and optional GitHub Projects v2 project. Use <code>GITHUB_TOKEN</code>; secrets stay server-side.</p>
+            <div class="landing-builder">
+              <div class="label">Owner</div><input id="githubOwner" class="input" value="${escapeHtml(connection?.owner || status.owner || '')}" placeholder="owner or org">
+              <div class="label">Repo</div><input id="githubRepo" class="input" value="${escapeHtml(connection?.repo || status.repo || '')}" placeholder="repository">
+              <div class="label">Project ID optional</div><input id="githubProjectId" class="input" value="${escapeHtml(connection?.projectId || status.projectId || '')}" placeholder="GitHub Projects v2 node ID">
+              <div class="label">Project URL optional</div><input id="githubProjectUrl" class="input" value="${escapeHtml(connection?.projectUrl || status.projectUrl || '')}" placeholder="https://github.com/users/.../projects/1">
+              <div class="preview-actions">
+                <button class="btn" onclick="loginGitHubConnector()">Login GitHub</button>
+                <button class="btn primary" onclick="saveGitHubConnection()">Save Connection</button>
+                <button class="btn" onclick="listGitHubIssues()">List Issues</button>
+                <button class="btn" onclick="createGitHubIssueFromChat()">Create Issue</button>
+                <button class="btn green" onclick="syncBuildTasksToGitHub()">Sync Build Tasks</button>
+                <button class="btn" onclick="runSeoSecurityAudit()">SEO/Security</button>
+              </div>
+            </div>
+          </div>`;
+        document.getElementById('pageStatus').textContent = status.configured ? 'GitHub connector ready' : 'Login with GitHub or set GITHUB_TOKEN';
+        addMessage('assistant', status.configured ? `GitHub connector ready${status.account ? ` as ${status.account}` : ''}. Save a repo/project connection to manage work from Nexus.` : 'GitHub management UI is ready. Use Login GitHub or configure GITHUB_TOKEN.');
+      } catch (error) {
+        addMessage('system', `GitHub manager failed: ${error.message}`);
+      }
+    }
+
+    async function runSeoSecurityAudit() {
+      try {
+        const query = new URLSearchParams({ sessionId: currentSessionId || 'default', pageId: currentPageId || '', buildId: activeBuildId || '' });
+        const report = await getApi(`/api/builder/seo-security-audit?${query.toString()}`);
+        document.getElementById('researchStream').textContent = `SEO score inputs\n\n${report.seo.map(item => `- ${item}`).join('\n')}`;
+        document.getElementById('qaStream').textContent = `Security score inputs\n\n${report.security.map(item => `- ${item}`).join('\n')}`;
+        document.getElementById('taskStream').textContent = report.opencodePrompt;
+        addMessage('assistant', `SEO/Security audit score: ${report.score}/100. I generated an OpenCode repair prompt in the task stream.`);
+      } catch (error) {
+        addMessage('system', `SEO/Security audit failed: ${error.message}`);
+      }
+    }
+
+    async function showBoltParity() {
+      try {
+        const matrix = await getApi('/api/builder/bolt-parity');
+        document.getElementById('browserView').innerHTML = `
+          <div class="hud"><span class="pill">Bolt Parity</span><span class="pill">${matrix.providerCount} providers</span><span class="pill">${matrix.gaps.length} gaps</span></div>
+          <div class="search-page">
+            <h1>bolt.diy parity, Nexus browser-first</h1>
+            <p>${escapeHtml(matrix.summary)}</p>
+            ${matrix.features.map(item => `<article class="search-result">
+              <b>${escapeHtml(item.area)} · ${escapeHtml(item.nexusStatus)}</b>
+              <small>bolt.diy: ${escapeHtml(item.boltFeature)}</small>
+              <p>${escapeHtml(item.browserAdvantage)}</p>
+              <div class="preview-actions">${item.actions.map(action => `<button class="btn" onclick="sendBuilderPrompt('${escapeJs(action)}')">${escapeHtml(action)}</button>`).join('')}</div>
+            </article>`).join('')}
+          </div>`;
+        document.getElementById('researchStream').textContent = matrix.features.map(item => `${item.nexusStatus.toUpperCase()} ${item.area}\nBolt: ${item.boltFeature}\nNexus: ${item.browserAdvantage}`).join('\n\n');
+        document.getElementById('taskStream').textContent = matrix.gaps.map(item => `${item.area}\nClose gap with: ${item.actions.join(', ')}`).join('\n\n') || 'All tracked bolt.diy features are live.';
+        addMessage('assistant', `Loaded bolt.diy parity matrix: ${matrix.features.length} features tracked, ${matrix.gaps.length} gaps/partials.`);
+      } catch (error) {
+        addMessage('system', `Bolt parity failed: ${error.message}`);
+      }
+    }
+
+    async function saveGitHubConnection() {
+      try {
+        const connection = await api('/api/github/project-connection', {
+          owner: document.getElementById('githubOwner').value.trim(),
+          repo: document.getElementById('githubRepo').value.trim(),
+          projectId: document.getElementById('githubProjectId').value.trim(),
+          projectUrl: document.getElementById('githubProjectUrl').value.trim(),
+        });
+        addMessage('assistant', `Connected GitHub repo ${connection.owner}/${connection.repo}${connection.projectId ? ' with Projects v2 linking' : ''}.`);
+      } catch (error) {
+        addMessage('system', `GitHub connection failed: ${error.message}`);
+      }
+    }
+
+    async function listGitHubIssues() {
+      try {
+        const owner = document.getElementById('githubOwner')?.value.trim();
+        const repo = document.getElementById('githubRepo')?.value.trim();
+        const query = owner && repo ? `?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}` : '';
+        const issues = await getApi(`/api/github/issues${query}`);
+        document.getElementById('researchStream').textContent = issues.map(issue => `#${issue.number} ${issue.title}\n${issue.state} · ${issue.url}`).join('\n\n') || 'No issues found.';
+        addMessage('assistant', `Loaded ${issues.length} GitHub issues.`);
+      } catch (error) {
+        addMessage('system', `GitHub issue list failed: ${error.message}`);
+      }
+    }
+
+    async function createGitHubIssueFromChat() {
+      try {
+        const title = prompt('Issue title');
+        if (!title) return;
+        const body = prompt('Issue details') || 'Created from NexusBrowser project manager.';
+        const issue = await api('/api/github/issues', {
+          owner: document.getElementById('githubOwner')?.value.trim(),
+          repo: document.getElementById('githubRepo')?.value.trim(),
+          title,
+          body,
+          labels: ['nexus'],
+        });
+        addMessage('assistant', `Created GitHub issue #${issue.number}: ${issue.url}${issue.projectLinked ? '\nLinked to GitHub Project.' : ''}`);
+      } catch (error) {
+        addMessage('system', `GitHub issue creation failed: ${error.message}`);
+      }
+    }
+
+    async function syncBuildTasksToGitHub() {
+      try {
+        const tasks = document.getElementById('taskStream').textContent.split(/\n\n+/).map((block, index) => ({ title: block.split('\n')[0].replace(/^\d+\.\s*/, '') || `Nexus build task ${index + 1}`, body: block })).filter(task => task.body.trim()).slice(0, 25);
+        if (!tasks.length) return addMessage('system', 'No build tasks available. Run Research Project or Plan Mode first.');
+        const result = await api('/api/github/sync-build-tasks', {
+          owner: document.getElementById('githubOwner')?.value.trim(),
+          repo: document.getElementById('githubRepo')?.value.trim(),
+          tasks,
+        });
+        document.getElementById('qaStream').textContent = result.created.map(issue => `#${issue.number} ${issue.title}\n${issue.url}${issue.projectLinked ? '\nProject linked' : issue.projectError ? `\nProject link failed: ${issue.projectError}` : ''}`).join('\n\n');
+        addMessage('assistant', `Synced ${result.created.length} Nexus build tasks to GitHub issues.`);
+      } catch (error) {
+        addMessage('system', `GitHub task sync failed: ${error.message}`);
       }
     }
 
@@ -1244,6 +1420,14 @@
     function appendStream(id, text) {
       const el = document.getElementById(id);
       el.textContent = `${el.textContent}\n${new Date().toLocaleTimeString()} ${text}`.trim();
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    function escapeJs(value) {
+      return String(value || '').replace(/[\\']/g, char => char === '\\' ? '\\\\' : "\\'");
     }
 
     function setStatus(ok, text) {
