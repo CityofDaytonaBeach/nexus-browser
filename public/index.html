@@ -224,7 +224,9 @@
           <div class="label">Model Override</div>
           <input id="aiModel" class="input" placeholder="optional model name">
         </div>
-        <div class="section tools">
+        <details class="section">
+          <summary class="label">Advanced tools</summary>
+          <div class="tools">
           <div class="tool" onclick="runResearchProject()"><strong>Research + Plan</strong><span>Crawl, extract UI/API, create project brain and OpenCode tasks.</span></div>
           <div class="tool" onclick="runBuildOverlay()"><strong>Build Overlay</strong><span>Watch the UI reconstruction plan block by block.</span></div>
           <div class="tool" onclick="startActiveBuildPreview()"><strong>Live App Preview</strong><span>Start the generated app runtime and render it in Nexus.</span></div>
@@ -261,7 +263,8 @@
           <div class="tool" onclick="showAgentSwarm()"><strong>Agents</strong><span>Project/app agents, skills, memory, routing, automations.</span></div>
           <div class="tool" onclick="showCompetitiveBlueprint()"><strong>Roadmap</strong><span>Palot/Bolt-inspired priorities for Nexus.</span></div>
           <div class="tool" onclick="createWorkspaceSnapshot()"><strong>Snapshot</strong><span>Capture workspace manifest before edits.</span></div>
-        </div>
+          </div>
+        </details>
         <div class="section metric-grid">
           <div class="metric"><b id="endpointCount">0</b><span>endpoints</span></div>
           <div class="metric"><b id="componentCount">0</b><span>components</span></div>
@@ -358,6 +361,7 @@
     let activeBuildId = localStorage.getItem('nexus-active-build-id') || null;
     let previewLogTimer = null;
     let browserIntelTimer = null;
+    let pendingResearchAfterLoad = false;
     let lastBrowserIntelligence = '';
     let lastGathererObservationCount = 0;
     let lastBackendObservation = '';
@@ -501,6 +505,12 @@
       if (msg.type === 'page:loaded') {
         refreshScreenshot();
         refreshBrowserIntelligence(true);
+        if (pendingResearchAfterLoad) {
+          pendingResearchAfterLoad = false;
+          addMessage('system', 'Browser page loaded. Resuming research project...');
+          setTimeout(() => runResearchProject(), 1200);
+          return;
+        }
         if (pendingAutoBuild) {
           const message = pendingAutoBuild;
           pendingAutoBuild = null;
@@ -580,8 +590,36 @@
       sendWs('page:action', { pageId: currentPageId, action: { type: 'navigate', url, options: { waitUntil: 'domcontentloaded', timeout: 60000 } } });
     }
 
+    async function ensureBrowserPage(url) {
+      if (!currentSessionId || !currentPageId) {
+        const session = await api('/api/sessions', {});
+        currentSessionId = session.id;
+        currentPageId = session.activePageId || session.pages?.[0]?.id;
+        document.getElementById('sessionPill').textContent = currentSessionId.slice(0, 8);
+        addMessage('system', 'Browser agent opened a session for the current workflow.');
+      }
+      if (!currentPageId) throw new Error('Browser session did not create an active page.');
+      if (url) {
+        pendingResearchAfterLoad = true;
+        document.getElementById('urlInput').value = url;
+        navigateToUrl(url);
+      }
+    }
+
     async function runResearchProject() {
-      if (!currentSessionId || !currentPageId) return addMessage('system', 'No active browser session yet.');
+      if (!currentSessionId || !currentPageId) {
+        const build = await getActiveBuild().catch(() => null);
+        if (build?.previewUrl || activeBuildId) {
+          const preview = build?.previewUrl ? build : await api(`/api/builder/builds/${activeBuildId}/preview`, {}).catch(() => null);
+          if (preview?.previewUrl) {
+            addMessage('system', 'Browser agent is opening the generated preview so research can use real page evidence.');
+            await ensureBrowserPage(preview.previewUrl);
+            return false;
+          }
+        }
+        addMessage('system', 'No active browser session yet. Open a target URL or start a preview so Nexus can research real browser evidence.');
+        return false;
+      }
       appendStream('researchStream', 'Running full research-project compiler...');
       const result = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/research-project`, { maxPages: 8, delayMs: 2200, sameOriginOnly: true });
       updateMetrics(result.project);
@@ -589,6 +627,7 @@
       document.getElementById('taskStream').textContent = result.project.buildPlan.map(step => `${step.id}. ${step.title}: ${step.goal}`).join('\n\n');
       document.getElementById('qaStream').textContent = Object.entries(result.project.scorecard).map(([k, v]) => `${k}: ${v.score}/100`).join('\n');
       addMessage('assistant', `Research project created. Output: ${result.outputDir}`);
+      return true;
     }
 
     async function runUiIntelligence() {
@@ -1313,7 +1352,7 @@
         await refreshBackendObserver(true);
         const result = await api('/api/builder/chat', { sessionId: currentSessionId, pageId: currentPageId, activeBuildId, message, browserContext: `${lastBrowserIntelligence}\n\n${lastBackendObservation}`.trim(), mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value, ...buildBrainOptions() });
         addMessage('assistant', result.response);
-        addActionMessage(result.actions || [], result.source);
+        if (result.source === 'ai') addActionMessage(result.actions || [], result.source);
         if (result.build) showBuildStarted(result.build);
         if (result.update) showBuildUpdateStarted(result.update);
         if (pendingAutoBuild !== message) executeChatIntent(message);
@@ -1407,7 +1446,7 @@
         setTimeout(() => runBuildDoctor(/\b(auto heal|self heal|fix|repair)\b/.test(text)), 800);
       } else if (mode === 'build' || /\b(start building|build app|build mode|full app|research project)\b/.test(text)) {
         addMessage('system', 'Starting research-project compiler for OpenCode build...');
-        setTimeout(() => runResearchProject().then(() => openIDE()).catch(error => addMessage('system', `Build start failed: ${error.message}`)), 1200);
+        setTimeout(() => runResearchProject().then((ok) => { if (ok) openIDE(); }).catch(error => addMessage('system', `Build start failed: ${error.message}`)), 1200);
       } else if (mode === 'plan' || /\b(plan app|plan mode|architecture plan)\b/.test(text)) {
         addMessage('system', 'Generating plan artifacts from the active page...');
         setTimeout(() => runResearchProject().catch(error => addMessage('system', `Plan generation failed: ${error.message}`)), 1200);
@@ -1669,7 +1708,7 @@
       sourceLine.className = 'chat-source';
       sourceLine.textContent = source === 'ai' ? 'AI conductor next moves' : 'Fallback next moves';
       wrap.appendChild(sourceLine);
-      actions.slice(0, 5).forEach((action) => {
+      actions.slice(0, 2).forEach((action) => {
         const button = document.createElement('button');
         button.className = 'chat-action';
         button.type = 'button';

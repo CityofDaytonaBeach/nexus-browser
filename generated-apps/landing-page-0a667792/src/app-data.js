@@ -7,15 +7,15 @@ export default {
     "paper": "#f7fbf8"
   },
   "signature": "Web App Command Surface",
-  "metric": "10",
+  "metric": "09",
   "metricLabel": "live product systems",
   "primaryCta": "Run workflow",
   "pages": [
     {
       "id": "overview",
       "label": "Overview",
-      "headline": "a landing with daytona bikers",
-      "summary": "A working web app experience generated from your request, focused on build, landing, daytona, bikers.",
+      "headline": "daytona beach landing",
+      "summary": "A working web app experience generated from your request, focused on build, daytona, beach, landing.",
       "features": [
         "Live product shell",
         "Responsive command flow",
@@ -58,7 +58,6 @@ export default {
     "Run staging and repair loops"
   ],
   "updates": [
-    "build mode start implementing with OpenCode using the project brain and live browser preview.",
-    "build"
+    "Build mode start implementing with OpenCode using the project brain and live browser preview."
   ]
 };
