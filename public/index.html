@@ -44,14 +44,18 @@
     button, input, select, textarea { font: inherit; }
     .shell { display: grid; grid-template-rows: 48px 1fr 24px; height: 100vh; }
     .topbar { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(18px); }
+    body.chat-first { color-scheme: light; --bg: #f6f6f4; --canvas: #ffffff; --panel: rgba(255,255,255,.88); --panel-2: rgba(255,255,255,.94); --line: rgba(17,24,39,.12); --text: #171717; --muted: #73736d; --blue: #111827; --blue-soft: rgba(17,24,39,.07); --shadow: 0 28px 90px rgba(17,24,39,.12); }
     body.chat-first .topbar, body.chat-first #toolsPanel, body.chat-first .statusbar { display: none; }
     body.chat-first .shell { grid-template-rows: 1fr; }
     body.chat-first .workspace { grid-template-columns: 1fr; }
     body.chat-first .mode-tabs, body.chat-first .build-stream { display: none; }
     body.chat-first .hud { display: none; }
     body.chat-first .center { grid-template-rows: 1fr; }
-    body.chat-first #chatPanel:not(.open) { display: none; }
-    body.chat-first #chatPanel.open { box-shadow: var(--shadow); }
+    body.chat-first #chatPanel:not(.open) { display: flex; }
+    body.chat-first #chatPanel.open, body.chat-first #chatPanel { inset: 50% auto auto 50%; width: min(760px, calc(100vw - 28px)); height: min(760px, calc(100vh - 28px)); border-radius: 28px; transform: translate(-50%, -50%); opacity: 1; pointer-events: auto; box-shadow: var(--shadow), 0 0 80px rgba(99,102,241,.09); }
+    body.chat-first .chat-briefing, body.chat-first .chat-actions { display: none; }
+    body.chat-first .panel-title { padding: 14px 16px; color: var(--muted); border-bottom-color: rgba(17,24,39,.1); }
+    body.chat-first .panel-title button { display: none; }
     .brand { width: 132px; font-size: 12px; font-weight: 760; letter-spacing: .08em; color: var(--text); }
     .browser-tabs { display: flex; align-items: center; gap: 6px; max-width: 34vw; overflow: auto; }
     .browser-tab { display: inline-flex; align-items: center; gap: 6px; max-width: 180px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
@@ -86,13 +90,15 @@
     .mode-tabs { display: flex; gap: 6px; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(18px); }
     .tab { border: 1px solid transparent; color: var(--muted); border-radius: 999px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
     .tab.active { color: var(--text); border-color: var(--line); background: var(--panel-2); }
-    .preview { position: relative; min-height: 0; overflow: hidden; background: linear-gradient(180deg,var(--canvas),var(--preview-grid-b)); }
+    .preview { position: relative; min-height: 0; overflow: hidden; background: radial-gradient(circle at 20% 15%, rgba(109,94,252,.16), transparent 28%), radial-gradient(circle at 82% 28%, rgba(34,211,238,.18), transparent 30%), linear-gradient(180deg,#fbfbfa,#f6f6f4 58%,#ededeb); }
+    body.chat-first .preview::before { content: '010101  NEXUS  BUILD  ROUTE  AGENT  STAGE  VERIFY  SHIP\A function build(){ return evidence.map(code).test(); }\A 101101  BROWSER  DOM  NETWORK  API  QA  MOBILE  DEPLOY\A const agents = [gatherer, browser, backend, opencode, staging];\A 011010  SNAPSHOT  REACT  VITALS  MCP  SUPABASE  STRIPE\A while(goal){ research(); implement(); preview(); heal(); }\A 110011  TYPESCRIPT  TAILWIND  NODE  GITHUB  VERCEL\A export default async function awesome(){ await nexus.run(); }'; position: absolute; inset: -40% -10% 0; z-index: 0; white-space: pre; color: rgba(17,24,39,.08); font: 700 18px/1.8 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .18em; transform: rotate(-8deg); animation: matrixRain 18s linear infinite; pointer-events: none; }
+    body.chat-first .preview::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, transparent 0 48%, rgba(109,94,252,.08) 49%, transparent 51% 100%), radial-gradient(circle at 50% 52%, rgba(34,211,238,.12), transparent 24%), repeating-linear-gradient(180deg, rgba(17,24,39,.025) 0 1px, transparent 1px 5px); animation: codePulse 5s ease-in-out infinite; }
     .preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .app-frame { width: 100%; height: 100%; border: 0; background: white; display: block; }
-    .search-page { height: 100%; overflow: auto; padding: 72px min(7vw,72px) 40px; }
+    .search-page { position: relative; z-index: 2; height: 100%; overflow: auto; padding: 72px min(7vw,72px) 40px; color: var(--text); }
     .search-page h1 { font-size: clamp(26px,4vw,52px); letter-spacing: -.06em; margin-bottom: 18px; }
-    .search-result { display: grid; gap: 7px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); padding: 16px; margin-bottom: 10px; cursor: pointer; }
-    .search-result:hover { border-color: var(--text); background: var(--panel-2); }
+    .search-result { display: grid; gap: 7px; border: 1px solid rgba(17,24,39,.12); border-radius: 18px; background: rgba(255,255,255,.78); padding: 16px; margin-bottom: 10px; cursor: pointer; backdrop-filter: blur(20px); box-shadow: 0 16px 50px rgba(17,24,39,.08); }
+    .search-result:hover { border-color: rgba(17,24,39,.42); background: rgba(255,255,255,.95); }
     .search-result b { font-size: 17px; }
     .search-result small { color: var(--muted); overflow-wrap: anywhere; }
     .search-result p { color: var(--muted); line-height: 1.45; }
@@ -113,12 +119,13 @@
     .build-block.live { opacity: 1; transform: scale(1); }
     .build-block.done { border-color: rgba(34,197,94,.9); background: rgba(34,197,94,.12); box-shadow: 0 0 0 1px rgba(15,23,42,.2); }
     .block-label { position: absolute; left: 0; top: -24px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 999px; background: rgba(3,7,18,.88); color: white; padding: 4px 8px; font-size: 11px; }
-    .empty { height: 100%; display: grid; place-items: center; color: var(--text); text-align: center; padding: 30px; }
+    .empty { position: relative; z-index: 2; height: 100%; display: grid; place-items: center; color: var(--text); text-align: center; padding: 30px; }
+    .empty::before { content: '<Nexus />\A chat -> plan -> build -> stage -> ship'; position: absolute; top: 12%; left: 50%; transform: translateX(-50%); color: rgba(17,24,39,.16); white-space: pre; font: 700 clamp(18px,3vw,42px)/1.35 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: -.04em; text-shadow: 0 0 40px rgba(109,94,252,.18); animation: floatCode 6s ease-in-out infinite; }
     .empty h1 { font-size: clamp(24px, 4vw, 48px); line-height: .95; margin-bottom: 10px; }
-    .landing-builder { width: min(720px, 94vw); border: 1px solid var(--line); border-radius: 24px; background: var(--panel); box-shadow: var(--shadow); padding: 22px; backdrop-filter: blur(18px); color: var(--text); text-align: left; }
+    .landing-builder { width: min(720px, 94vw); border: 1px solid rgba(17,24,39,.12); border-radius: 24px; background: rgba(255,255,255,.82); box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.8); padding: 22px; backdrop-filter: blur(22px); color: var(--text); text-align: left; }
     .landing-minimal { width: min(760px, 92vw); padding: 10px; border-radius: 20px; }
     .landing-builder p { color: var(--muted); margin-bottom: 14px; font-size: 14px; }
-    .landing-chat { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel-2); }
+    .landing-chat { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px; border: 1px solid rgba(17,24,39,.1); border-radius: 16px; background: rgba(255,255,255,.92); }
     .landing-chat textarea { min-height: 68px; resize: none; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 14px; line-height: 1.45; }
     .landing-minimal .landing-chat textarea { min-height: 54px; font-size: 16px; padding: 8px; }
     .landing-chat button { align-self: end; }
@@ -141,10 +148,10 @@
     .command-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .command-grid button { border: 1px solid var(--line); border-radius: 11px; background: transparent; color: var(--text); padding: 7px 8px; cursor: pointer; font-size: 11px; text-align: left; }
     .command-grid button:hover { border-color: var(--text); background: var(--blue-soft); }
-    .messages { flex: 1; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-    .msg { max-width: 94%; border: 1px solid var(--line); border-radius: 14px; padding: 10px 11px; white-space: pre-wrap; font-size: 13px; line-height: 1.42; }
-    .msg.user { align-self: flex-end; background: var(--text); color: var(--bg); border-color: var(--text); }
-    .msg.assistant { align-self: flex-start; background: var(--panel-2); }
+    .messages { flex: 1; overflow: auto; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+    .msg { max-width: 94%; border: 1px solid var(--line); border-radius: 16px; padding: 11px 12px; white-space: pre-wrap; font-size: 13px; line-height: 1.45; }
+    .msg.user { align-self: flex-end; background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 650; }
+    .msg.assistant { align-self: flex-start; background: rgba(255,255,255,.9); }
     .msg.system { align-self: center; color: var(--muted); background: transparent; border: 0; font-size: 12px; }
     .chat-actions { align-self: flex-start; display: grid; gap: 6px; width: 94%; }
     .chat-action { border: 1px solid var(--line); border-radius: 13px; padding: 8px 10px; background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
@@ -152,8 +159,9 @@
     .chat-action b { display: block; font-size: 12px; margin-bottom: 2px; }
     .chat-action span { display: block; color: var(--muted); font-size: 11px; line-height: 1.35; }
     .chat-source { color: var(--muted); font-size: 10px; padding-left: 2px; }
-    .composer { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
-    .composer textarea { min-height: 74px; resize: none; border: 1px solid var(--line); border-radius: 16px; padding: 10px; color: var(--text); background: var(--panel-2); outline: none; font-size: 13px; }
+    .composer { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 14px; border-top: 1px solid rgba(17,24,39,.1); }
+    .composer textarea { min-height: 84px; resize: none; border: 1px solid rgba(17,24,39,.12); border-radius: 18px; padding: 12px; color: var(--text); background: rgba(255,255,255,.95); outline: none; font-size: 14px; box-shadow: inset 0 0 28px rgba(17,24,39,.03); }
+    .composer textarea:focus { border-color: rgba(17,24,39,.48); box-shadow: 0 0 0 3px rgba(109,94,252,.1), inset 0 0 28px rgba(17,24,39,.04); }
     .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .metric { border: 1px solid var(--line); border-radius: 9px; padding: 7px; background: var(--panel-2); }
     .metric b { display: block; font-size: 16px; }
@@ -161,7 +169,10 @@
     .statusbar { display: flex; gap: 12px; align-items: center; padding: 4px 10px; border-top: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 10px; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 6px; }
     .dot.bad { background: var(--red); }
-    @media (max-width: 720px) { .browser-tabs { max-width: 28vw; } .panel { width: calc(100vw - 24px); } .build-stream { display: none; } .center { grid-template-rows: 40px 1fr; } }
+    @keyframes matrixRain { from { transform: translateY(-18%) rotate(-8deg); } to { transform: translateY(18%) rotate(-8deg); } }
+    @keyframes codePulse { 0%,100% { opacity: .45; filter: hue-rotate(0deg); } 50% { opacity: .85; filter: hue-rotate(45deg); } }
+    @keyframes floatCode { 0%,100% { transform: translate(-50%, 0); opacity: .4; } 50% { transform: translate(-50%, -16px); opacity: .75; } }
+    @media (max-width: 720px) { .browser-tabs { max-width: 28vw; } .panel { width: calc(100vw - 24px); } .build-stream { display: none; } .center { grid-template-rows: 40px 1fr; } body.chat-first #chatPanel.open, body.chat-first #chatPanel { width: calc(100vw - 18px); height: calc(100vh - 18px); border-radius: 22px; } body.chat-first .preview::before { font-size: 13px; } }
   </style>
 </head>
 <body class="chat-first">
@@ -312,29 +323,30 @@
         </div>
       </section>
 
-      <aside class="panel right" id="chatPanel">
-        <div class="panel-title"><span>Chat</span><span><span id="wsBadge"><span class="dot bad"></span>offline</span> <button class="btn" onclick="popoutChat()">Popout</button> <button class="btn" onclick="toggleChat(false)">Hide</button></span></div>
+      <aside class="panel right open" id="chatPanel">
+        <div class="panel-title"><span>Nexus Chat</span><span id="wsBadge"><span class="dot bad"></span>offline</span></div>
         <div class="chat">
           <div class="chat-briefing">
-            <div class="label">Nexus Developer Employees</div>
+            <div class="label">Unified Nexus Brain</div>
             <div class="agent-strip">
               <div class="agent-chip"><b>Gatherer</b><span id="gathererStatus">waiting for page</span></div>
               <div class="agent-chip"><b>Backend Observer</b><span id="backendStatus">waiting for build</span></div>
               <div class="agent-chip"><b>Mobile/Kiosk QA</b><span>desktop · tablet · phone</span></div>
-              <div class="agent-chip"><b>OpenCode</b><span>build · fix · verify</span></div>
+              <div class="agent-chip"><b>Agent Browser</b><span>saved evidence · web actions</span></div>
             </div>
             <div class="command-grid">
               <button onclick="smartCommand('diagnose')">Diagnose like DevTools</button>
               <button onclick="smartCommand('mobile')">Test mobile/kiosk</button>
               <button onclick="smartCommand('backend')">Map backend/API</button>
-              <button onclick="smartCommand('employee')">Hire dev employees</button>
+              <button onclick="smartCommand('agentBrowser')">Run Agent Browser</button>
+              <button onclick="smartCommand('setup')">Smart Setup</button>
             </div>
           </div>
           <div class="messages" id="messages">
-            <div class="msg system">Nexus Command Chat watches the real browser, backend, logs, APIs, and previews before it builds.</div>
+            <div class="msg system">Nexus Command Chat shares evidence across Gatherer, Agent Browser, Backend Observer, OpenCode builds, connectors, and QA before it answers or builds.</div>
           </div>
           <div class="composer">
-            <textarea id="chatInput" placeholder="Build an app, then say things like: add pages, change the style, fix the preview, run staging." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+            <textarea id="chatInput" placeholder="Ask, build, fix, QA, deploy, or use /agent-browser snapshot. Nexus will combine all evidence." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
             <button class="btn primary" onclick="sendChat()">Send</button>
           </div>
         </div>
@@ -1208,7 +1220,7 @@
         const build = await getActiveBuild();
         if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
         appendStream('qaStream', `Staging Studio preparing multi-device preview for ${build.name}...`);
-        const report = await api(`/api/builder/builds/${build.id}/staging`, { devices: ['desktop', 'tablet', 'mobile', 'game'], runDoctor: false });
+        const report = await api(`/api/builder/builds/${build.id}/staging`, { sessionId: currentSessionId || 'default', runDoctor: false });
         document.getElementById('outputPath').textContent = report.outputDir;
         showStagingStudio(report);
         document.getElementById('researchStream').textContent = `Staging Studio\n${report.summary}\n\nDevices:\n${report.devices.map(check => `- ${check.device.name}: ${check.status} ${check.device.width}x${check.device.height}, HTTP ${check.healthCode || 'n/a'}, ${check.latencyMs || 0}ms`).join('\n')}`;
@@ -1349,13 +1361,12 @@
       try {
         applyModeFromMessage(message);
         if (maybeShowChatStatus(message)) return;
-        if (maybeAskBuildIntake(message)) return;
         if (prepareBrowserGrounding(message)) return;
         await refreshBrowserIntelligence(true);
         await refreshBackendObserver(true);
         const result = await api('/api/builder/chat', { sessionId: currentSessionId, pageId: currentPageId, activeBuildId, message, browserContext: `${lastBrowserIntelligence}\n\n${lastBackendObservation}`.trim(), mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value, ...buildBrainOptions() });
         addMessage('assistant', result.response);
-        if (result.source === 'ai') addActionMessage(result.actions || [], result.source);
+        if (result.source === 'ai' || result.source === 'agent-browser') addActionMessage(result.actions || [], result.source);
         if (result.build) showBuildStarted(result.build);
         if (result.update) showBuildUpdateStarted(result.update);
         if (pendingAutoBuild !== message) executeChatIntent(message);
@@ -1592,6 +1603,8 @@
         mobile: 'Run mobile and kiosk QA thinking. Check desktop, tablet, mobile touch, fullscreen kiosk, app-store screenshot, accessibility, responsive overflow, touch targets, and visual regression risks for this app.',
         backend: 'Map the backend and API functionality. Identify package scripts, dependencies, server routes, data models, env keys, auth/session behavior, API request shapes, storage, logs, and what must be duplicated.',
         employee: 'Use the Twin-inspired developer employee model. Assign Browser Gatherer, Backend Observer, Full-Stack Architect, OpenCode Implementer, Mobile/Kiosk QA, Integration Builder, and Release Operator to this project with triggers and outputs.',
+        agentBrowser: '/agent-browser chat "inspect the current page, summarize what is interactive, and suggest the next browser action"',
+        setup: 'Plan smart project setup before building. Infer the project type and stack, ask only missing critical questions, then connect chat, project setup, staging, Build Doctor, Agent Browser, Backend Observer, OpenCode, QA, and deploy into one workflow.',
       };
       document.getElementById('chatInput').value = prompts[kind] || prompts.diagnose;
       toggleChat(true);
@@ -1735,7 +1748,7 @@
       wrap.className = 'chat-actions';
       const sourceLine = document.createElement('div');
       sourceLine.className = 'chat-source';
-      sourceLine.textContent = source === 'ai' ? 'AI conductor next moves' : 'Fallback next moves';
+      sourceLine.textContent = source === 'agent-browser' ? 'Agent Browser next moves' : source === 'ai' ? 'AI conductor next moves' : 'Fallback next moves';
       wrap.appendChild(sourceLine);
       actions.slice(0, 2).forEach((action) => {
         const button = document.createElement('button');

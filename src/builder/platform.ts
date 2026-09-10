@@ -3,6 +3,7 @@ import * as path from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { v4 as uuid } from 'uuid';
 import { chromium } from 'playwright';
+import { config } from '../core/config';
 import { getLanguageExperts, LanguageExpertProfile } from '../languages/registry';
 import { getProjectAgentSwarm } from '../project-agents/registry';
 
@@ -39,13 +40,24 @@ export interface OpenCodeSessionStub {
   createdAt: string;
 }
 
+export interface CodeExecutionBackend {
+  id: 'local' | 'remote' | 'custom';
+  name: string;
+  kind: 'opencode-cli' | 'codex-server' | 'opencode-server' | 'custom-server';
+  command?: string;
+  url?: string;
+  model?: string;
+  status: 'configured' | 'missing-config';
+  notes: string[];
+}
+
 export type BuildBrainMode = 'opencode' | 'hybrid' | 'ollama' | 'cloud';
 
 export interface BuildBrainProfile {
   mode: BuildBrainMode;
   provider: string;
   model?: string;
-  executor: 'opencode' | 'nexus-fallback';
+  executor: 'opencode' | 'remote-codex' | 'custom-opencode' | 'nexus-fallback';
   notes: string[];
 }
 
@@ -269,6 +281,37 @@ export class BuilderPlatform {
     ];
   }
 
+  getCodeExecutionBackends(): CodeExecutionBackend[] {
+    const cfg = config.get().codeExecution;
+    return [
+      {
+        id: 'local',
+        name: 'Local CLI',
+        kind: 'opencode-cli',
+        command: `${cfg.localCli} ${cfg.localArgs.join(' ')}`.trim(),
+        model: cfg.ollamaModel,
+        status: cfg.localCli ? 'configured' : 'missing-config',
+        notes: ['Runs on this machine.', `Ollama URL: ${cfg.ollamaBaseUrl}`, 'Use for private/local builds, including Ollama-backed coding models.'],
+      },
+      {
+        id: 'remote',
+        name: cfg.remoteKind === 'codex' ? 'Remote Codex Server' : 'Remote OpenCode Server',
+        kind: cfg.remoteKind === 'codex' ? 'codex-server' : 'opencode-server',
+        url: cfg.remoteUrl,
+        status: cfg.remoteUrl ? 'configured' : 'missing-config',
+        notes: ['Runs build/update/repair prompts on a cloud or LAN agent server.', 'Expected endpoint: POST /runs with { workspace, prompt, mode, metadata }.'],
+      },
+      {
+        id: 'custom',
+        name: 'Custom Code Server',
+        kind: 'custom-server',
+        url: cfg.remoteUrl,
+        status: cfg.remoteUrl ? 'configured' : 'missing-config',
+        notes: ['Use for your own OpenCode-compatible, Codex-compatible, or custom executor service.', 'Set CODE_EXECUTION_REMOTE_KIND=custom.'],
+      },
+    ];
+  }
+
   private createBuildBrain(mode: BuildBrainMode, provider: string, model?: string): BuildBrainProfile {
     const normalizedProvider = provider || (mode === 'ollama' ? 'ollama' : mode === 'opencode' ? 'opencode' : 'openai');
     const defaultModel = model || (normalizedProvider === 'ollama' ? process.env.OLLAMA_MODEL || 'qwen2.5-coder' : normalizedProvider === 'anthropic' ? process.env.ANTHROPIC_MODEL : normalizedProvider === 'gemini' ? process.env.GEMINI_MODEL : process.env.OPENAI_MODEL);
@@ -276,14 +319,14 @@ export class BuilderPlatform {
       mode,
       provider: normalizedProvider,
       model: defaultModel,
-      executor: 'opencode',
+      executor: this.currentExecutorId(),
       notes: mode === 'opencode'
-        ? ['OpenCode performs planning, file edits, commands, and repair directly.']
+        ? [`${this.currentExecutorLabel()} performs planning, file edits, commands, and repair directly.`]
         : mode === 'hybrid'
-          ? ['Nexus routes strategy to the selected AI provider, then OpenCode executes file edits and shell commands.', 'Use this as the default for strongest app-building behavior.']
+          ? [`Nexus routes strategy to the selected AI provider, then ${this.currentExecutorLabel()} executes file edits and shell commands.`, 'Use this as the default for strongest app-building behavior.']
           : mode === 'ollama'
-            ? ['Use local Ollama for private planning/review when available, with OpenCode as executor.', 'Falls back to Nexus deterministic builder if local model is unavailable.']
-            : ['Use selected cloud AI for planning/code reasoning, with OpenCode as executor and Nexus browser QA.'],
+            ? [`Use local Ollama (${config.get().codeExecution.ollamaModel}) for private planning/review when available, with ${this.currentExecutorLabel()} as executor.`, 'Falls back to Nexus deterministic builder if local model is unavailable.']
+            : [`Use selected cloud AI for planning/code reasoning, with ${this.currentExecutorLabel()} as executor and Nexus browser QA.`],
     };
   }
 
@@ -298,6 +341,110 @@ export class BuilderPlatform {
     };
     this.sessions.set(session.id, session);
     return session;
+  }
+
+  private currentExecutorId(): BuildBrainProfile['executor'] {
+    const cfg = config.get().codeExecution;
+    if (cfg.mode === 'remote' && cfg.remoteKind === 'codex') return 'remote-codex';
+    if (cfg.mode === 'remote' || cfg.mode === 'custom') return 'custom-opencode';
+    return 'opencode';
+  }
+
+  private currentExecutorLabel(): string {
+    const cfg = config.get().codeExecution;
+    if (cfg.mode === 'local') return `${cfg.localCli} local CLI`;
+    if (cfg.remoteKind === 'codex') return 'remote Codex server';
+    if (cfg.remoteKind === 'custom') return 'custom code server';
+    return 'remote OpenCode server';
+  }
+
+  private codeExecutionCommand(prompt: string): string {
+    const cfg = config.get().codeExecution;
+    if (cfg.mode === 'local') return `${cfg.localCli} ${cfg.localArgs.concat([JSON.stringify(prompt)]).join(' ')}`;
+    return `${cfg.remoteKind} server ${cfg.remoteUrl || '(CODE_EXECUTION_REMOTE_URL not set)'}`;
+  }
+
+  private launchCodeExecution(workspace: string, prompt: string, mode: string, logPath: string, onExit?: (code: number | null) => void, onError?: (error: Error) => void): ChildProcess | undefined {
+    const cfg = config.get().codeExecution;
+    fs.writeFileSync(logPath, `Nexus code execution backend: ${cfg.mode} (${cfg.remoteKind})\nWorkspace: ${workspace}\nMode: ${mode}\n\n`, { flag: 'a' });
+
+    if (cfg.mode === 'remote' || cfg.mode === 'custom') {
+      void this.callRemoteCodeExecution(workspace, prompt, mode, logPath)
+        .then(() => onExit?.(0))
+        .catch((error) => onError?.(error));
+      return undefined;
+    }
+
+    const commandParts = process.platform === 'win32'
+      ? { command: 'cmd.exe', args: ['/c', cfg.localCli, ...cfg.localArgs, prompt] }
+      : { command: cfg.localCli, args: [...cfg.localArgs, prompt] };
+    const child = spawn(commandParts.command, commandParts.args, {
+      cwd: workspace,
+      env: {
+        ...process.env,
+        OLLAMA_BASE_URL: cfg.ollamaBaseUrl,
+        OLLAMA_MODEL: cfg.ollamaModel,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: false,
+      windowsHide: true,
+    });
+    const log = fs.createWriteStream(logPath, { flags: 'a' });
+    child.stdout.pipe(log);
+    child.stderr.pipe(log);
+    child.on('exit', (code) => {
+      log.write(`\nCode executor exited with code ${code}\n`);
+      onExit?.(code);
+    });
+    child.on('error', (error) => {
+      log.write(`\nCode executor failed to start: ${error.message}\n`);
+      onError?.(error);
+    });
+    return child;
+  }
+
+  private async callRemoteCodeExecution(workspace: string, prompt: string, mode: string, logPath: string): Promise<void> {
+    const cfg = config.get().codeExecution;
+    if (!cfg.remoteUrl) throw new Error('CODE_EXECUTION_REMOTE_URL is required for remote/custom code execution');
+
+    const response = await fetch(`${cfg.remoteUrl.replace(/\/$/, '')}/runs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(cfg.remoteApiKey ? { Authorization: `Bearer ${cfg.remoteApiKey}` } : {}),
+      },
+      body: JSON.stringify({
+        workspace,
+        prompt,
+        mode,
+        kind: cfg.remoteKind,
+        metadata: {
+          source: 'nexus-browser',
+          ollamaBaseUrl: cfg.ollamaBaseUrl,
+          ollamaModel: cfg.ollamaModel,
+        },
+      }),
+    });
+    const text = await response.text();
+    fs.writeFileSync(logPath, `${text}\n`, { flag: 'a' });
+    if (!response.ok) throw new Error(`Remote code executor failed: ${response.status} ${text}`);
+  }
+
+  private async runCodeExecutionBlocking(workspace: string, prompt: string, mode: string, logPath: string, timeoutMs: number): Promise<{ stdout: string; stderr: string; code: number | null; timedOut: boolean }> {
+    const cfg = config.get().codeExecution;
+    if (cfg.mode === 'remote' || cfg.mode === 'custom') {
+      try {
+        await this.callRemoteCodeExecution(workspace, prompt, mode, logPath);
+        return { stdout: 'Remote code executor completed.', stderr: '', code: 0, timedOut: false };
+      } catch (error: any) {
+        return { stdout: '', stderr: error.message, code: 1, timedOut: false };
+      }
+    }
+
+    const commandParts = process.platform === 'win32'
+      ? { command: 'cmd.exe', args: ['/c', cfg.localCli, ...cfg.localArgs, prompt] }
+      : { command: cfg.localCli, args: [...cfg.localArgs, prompt] };
+    return this.runCommand(workspace, commandParts.command, commandParts.args, timeoutMs);
   }
 
   getOpenCodeSessions(): OpenCodeSessionStub[] {
@@ -317,7 +464,7 @@ export class BuilderPlatform {
     this.writeStarterApp(root, name, prompt);
     fs.writeFileSync(path.join(root, 'OPENCODE_BUILD_PROMPT.md'), opencodePrompt);
 
-    const command = `opencode run ${JSON.stringify(opencodePrompt)}`;
+    const command = this.codeExecutionCommand(opencodePrompt);
     const build: BuildWorkspace = {
       id,
       name,
@@ -334,31 +481,15 @@ export class BuilderPlatform {
     };
 
     try {
-      const commandParts = process.platform === 'win32'
-        ? { command: 'cmd.exe', args: ['/c', 'opencode', 'run', opencodePrompt] }
-        : { command: 'opencode', args: ['run', opencodePrompt] };
-      const child = spawn(commandParts.command, commandParts.args, {
-        cwd: root,
-        env: process.env,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        shell: false,
-        windowsHide: true,
-      });
-      const log = fs.createWriteStream(logPath, { flags: 'a' });
-      child.stdout.pipe(log);
-      child.stderr.pipe(log);
-      child.on('exit', (code) => {
-        log.write(`\nOpenCode exited with code ${code}\n`);
+      const child = this.launchCodeExecution(root, opencodePrompt, options.mode || 'build', logPath, () => {
         this.buildProcesses.delete(id);
-      });
-      child.on('error', (error) => {
-        log.write(`\nOpenCode failed to start: ${error.message}\n`);
+      }, () => {
         build.status = 'opencode-unavailable';
       });
-      this.buildProcesses.set(id, child);
+      if (child) this.buildProcesses.set(id, child);
       build.status = 'opencode-running';
-    } catch {
-      fs.writeFileSync(logPath, `OpenCode could not be launched automatically. Run this manually from ${root}:\n${command}\n`);
+    } catch (error: any) {
+      fs.writeFileSync(logPath, `Code executor could not be launched automatically. Run this manually from ${root}:\n${command}\n\n${error.message}\n`);
       build.status = 'opencode-unavailable';
     }
 
@@ -400,23 +531,13 @@ export class BuilderPlatform {
       this.addProjectMemory(buildId, { type: 'decision', summary: `Chat update requested: ${message}`, evidence: [outputDir], tags: ['chat-update', options.uiLook || 'modern-saas'] });
       return run;
     }
-    const commandParts = process.platform === 'win32'
-      ? { command: 'cmd.exe', args: ['/c', 'opencode', 'run', prompt] }
-      : { command: 'opencode', args: ['run', prompt] };
     try {
-      const child = spawn(commandParts.command, commandParts.args, { cwd: build.root, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], shell: false, windowsHide: true });
-      const log = fs.createWriteStream(logPath, { flags: 'a' });
-      child.stdout.pipe(log);
-      child.stderr.pipe(log);
-      child.on('exit', (code) => {
-        log.write(`\nChat update exited with code ${code}\n`);
+      this.launchCodeExecution(build.root, prompt, options.mode || 'update', logPath, (code) => {
         run.status = code === 0 ? 'completed' : 'failed';
         session.status = run.status;
         this.stopPreview(buildId);
         this.startPreview(buildId);
-      });
-      child.on('error', (error) => {
-        log.write(`\nChat update failed to start: ${error.message}\n`);
+      }, () => {
         run.status = 'failed';
         session.status = 'failed';
       });
@@ -756,10 +877,7 @@ export class BuilderPlatform {
 
       const healLogPath = path.join(report.outputDir, `auto-heal-loop-pass-${pass}.log`);
       fs.writeFileSync(healLogPath, `Auto-heal loop ${id}, pass ${pass}\n\n`, { flag: 'a' });
-      const commandParts = process.platform === 'win32'
-        ? { command: 'cmd.exe', args: ['/c', 'opencode', 'run', report.repairPrompt] }
-        : { command: 'opencode', args: ['run', report.repairPrompt] };
-      const result = await this.runCommand(build.root, commandParts.command, commandParts.args, timeoutMs);
+      const result = await this.runCodeExecutionBlocking(build.root, report.repairPrompt, 'auto-heal-loop', healLogPath, timeoutMs);
       fs.writeFileSync(healLogPath, `${result.stdout}\n${result.stderr}\n`, { flag: 'a' });
       healLogs.push({ pass, code: result.code, timedOut: result.timedOut, logPath: healLogPath });
       this.stopPreview(buildId);
@@ -1041,21 +1159,11 @@ export class BuilderPlatform {
     this.createSnapshot(build.root, `auto-heal before doctor report ${report.id}`);
     const session = this.createOpenCodeSession(build.root, report.repairPrompt, 'auto-heal');
     session.status = 'running';
-    const commandParts = process.platform === 'win32'
-      ? { command: 'cmd.exe', args: ['/c', 'opencode', 'run', report.repairPrompt] }
-      : { command: 'opencode', args: ['run', report.repairPrompt] };
     const healLogPath = path.join(report.outputDir, 'auto-heal.log');
     try {
-      const child = spawn(commandParts.command, commandParts.args, { cwd: build.root, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], shell: false, windowsHide: true });
-      const log = fs.createWriteStream(healLogPath, { flags: 'a' });
-      child.stdout.pipe(log);
-      child.stderr.pipe(log);
-      child.on('exit', (code) => {
-        log.write(`\nAuto-heal exited with code ${code}\n`);
+      this.launchCodeExecution(build.root, report.repairPrompt, 'auto-heal', healLogPath, (code) => {
         session.status = code === 0 ? 'completed' : 'failed';
-      });
-      child.on('error', (error) => {
-        log.write(`\nAuto-heal failed to start: ${error.message}\n`);
+      }, () => {
         session.status = 'failed';
       });
     } catch (error: any) {

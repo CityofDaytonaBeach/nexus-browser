@@ -1,0 +1,41 @@
+{
+  "memories": [
+    {
+      "id": "28bd3cf5-0943-4237-8dbb-bafa0716724d",
+      "scope": "session",
+      "content": "User asked: build bike wekk\nMode: ui-builder\nActive build: d8b5e948",
+      "tags": [
+        "builder-chat",
+        "ui-builder",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1789045061307,
+      "updatedAt": 1789045061307
+    }
+  ],
+  "skills": [
+    {
+      "id": "97947c20-90d1-44ad-a37b-353b004f0f78",
+      "name": "Autonomous Vibe Coding Browser Loop",
+      "description": "Browser-native loop for turning chat intent into research, build, preview, QA, repair, and durable memory.",
+      "trigger": "Use when chat asks Nexus to build, clone, repair, improve, debug, automate, or act autonomously.",
+      "steps": [
+        "Capture live browser evidence: page, DOM, styles, console, network, storage, screenshots, and responsive state.",
+        "Classify the work: research, plan, build, update, repair, integration, QA, deploy, or recurring operation.",
+        "Delegate to specialist agents when parallel research, coding, backend mapping, QA, or memory work helps.",
+        "Start or update OpenCode with browser/backend/runtime context, then verify with preview, Build Doctor, and visual QA.",
+        "Persist decisions, failures, repairs, user preferences, and reusable procedures back into runtime memory and skills."
+      ],
+      "successCount": 0,
+      "failureCount": 0,
+      "lessons": [
+        "Refreshed from chat intent: build bike wekk"
+      ],
+      "createdAt": 1789045061311,
+      "updatedAt": 1789045061311
+    }
+  ],
+  "delegations": [],
+  "jobs": []
+}

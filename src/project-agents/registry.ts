@@ -3,6 +3,7 @@ export interface ProjectAgentSpec {
   name: string;
   role: string;
   mode: 'research' | 'plan' | 'build' | 'review' | 'operate';
+  runtime?: 'nexus' | 'nexus-native';
   modelRouting: string[];
   tools: string[];
   memory: string[];
@@ -13,10 +14,45 @@ export interface ProjectAgentSpec {
 
 export interface AgentSwarmPlan {
   philosophy: string;
+  nativeAgentRuntime: NexusNativeAgentIntegration;
   sharedKnowledge: string[];
   agents: ProjectAgentSpec[];
   workflows: Array<{ name: string; trigger: string; agents: string[]; output: string }>;
 }
+
+export interface NexusNativeAgentIntegration {
+  storage: string;
+  apiBase: string;
+  commands: {
+    state: string;
+    memory: string;
+    skills: string;
+    delegations: string;
+    jobs: string;
+  };
+  capabilities: string[];
+}
+
+const NEXUS_NATIVE_AGENT_RUNTIME: NexusNativeAgentIntegration = {
+  storage: '.nexus/agent-runtime/state.json',
+  apiBase: '/api/agent-runtime',
+  commands: {
+    state: 'GET /api/agent-runtime',
+    memory: 'POST /api/agent-runtime/memory and GET /api/agent-runtime/memory/search?q=',
+    skills: 'POST /api/agent-runtime/skills',
+    delegations: 'POST /api/agent-runtime/delegations',
+    jobs: 'POST /api/agent-runtime/jobs and DELETE /api/agent-runtime/jobs/:id',
+  },
+  capabilities: [
+    'persistent memory and session search',
+    'self-improving Nexus coding skills',
+    'chat-triggered specialist agent delegation',
+    'recurring autonomous build, QA, research, and memory jobs',
+    'browser-first evidence loop using DOM, styles, console, network, screenshots, and backend observations',
+    'OpenCode build/update handoff with runtime memory and matching skills',
+    'MCP, API, integration, QA, and release tooling plans',
+  ],
+};
 
 const SHARED_ADVANCED_KNOWLEDGE = [
   'NexusBrowser advantage: treat the browser as the development brain, not just a preview. Use live pages, screenshots, DOM, computed styles, console logs, network traffic, storage, cookies, API discovery, accessibility signals, and visual QA as evidence for every coding decision.',
@@ -45,6 +81,7 @@ const SHARED_AGENT_RULES = [
   'When diagnosing failures, classify the layer first: requirements, package manager, language/compiler, framework, runtime, API, database, auth, browser, deployment, or design.',
   'Do not invent credentials, APIs, files, or successful test results. Redact secrets and ask for permission before destructive or external-risk actions.',
   'Persist durable decisions, successful repairs, failed repairs, environment assumptions, and user preferences into project memory.',
+  'Use the Nexus Native Agent Runtime when the user asks for persistent memory, self-improving skills, recurring work, vibe coding autonomy, or parallel specialist delegation.',
 ];
 
 export function getProjectAgentSwarm(): AgentSwarmPlan {
@@ -66,10 +103,17 @@ export function getProjectAgentSwarm(): AgentSwarmPlan {
     agent('qa-agent', 'QA Agent', 'Run browser QA, visual comparison, flow replay, accessibility checks, API tests, and repair tasks.', 'review', ['vision', 'code-review'], ['browser.compare', 'playwright', 'api.test'], ['known regressions', 'accepted diffs'], ['visual-qa', 'flow-replay', 'repair-loop'], ['qa-report.md', 'repair-tasks.md']),
     agent('memory-agent', 'Memory And Skills Agent', 'Persist project knowledge, summarize sessions, create reusable skills, and retrieve previous decisions.', 'operate', ['summarization', 'retrieval'], ['memory.write', 'memory.search', 'skills.create'], ['project memory', 'user preferences', 'skills'], ['context-compression', 'skill-creation', 'session-recall'], ['memory/project.md', 'skills/*.md']),
     agent('scheduler-agent', 'Automation Scheduler Agent', 'Schedule recurring crawls, nightly QA, dependency checks, endpoint monitoring, and build audits.', 'operate', ['cheap-fast', 'ops'], ['cron.schedule', 'browser.crawl', 'qa.run'], ['schedule history', 'run summaries'], ['recurring-automation', 'human-review-queue'], ['automations.json', 'scheduled-runs.md']),
+    agent('nexus-memory-agent', 'Nexus Memory Agent', 'Use persistent runtime memory, session search, user preferences, and context summaries so Nexus remembers durable project decisions across sessions.', 'operate', ['long-context', 'retrieval', 'summarization'], ['agentRuntime.memory', 'agentRuntime.search', 'builder.memory'], ['project memory', 'user preferences', 'session summaries'], ['memory-curation', 'session-search', 'context-files'], ['.nexus/agent-runtime/state.json'], 'nexus-native'),
+    agent('nexus-skills-agent', 'Nexus Skills Agent', 'Create, refine, and apply Nexus coding skills so repeated browser-build workflows become reusable procedures.', 'operate', ['procedural-memory', 'code', 'reasoning'], ['agentRuntime.skills', 'skills.create', 'skills.improve', 'files.inspect'], ['skill usage', 'successful procedures', 'failed procedures'], ['skill-authoring', 'skill-refinement', 'workflow-reuse'], ['.nexus/agent-runtime/state.json'], 'nexus-native'),
+    agent('nexus-delegation-agent', 'Nexus Delegation Agent', 'Launch specialist Nexus agents for parallel research, coding, review, debugging, and QA workstreams, then merge findings into the browser-native build loop.', 'build', ['best-code-model', 'parallel-reasoning'], ['agentRuntime.delegations', 'terminal.run', 'files.inspect', 'tests.run'], ['delegation plan', 'specialist outputs', 'merge decisions'], ['agent-orchestration', 'parallel-workstreams', 'result-synthesis'], ['.nexus/agent-runtime/state.json'], 'nexus-native'),
+    agent('nexus-operator-agent', 'Nexus Operator Agent', 'Turn chat requests into safe autonomous operations with approval boundaries, connector routing, release checks, and progress reporting.', 'operate', ['ops', 'messaging', 'security'], ['agentRuntime.jobs', 'connector.auth', 'builder.doctor', 'deploy.check'], ['operation status', 'approval gates', 'channel-ready reports'], ['operator-loop', 'secret-redaction', 'human-approval-gates'], ['.nexus/agent-runtime/state.json'], 'nexus-native'),
+    agent('nexus-scheduler-agent', 'Nexus Scheduler Agent', 'Create recurring native jobs for nightly QA, dependency audits, research updates, endpoint monitoring, backups, and progress reports.', 'operate', ['cheap-fast', 'ops', 'summarization'], ['agentRuntime.jobs', 'scheduler.create', 'tests.run', 'browser.crawl'], ['schedule history', 'run summaries', 'failure reports'], ['recurring-automation', 'safe-notifications', 'memory-updates'], ['.nexus/agent-runtime/state.json', 'scheduled-runs.md'], 'nexus-native'),
+    agent('nexus-mcp-tooling-agent', 'Nexus MCP And Tooling Agent', 'Wire Nexus tools, browser evidence, generated APIs, and external services into MCP servers, integrations, and safe agent tool plans.', 'build', ['tools', 'code', 'security'], ['mcp.server', 'plugin.catalog', 'api.discovery', 'auth.redact'], ['tool inventory', 'MCP schemas', 'permission notes'], ['mcp-integration', 'plugin-selection', 'toolset-design'], ['mcp/nexus-tools.md', '.nexus/tooling-report.md'], 'nexus-native'),
   ];
 
   return {
-    philosophy: 'Use Hermes-style persistent memory, skills, model routing, subagent delegation, and scheduled automations, but make browser evidence and OpenCode builds the center of every agent workflow.',
+    philosophy: 'Use the Nexus Native Agent Runtime for persistent memory, coding skills, model routing, specialist delegation, operator loops, and scheduled automations, with browser evidence and OpenCode builds at the center of every workflow.',
+    nativeAgentRuntime: NEXUS_NATIVE_AGENT_RUNTIME,
     sharedKnowledge: SHARED_ADVANCED_KNOWLEDGE,
     agents,
     workflows: [
@@ -82,6 +126,7 @@ export function getProjectAgentSwarm(): AgentSwarmPlan {
       { name: 'Creative Divergence Pass', trigger: 'User asks for advanced creative output, mobile/game/UI builder mode, or says nothing should look the same.', agents: ['creative-mind-agent', 'browser-ui-agent', 'tailwind-agent', 'qa-agent', 'memory-agent'], output: 'anti-template creative prompt, design system rules, visual QA checks, and memory update' },
       { name: 'Operate Mode', trigger: 'User schedules recurring research or QA.', agents: ['scheduler-agent', 'memory-agent', 'build-doctor-agent'], output: 'scheduled-runs.md' },
       { name: 'Developer Employee Mode', trigger: 'User asks for Twin-style employees, autopilot, recurring dev work, or the smartest vibe coding system.', agents: ['research-agent', 'browser-ui-agent', 'api-agent', 'framework-expert-router', 'opencode-build-agent', 'build-doctor-agent', 'qa-agent', 'memory-agent', 'scheduler-agent'], output: 'hireable developer employee plan, triggers, integrations, approval gates, and recurring run reports' },
+      { name: 'Nexus Native Agent Runtime', trigger: 'User asks for autonomy, persistent memory, skills, vibe coding, recurring work, operator loops, or subagent delegation.', agents: ['nexus-memory-agent', 'nexus-skills-agent', 'nexus-delegation-agent', 'nexus-operator-agent', 'nexus-scheduler-agent', 'nexus-mcp-tooling-agent'], output: 'runtime memory updates, selected skills, schedules, specialist delegations, MCP/tooling plan, and reusable coding procedures' },
     ],
   };
 }
@@ -91,12 +136,13 @@ export function buildAgentFiles(): Record<string, string> {
   return Object.fromEntries(swarm.agents.map((spec) => [`${spec.id}.md`, spec.prompt]));
 }
 
-function agent(id: string, name: string, role: string, mode: ProjectAgentSpec['mode'], modelRouting: string[], tools: string[], memory: string[], skills: string[], outputs: string[]): ProjectAgentSpec {
+function agent(id: string, name: string, role: string, mode: ProjectAgentSpec['mode'], modelRouting: string[], tools: string[], memory: string[], skills: string[], outputs: string[], runtime: ProjectAgentSpec['runtime'] = 'nexus'): ProjectAgentSpec {
   return {
     id,
     name,
     role,
     mode,
+    runtime,
     modelRouting,
     tools,
     memory,

@@ -14,6 +14,7 @@ import { config } from '../core/config';
 import { createLogger } from '../core/logger';
 import { BrowserEngine } from '../browser/engine';
 import { AIAgent } from '../agent/index';
+import { NexusAgentRuntime } from '../agent/nexus-runtime';
 import { AutomationEngine } from '../automation/engine';
 import { getAllIntegrationProfiles } from '../integrations/registry';
 import { getCompetitiveBlueprint } from '../competitive/blueprint';
@@ -48,7 +49,7 @@ interface BuilderChatAction {
 interface BuilderChatResult {
   response: string;
   actions: BuilderChatAction[];
-  source: 'ai' | 'fallback';
+  source: 'ai' | 'fallback' | 'agent-browser';
 }
 
 interface GitHubProjectConnection {
@@ -116,6 +117,30 @@ interface BackendObservation {
   };
 }
 
+interface AgentBrowserObservation {
+  id: string;
+  sessionId: string;
+  command: string;
+  args: string[];
+  output: string;
+  ok: boolean;
+  collectedAt: string;
+}
+
+interface ProjectReadiness {
+  id: string;
+  sessionId: string;
+  createdAt: string;
+  projectType: string;
+  stackSignals: string[];
+  features: string[];
+  questions: string[];
+  answeredSignals: string[];
+  recommendedSetup: string[];
+  stagingDevices: string[];
+  needsClarification: boolean;
+}
+
 export class CloudServer {
   private app: express.Application;
   private httpServer: HttpServer;
@@ -123,11 +148,14 @@ export class CloudServer {
   private clients: Map<string, CloudClient> = new Map();
   private engine: BrowserEngine;
   private agent: AIAgent;
+  private agentRuntime: NexusAgentRuntime;
   private automation: AutomationEngine;
   private llm: LLMClient;
   private builderChats: Map<string, BuilderMessage[]> = new Map();
   private gathererObservations: Map<string, GathererObservation[]> = new Map();
   private backendObservations: Map<string, BackendObservation[]> = new Map();
+  private agentBrowserObservations: Map<string, AgentBrowserObservation[]> = new Map();
+  private projectReadiness: Map<string, ProjectReadiness> = new Map();
   private builderPlatform: BuilderPlatform;
   private githubProjectConnection?: GitHubProjectConnection;
   private connectorConnections: Map<string, ConnectorConnection> = new Map();
@@ -139,6 +167,7 @@ export class CloudServer {
   constructor() {
     this.engine = BrowserEngine.getInstance();
     this.agent = new AIAgent();
+    this.agentRuntime = new NexusAgentRuntime();
     this.automation = new AutomationEngine();
     this.llm = new LLMClient();
     this.builderPlatform = new BuilderPlatform();
@@ -531,6 +560,8 @@ export class CloudServer {
         engines: {
           browser: true,
           browserTabs: true,
+          agentBrowser: true,
+          agentBrowserCommands: ['/agent-browser', '/ab', 'agent-browser:'],
           searchResults: true,
           embeddedIde: true,
           opencode: true,
@@ -538,7 +569,7 @@ export class CloudServer {
           livePreview: true,
           visualBuilder: true,
         },
-        outputs: ['research-project', 'project-brain', 'build-plan', 'tailwind-components', 'sdk-agents', 'mcp-server', 'database-schema', 'integration-factory'],
+        outputs: ['research-project', 'project-brain', 'build-plan', 'tailwind-components', 'sdk-agents', 'mcp-server', 'database-schema', 'integration-factory', 'agent-browser-evidence'],
         languageExperts: getLanguageExperts().map((expert) => ({ id: expert.id, category: expert.category, officialGithub: expert.officialGithub })),
         competitiveBlueprint: true,
       });
@@ -614,12 +645,73 @@ export class CloudServer {
       res.json(this.builderPlatform.getBuildBrains());
     });
 
+    router.get('/api/builder/code-execution-backends', this.authenticate, (_req, res) => {
+      res.json(this.builderPlatform.getCodeExecutionBackends());
+    });
+
     router.get('/api/builder/deploy-targets', this.authenticate, (_req, res) => {
       res.json(this.builderPlatform.getDeployTargets());
     });
 
     router.get('/api/builder/agents', this.authenticate, (_req, res) => {
       res.json(getProjectAgentSwarm());
+    });
+
+    router.get('/api/agent-runtime', this.authenticate, (_req, res) => {
+      res.json(this.agentRuntime.getState());
+    });
+
+    router.post('/api/agent-runtime/memory', this.authenticate, (req, res) => {
+      res.json(this.agentRuntime.remember({
+        scope: req.body?.scope,
+        content: String(req.body?.content || ''),
+        tags: Array.isArray(req.body?.tags) ? req.body.tags : [],
+        source: req.body?.source || 'api',
+      }));
+    });
+
+    router.get('/api/agent-runtime/memory/search', this.authenticate, (req, res) => {
+      res.json(this.agentRuntime.searchMemory(String(req.query.q || ''), Number(req.query.limit || 20)));
+    });
+
+    router.post('/api/agent-runtime/skills', this.authenticate, (req, res) => {
+      res.json(this.agentRuntime.upsertSkill({
+        id: req.body?.id,
+        name: String(req.body?.name || 'Untitled Skill'),
+        description: String(req.body?.description || ''),
+        trigger: String(req.body?.trigger || ''),
+        steps: Array.isArray(req.body?.steps) ? req.body.steps.map(String) : [],
+        lesson: req.body?.lesson,
+      }));
+    });
+
+    router.post('/api/agent-runtime/delegations', this.authenticate, async (req, res) => {
+      const sessionId = String(req.body?.sessionId || '');
+      const pageId = String(req.body?.pageId || '');
+      if (!sessionId || !pageId) {
+        res.status(400).json({ error: 'sessionId and pageId are required for delegated browser work' });
+        return;
+      }
+      res.json(await this.agentRuntime.delegate({
+        goal: String(req.body?.goal || ''),
+        agents: Array.isArray(req.body?.agents) ? req.body.agents.map(String) : undefined,
+        sessionId,
+        pageId,
+      }, this.agent));
+    });
+
+    router.post('/api/agent-runtime/jobs', this.authenticate, (req, res) => {
+      res.json(this.agentRuntime.createJob({
+        name: String(req.body?.name || 'Scheduled Agent Job'),
+        goal: String(req.body?.goal || ''),
+        intervalMs: Number(req.body?.intervalMs || 3600000),
+        agents: Array.isArray(req.body?.agents) ? req.body.agents.map(String) : undefined,
+        enabled: req.body?.enabled,
+      }));
+    });
+
+    router.delete('/api/agent-runtime/jobs/:id', this.authenticate, (req, res) => {
+      res.json({ success: this.agentRuntime.deleteJob(req.params.id) });
     });
 
     router.post('/api/builder/opencode-sessions', this.authenticate, (req, res) => {
@@ -656,13 +748,17 @@ export class CloudServer {
 
     router.post('/api/builder/start-build', this.authenticate, (req, res) => {
       try {
-        const build = this.builderPlatform.startBuildFromPrompt(String(req.body?.prompt || 'Build a landing page'), {
+        const sessionId = String(req.body?.sessionId || 'default');
+        const prompt = String(req.body?.prompt || 'Build a landing page');
+        const readiness = this.createProjectReadiness(sessionId, prompt, this.builderChats.get(sessionId) || [], String(req.body?.browserContext || ''));
+        this.projectReadiness.set(sessionId, readiness);
+        const brainOptions = this.resolveBrainOptions(req.body);
+        const build = this.builderPlatform.startBuildFromPrompt(prompt, {
           workspaceRoot: req.body?.workspaceRoot,
           uiLook: req.body?.uiLook,
           mode: req.body?.mode || 'build',
-          brainMode: req.body?.brainMode,
-          aiProvider: req.body?.aiProvider,
-          aiModel: req.body?.aiModel,
+          browserContext: this.buildProjectReadinessContext(readiness),
+          ...brainOptions,
         });
         res.json(build);
       } catch (error: any) {
@@ -776,8 +872,10 @@ export class CloudServer {
 
     router.post('/api/builder/builds/:id/staging', this.authenticate, async (req, res) => {
       try {
+        const sessionId = String(req.body?.sessionId || 'default');
+        const readiness = this.projectReadiness.get(sessionId);
         res.json(await this.builderPlatform.runStagingStudio(req.params.id, {
-          devices: Array.isArray(req.body?.devices) ? req.body.devices : undefined,
+          devices: Array.isArray(req.body?.devices) ? req.body.devices : readiness?.stagingDevices,
           runDoctor: Boolean(req.body?.runDoctor),
         }));
       } catch (error: any) {
@@ -815,10 +913,16 @@ export class CloudServer {
       const message = String(req.body?.message || '').trim();
       const mode = this.detectBuilderMode(message, req.body?.mode || 'ui-builder');
       const uiLook = req.body?.uiLook || 'faithful-clone';
-      const brainOptions = { brainMode: req.body?.brainMode, aiProvider: req.body?.aiProvider, aiModel: req.body?.aiModel };
+      const brainOptions = this.resolveBrainOptions(req.body);
       const activeBuildId = String(req.body?.activeBuildId || '');
       const messages = this.builderChats.get(sessionId) || [];
       if (message) messages.push({ role: 'user', content: message, timestamp: Date.now() });
+      if (this.isAgentBrowserCommand(message)) {
+        const chat = await this.runAgentBrowserChat(message, sessionId);
+        messages.push({ role: 'assistant', content: chat.response, timestamp: Date.now() });
+        this.builderChats.set(sessionId, messages.slice(-100));
+        return res.json({ response: chat.response, messages: this.builderChats.get(sessionId), actions: chat.actions, source: chat.source });
+      }
       if (req.body?.browserContext) this.storeExternalGathererObservation(sessionId, pageId, String(req.body.browserContext));
       const gathererContext = await this.collectGathererObservation(sessionId, pageId)
         .then((observation) => this.buildGathererContext(sessionId, observation.pageId))
@@ -833,9 +937,21 @@ export class CloudServer {
           }
         })()
         : 'Backend Observer has no active generated workspace yet. Start or select a build to inspect server/API/data functionality.';
-      const browserContext = `${gathererContext}\n\n${backendContext}`;
-      const chat = await this.runBuilderConductor(message, mode, uiLook, browserContext, messages, activeBuildId);
+      const browserContext = this.buildUnifiedChatContext(sessionId, pageId, activeBuildId, gathererContext, backendContext);
+      const readiness = this.createProjectReadiness(sessionId, message, messages, browserContext);
+      this.projectReadiness.set(sessionId, readiness);
+      const readinessContext = this.buildProjectReadinessContext(readiness);
+      if (this.shouldAskProjectReadiness(message, mode, readiness)) {
+        const response = this.projectReadinessQuestionResponse(readiness);
+        const actions = this.projectReadinessActions(readiness);
+        messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
+        this.builderChats.set(sessionId, messages.slice(-100));
+        return res.json({ response, messages: this.builderChats.get(sessionId), actions, source: 'fallback' });
+      }
+      const runtimeContext = this.agentRuntime.buildContext(message);
+      const chat = await this.runBuilderConductor(message, mode, uiLook, `${browserContext}\n\n${readinessContext}\n\n${runtimeContext}`, messages, activeBuildId);
       let response = chat.response;
+      response = this.applyAutonomousRuntimeFromChat(message, mode, sessionId, pageId, activeBuildId, `${browserContext}\n\n${readinessContext}`, chat, response);
       messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
       let build = undefined;
       let update = undefined;
@@ -851,14 +967,14 @@ export class CloudServer {
       } else if (activeBuildId && this.shouldUpdateBuild(message, mode)) {
         const targetBuildId = this.builderPlatform.getBuild(activeBuildId)?.id || this.builderPlatform.getBuilds().slice(-1)[0]?.id;
         if (!targetBuildId) throw new Error('No generated build workspace yet. Ask Build Mode to create one first.');
-        update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode, browserContext, ...brainOptions });
+        update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode, browserContext: `${browserContext}\n\n${readinessContext}`, ...brainOptions });
         messages.push({
           role: 'assistant',
           content: `App update started.\n\nWorkspace: ${update.workspace}\nSession: ${update.session.id}\nLog: ${update.logPath}\nI will restart the preview when the update command finishes.`,
           timestamp: Date.now(),
         });
       } else if (this.shouldStartBuild(message, mode)) {
-        build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode, browserContext, ...brainOptions });
+        build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode, browserContext: `${browserContext}\n\n${readinessContext}`, ...brainOptions });
         messages.push({
           role: 'assistant',
           content: `Build started.\n\nWorkspace: ${build.root}\nStatus: ${build.status}\nPreview command: ${build.previewCommand}\nOpenCode log: ${build.logPath}`,
@@ -1859,6 +1975,206 @@ export class CloudServer {
     ].join('\n').slice(0, 22000);
   }
 
+  private buildAgentBrowserContext(sessionId: string): string {
+    const timeline = this.agentBrowserObservations.get(sessionId) || [];
+    if (!timeline.length) return 'Agent Browser has no CLI/MCP observations yet. Use /agent-browser open, /agent-browser snapshot, or /agent-browser chat to add evidence.';
+    return [
+      'Agent Browser CLI/MCP timeline:',
+      timeline.slice(-8).map((item) => [
+        `${item.collectedAt} ${item.ok ? 'ok' : 'failed'}: ${item.command}`,
+        item.output.slice(0, 3500),
+      ].join('\n')).join('\n\n'),
+    ].join('\n').slice(0, 14000);
+  }
+
+  private storeAgentBrowserObservation(observation: AgentBrowserObservation): void {
+    const timeline = this.agentBrowserObservations.get(observation.sessionId) || [];
+    timeline.push(observation);
+    this.agentBrowserObservations.set(observation.sessionId, timeline.slice(-30));
+  }
+
+  private buildUnifiedChatContext(sessionId: string, pageId: string, activeBuildId: string, gathererContext: string, backendContext: string): string {
+    return [
+      this.buildNexusFeatureAwareness(),
+      gathererContext,
+      backendContext,
+      this.buildAgentBrowserContext(sessionId),
+      `Active build id: ${activeBuildId || 'none'}`,
+    ].join('\n\n---\n\n').slice(0, 42000);
+  }
+
+  private buildNexusFeatureAwareness(): string {
+    const providerCount = this.builderPlatform.getProviders().length;
+    const languageExpertCount = getLanguageExperts().length;
+    return [
+      'Nexus available capabilities for chat/build routing:',
+      '- Browser Gatherer: rendered DOM, text, interactive elements, framework signals, storage keys, console, network/API signals, screenshots.',
+      '- Agent Browser: /agent-browser and /ab run Vercel agent-browser CLI/MCP commands; use for snapshots, refs, page reads, accessibility, vitals, React introspection, network tools, WebMCP, and natural-language browser control.',
+      '- Backend Observer: generated workspace package scripts, dependencies, API/server files, data models, env keys, build logs, and backend risks.',
+      '- OpenCode Builder: start builds, update active builds, run Build Doctor, auto-heal loops, snapshots, file locks, live preview, diff review, export ZIP.',
+      '- Research Project: crawl target pages, create project brain, UI intelligence, API/MCP discovery, SDK agents, build plan, scorecard, artifacts.',
+      '- QA: visual QA repair, side-by-side diff, staging studio, mobile/tablet/kiosk checks, SEO/security audit, browser shakedown.',
+      '- Integrations: GitHub Projects/issues, Vercel, Supabase, Stripe, SEO/security connectors, deploy panel, Git/Expo import.',
+      `- Providers and experts: ${providerCount} model/provider routes and ${languageExpertCount} official-source language/stack experts.`,
+      'Routing rule: answer questions with the best available evidence, ask for missing critical context only when needed, and for build requests combine browser evidence, Agent Browser observations, backend observations, OpenCode implementation, and QA verification.',
+    ].join('\n');
+  }
+
+  private createProjectReadiness(sessionId: string, message: string, history: BuilderMessage[], evidence: string): ProjectReadiness {
+    const combined = `${history.slice(-10).map((item) => item.content).join('\n')}\n${message}\n${evidence}`.toLowerCase();
+    const stackSignals = this.detectStackSignals(combined);
+    const features = this.detectProjectFeatures(combined);
+    const projectType = this.detectProjectType(combined, features);
+    const answeredSignals = this.detectAnsweredSignals(combined);
+    const questions = this.projectReadinessQuestions(projectType, features, answeredSignals, combined);
+    return {
+      id: uuid(),
+      sessionId,
+      createdAt: new Date().toISOString(),
+      projectType,
+      stackSignals,
+      features,
+      questions,
+      answeredSignals,
+      recommendedSetup: this.recommendedProjectSetup(projectType, features, stackSignals),
+      stagingDevices: this.recommendedStagingDevices(projectType, features, combined),
+      needsClarification: questions.length > 0,
+    };
+  }
+
+  private detectStackSignals(text: string): string[] {
+    const signals: Array<[string, RegExp]> = [
+      ['react', /\b(react|jsx|tsx|vite|next\.js|nextjs|remix)\b/],
+      ['nextjs', /\b(next\.js|nextjs|app router|server actions)\b/],
+      ['tailwind', /\b(tailwind|shadcn|utility css)\b/],
+      ['node-api', /\b(node|express|fastify|api route|backend|server)\b/],
+      ['supabase', /\b(supabase|rls|postgres|auth table)\b/],
+      ['stripe', /\b(stripe|checkout|subscription|billing|payment|webhook)\b/],
+      ['github', /\b(github|repo|issue|project|pull request|actions)\b/],
+      ['mobile', /\b(mobile|phone|tablet|responsive|touch|expo|react native)\b/],
+      ['ai', /\b(ai|chatbot|agent|llm|openai|anthropic|model|rag|vector)\b/],
+      ['vercel', /\b(vercel|deploy|preview deployment|domain)\b/],
+    ];
+    return signals.filter(([, pattern]) => pattern.test(text)).map(([name]) => name);
+  }
+
+  private detectProjectFeatures(text: string): string[] {
+    const features: Array<[string, RegExp]> = [
+      ['auth', /\b(auth|login|signup|sign up|roles?|admin|users?)\b/],
+      ['database', /\b(database|db|crud|records?|profiles?|projects?|tasks?|orders?|content|cms|supabase|postgres)\b/],
+      ['payments', /\b(payment|stripe|checkout|subscription|billing|invoice|plan)\b/],
+      ['dashboard', /\b(dashboard|analytics|admin|metrics|reports?|charts?)\b/],
+      ['ecommerce', /\b(shop|store|product|cart|checkout|inventory|order)\b/],
+      ['content', /\b(blog|cms|article|marketing|landing page|portfolio|docs)\b/],
+      ['ai-workflow', /\b(ai|agent|chatbot|automation|workflow|rag|tools?)\b/],
+      ['realtime', /\b(realtime|websocket|live|collaboration|notifications?)\b/],
+      ['deploy', /\b(deploy|hosting|domain|production|vercel|netlify)\b/],
+      ['mobile-qa', /\b(mobile|tablet|touch|kiosk|game|app store|responsive)\b/],
+    ];
+    return features.filter(([, pattern]) => pattern.test(text)).map(([name]) => name);
+  }
+
+  private detectProjectType(text: string, features: string[]): string {
+    if (features.includes('ecommerce')) return 'ecommerce';
+    if (features.includes('dashboard')) return 'dashboard';
+    if (features.includes('ai-workflow')) return 'ai-workflow';
+    if (/\b(game|kiosk)\b/.test(text)) return 'interactive-kiosk-game';
+    if (features.includes('content')) return 'content-marketing';
+    if (/\b(saas|app|application)\b/.test(text)) return 'saas-app';
+    return 'general-web-app';
+  }
+
+  private detectAnsweredSignals(text: string): string[] {
+    const answers: Array<[string, RegExp]> = [
+      ['audience', /\b(for|users are|customers are|audience|students|teams|creators|admins|businesses)\b/],
+      ['pages', /\b(page|screen|route|dashboard|home|pricing|login|admin|settings|profile|checkout)\b/],
+      ['style', /\b(style|design|look|feel|brand|modern|minimal|luxury|neon|clean|color|dark|light)\b/],
+      ['data', /\b(data|database|table|schema|records?|crud|supabase|postgres|sqlite|api)\b/],
+      ['auth', /\b(auth|login|signup|roles?|permissions?|oauth)\b/],
+      ['payments', /\b(stripe|payment|checkout|subscription|billing|currency|price)\b/],
+      ['deployment', /\b(deploy|vercel|netlify|domain|production|env|environment)\b/],
+      ['device-targets', /\b(mobile|tablet|desktop|kiosk|game|responsive|touch)\b/],
+      ['reference', /https?:\/\/[^\s]+|\b(clone|reference|like|based on)\b/],
+      ['ai-provider', /\b(openai|anthropic|gemini|ollama|model|provider|llm)\b/],
+    ];
+    return answers.filter(([, pattern]) => pattern.test(text)).map(([name]) => name);
+  }
+
+  private projectReadinessQuestions(projectType: string, features: string[], answered: string[], text: string): string[] {
+    if (/\b(decide and build|you decide|surprise me|auto decide|agent decide|use defaults|pick for me)\b/.test(text)) return [];
+    const missing = (signal: string) => !answered.includes(signal);
+    const questions: string[] = [];
+    if (missing('audience')) questions.push('Who is this for and what outcome should they get first?');
+    if (missing('pages')) questions.push('What are the must-have pages/screens and primary user actions?');
+    if (missing('style')) questions.push('What should the visual style/brand feel like, or should Nexus invent a creative direction?');
+    if ((features.includes('database') || features.includes('dashboard') || features.includes('ecommerce')) && missing('data')) questions.push('What data/entities should exist, and should Nexus use local mock data, SQLite, or Supabase/Postgres?');
+    if ((features.includes('auth') || projectType === 'saas-app' || projectType === 'dashboard') && missing('auth')) questions.push('Does it need login, roles/permissions, OAuth, or should it be public for now?');
+    if ((features.includes('payments') || projectType === 'ecommerce') && missing('payments')) questions.push('For payments, what products/plans, currency, checkout flow, and webhook behavior are required?');
+    if (features.includes('ai-workflow') && missing('ai-provider')) questions.push('For AI features, which provider/model should be used and what data/tools may the agent access?');
+    if ((features.includes('deploy') || /\b(ship|production|launch)\b/.test(text)) && missing('deployment')) questions.push('Where should it deploy, and what env keys/domains/connectors are required?');
+    if ((features.includes('mobile-qa') || projectType === 'interactive-kiosk-game') && missing('device-targets')) questions.push('Which devices matter most: desktop, tablet, mobile, kiosk/fullscreen, gamepad, or app-store screenshots?');
+    if (projectType === 'content-marketing' && missing('reference')) questions.push('Should Nexus clone/reference a URL, search for examples, or invent from scratch?');
+    return questions.slice(0, 5);
+  }
+
+  private recommendedProjectSetup(projectType: string, features: string[], stackSignals: string[]): string[] {
+    const setup = ['Create project brain from chat plus browser/Agent Browser evidence', 'Generate OpenCode task plan before file edits', 'Run Build Doctor after dependency install/build'];
+    if (!stackSignals.includes('react')) setup.push('Default frontend: Vite React + TypeScript + Tailwind unless the user specifies another stack');
+    if (features.includes('database')) setup.push('Add schema, seed data, .env.example, and data access layer');
+    if (features.includes('auth')) setup.push('Add auth boundaries, protected routes, roles, and session QA');
+    if (features.includes('payments')) setup.push('Keep Stripe secrets server-side, add checkout/webhook stubs, and document env keys');
+    if (features.includes('ai-workflow')) setup.push('Add provider abstraction, tool permissions, and prompt/data privacy notes');
+    if (features.includes('deploy')) setup.push('Prepare deploy config, production env checklist, SEO/security audit, and preview verification');
+    if (projectType === 'interactive-kiosk-game') setup.push('Prioritize fullscreen, touch/game controls, orientation, latency, and offline/error states');
+    return setup;
+  }
+
+  private recommendedStagingDevices(projectType: string, features: string[], text: string): string[] {
+    const devices = new Set<string>(['desktop', 'tablet', 'mobile']);
+    if (features.includes('mobile-qa') || /\b(app store|phone|mobile)\b/.test(text)) devices.add('app-store-mobile');
+    if (projectType === 'interactive-kiosk-game' || /\b(game|kiosk|fullscreen)\b/.test(text)) devices.add('game');
+    return Array.from(devices);
+  }
+
+  private buildProjectReadinessContext(readiness: ProjectReadiness): string {
+    return [
+      'Project readiness / smart setup:',
+      `Type: ${readiness.projectType}`,
+      `Stack signals: ${readiness.stackSignals.join(', ') || 'default web stack not yet specified'}`,
+      `Feature signals: ${readiness.features.join(', ') || 'none explicit yet'}`,
+      `Answered setup signals: ${readiness.answeredSignals.join(', ') || 'none explicit yet'}`,
+      `Clarification needed: ${readiness.needsClarification ? 'yes' : 'no'}`,
+      readiness.questions.length ? `Questions to ask before build:\n${readiness.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}` : 'Questions to ask before build: none; proceed with stated requirements and sensible defaults.',
+      `Recommended setup:\n${readiness.recommendedSetup.map((item) => `- ${item}`).join('\n')}`,
+      `Recommended staging devices: ${readiness.stagingDevices.join(', ')}`,
+    ].join('\n');
+  }
+
+  private shouldAskProjectReadiness(message: string, mode: string, readiness: ProjectReadiness): boolean {
+    if (!readiness.needsClarification) return false;
+    if (!this.shouldStartBuild(message, mode)) return false;
+    if (/\b(decide and build|you decide|surprise me|auto decide|agent decide|use defaults|pick for me)\b/i.test(message)) return false;
+    return message.length < 260 || readiness.questions.some((question) => /payment|login|data|deploy|devices|AI features/i.test(question));
+  }
+
+  private projectReadinessQuestionResponse(readiness: ProjectReadiness): string {
+    return [
+      `I can build this, but I need a few ${readiness.projectType} setup answers so chat, project setup, staging, and QA all work together.`,
+      '',
+      readiness.questions.map((question, index) => `${index + 1}. ${question}`).join('\n'),
+      '',
+      'Reply in one message. If you want Nexus to choose, say "decide and build" and I will use smart defaults, then run build, preview, staging, and QA from the shared evidence.',
+    ].join('\n');
+  }
+
+  private projectReadinessActions(readiness: ProjectReadiness): BuilderChatAction[] {
+    return [
+      { id: 'decide-build', label: 'Decide Build', description: 'Let Nexus pick stack/setup defaults and start from shared evidence.', prompt: 'Decide and build with smart defaults, then run preview, staging, Build Doctor, and QA.' },
+      { id: 'research-first', label: 'Research First', description: 'Gather browser and Agent Browser evidence before choosing setup.', prompt: 'Open a relevant reference, run /agent-browser snapshot, then create a research project before building.' },
+      { id: 'setup-plan', label: 'Setup Plan', description: `Create a ${readiness.projectType} setup plan before code.`, prompt: `Plan setup for this ${readiness.projectType}: stack, pages, data, auth, integrations, staging devices, deploy, and QA.` },
+    ];
+  }
+
   private collectBackendObservation(buildId: string): BackendObservation {
     const build = buildId ? this.builderPlatform.getBuild(buildId) : undefined;
     if (!build) throw new Error('No active generated build workspace. Start a build before backend observation.');
@@ -1988,15 +2304,25 @@ export class CloudServer {
   ): Promise<BuilderChatResult> {
     const fallback = this.createFallbackBuilderChat(message, mode, uiLook, browserContext);
     if (!message.trim()) return fallback;
+    if (!this.hasConfiguredChatProvider()) {
+      return {
+        ...fallback,
+        response: `${fallback.response}\n\nCloud AI is not configured, so Nexus is using built-in planning plus OpenCode as the code executor. Builds will still create an OpenCode prompt/workspace and run \`${config.get().codeExecution.localCli} ${config.get().codeExecution.localArgs.join(' ')}\` when available.`,
+      };
+    }
 
     const recentHistory = history.slice(-8).map((item) => `${item.role}: ${item.content}`).join('\n\n');
     const system = `You are Nexus Command Chat, an elite app-building conductor designed to beat Lovable, Bolt, and other visual builders.
 
 You must be better in these areas:
 - Understand the live browser and generated preview before proposing code.
+- Treat Agent Browser outputs, Gatherer observations, Backend Observer data, chat history, and project/build memory as one shared evidence pool.
 - Convert vague ideas into shippable full-stack product decisions.
 - Start or update OpenCode builds when useful, but ask for missing essentials when risk is high.
+- Use Nexus Native Agent Runtime memory and skills without waiting for the user to manually manage context.
 - Recommend browser-first verification: Build Doctor, visual QA, staging studio, mobile checks, backend/API mapping, and project memory.
+- Use the right Nexus feature automatically: Agent Browser for browser actions/refs/a11y/vitals/React/network/WebMCP, Research Project for target understanding, OpenCode for files, Backend Observer for server/API/data, QA tools for verification, connectors for GitHub/deploy/database/payment work.
+- When the user asks for autonomy, developer employees, agents, vibe coding, recurring work, or skills, route to the native runtime: remember durable facts, apply matching skills, delegate to specialist agents, and offer schedules.
 - Avoid generic SaaS output. Push distinctive product-specific UI direction.
 
 Return strict JSON only with this shape:
@@ -2007,6 +2333,9 @@ Rules:
 - Mention concrete next build/QA steps, not generic encouragement.
 - Actions must be executable chat prompts for Nexus, max 5 actions.
 - If browser/backend context is unavailable, say what to open or run next.
+- If Agent Browser evidence is relevant, reference it by what it observed and offer an /agent-browser next action.
+- For builds, plan and route through browser evidence, Agent Browser, Backend Observer, OpenCode, and QA instead of treating them as separate tools.
+- If relevant skills or memories are present in the runtime context, explicitly use them in the next step.
 - Never claim files were changed unless OpenCode/build/update was started by the API after this response.`;
     const messages: LLMMessage[] = [
       { role: 'system', content: system },
@@ -2022,11 +2351,279 @@ Rules:
       if (!parsed.response) return fallback;
       return { response: parsed.response, actions: parsed.actions, source: 'ai' };
     } catch (error: any) {
+      if (/OPENAI_API_KEY not configured|ANTHROPIC_API_KEY not configured/i.test(error.message)) {
+        return {
+          ...fallback,
+          response: `${fallback.response}\n\nCloud AI is not configured, so Nexus is using built-in planning plus OpenCode as the code executor. To use cloud chat reasoning, add an API key; to stay local, keep using Build Mode/OpenCode.`,
+        };
+      }
       return {
         ...fallback,
         response: `${fallback.response}\n\nAI conductor unavailable: ${error.message}`,
       };
     }
+  }
+
+  private resolveBrainOptions(body: any): { brainMode: any; aiProvider: any; aiModel: any } {
+    const requestedProvider = String(body?.aiProvider || config.get().ai.provider || 'openai');
+    const requestedBrain = body?.brainMode;
+    const hasRequestedProvider = requestedProvider === 'openai'
+      ? Boolean(config.get().ai.openaiApiKey)
+      : requestedProvider === 'anthropic'
+        ? Boolean(config.get().ai.anthropicApiKey)
+        : requestedProvider === 'opencode' || requestedProvider === 'ollama';
+    if (!hasRequestedProvider && requestedBrain !== 'ollama') {
+      return { brainMode: 'opencode', aiProvider: 'opencode', aiModel: undefined };
+    }
+    if (body?.brainMode || body?.aiProvider || body?.aiModel) {
+      return { brainMode: body?.brainMode, aiProvider: body?.aiProvider, aiModel: body?.aiModel };
+    }
+    if (!this.hasConfiguredChatProvider()) {
+      return { brainMode: 'opencode', aiProvider: 'opencode', aiModel: undefined };
+    }
+    return { brainMode: body?.brainMode, aiProvider: body?.aiProvider, aiModel: body?.aiModel };
+  }
+
+  private hasConfiguredChatProvider(): boolean {
+    const ai = config.get().ai;
+    if (ai.provider === 'openai') return Boolean(ai.openaiApiKey);
+    if (ai.provider === 'anthropic') return Boolean(ai.anthropicApiKey);
+    return false;
+  }
+
+  private applyAutonomousRuntimeFromChat(
+    message: string,
+    mode: string,
+    sessionId: string,
+    pageId: string,
+    activeBuildId: string,
+    browserContext: string,
+    chat: BuilderChatResult,
+    response: string,
+  ): string {
+    if (!message.trim()) return response;
+
+    const intent = message.toLowerCase();
+    const tags = ['builder-chat', mode, ...(activeBuildId ? ['active-build'] : []), ...(pageId ? ['browser-session'] : [])];
+    this.agentRuntime.remember({
+      scope: 'session',
+      content: `User asked: ${message}\nMode: ${mode}\nActive build: ${activeBuildId || 'none'}`,
+      tags,
+      source: `builder-chat:${sessionId}`,
+    });
+
+    const notes: string[] = [];
+    const skills = this.agentRuntime.findSkills(message, 3);
+    if (skills.length) notes.push(`Applied runtime skills: ${skills.map((skill) => skill.name).join(', ')}.`);
+
+    if (/vibe|coding browser|autonomous|agent|employee|opencode|build|qa|repair|debug|devtools/.test(intent)) {
+      const skill = this.agentRuntime.upsertSkill({
+        name: 'Autonomous Vibe Coding Browser Loop',
+        description: 'Browser-native loop for turning chat intent into research, build, preview, QA, repair, and durable memory.',
+        trigger: 'Use when chat asks Nexus to build, clone, repair, improve, debug, automate, or act autonomously.',
+        steps: [
+          'Capture live browser evidence: page, DOM, styles, console, network, storage, screenshots, and responsive state.',
+          'Classify the work: research, plan, build, update, repair, integration, QA, deploy, or recurring operation.',
+          'Delegate to specialist agents when parallel research, coding, backend mapping, QA, or memory work helps.',
+          'Start or update OpenCode with browser/backend/runtime context, then verify with preview, Build Doctor, and visual QA.',
+          'Persist decisions, failures, repairs, user preferences, and reusable procedures back into runtime memory and skills.',
+        ],
+        lesson: `Refreshed from chat intent: ${message.slice(0, 180)}`,
+      });
+      notes.push(`Runtime skill ready: ${skill.name}.`);
+    }
+
+    if (this.shouldCreateAutonomousSchedule(intent)) {
+      const intervalMs = this.parseAutonomousInterval(intent);
+      const job = this.agentRuntime.createJob({
+        name: this.scheduleNameForIntent(intent),
+        goal: message,
+        intervalMs,
+        agents: ['scheduler-agent', 'build-doctor-agent', 'qa-agent', 'memory-agent'],
+      });
+      notes.push(`Created recurring autonomous job: ${job.name} every ${Math.round(job.intervalMs / 60000)} minutes.`);
+    }
+
+    if (this.shouldDelegateAutonomously(intent) && sessionId && pageId) {
+      void this.agentRuntime.delegate({
+        goal: message,
+        agents: this.autonomousAgentsForIntent(intent),
+        sessionId,
+        pageId,
+      }, this.agent);
+      notes.push('Started background specialist delegation for this browser session.');
+    } else if (this.shouldDelegateAutonomously(intent)) {
+      notes.push('Autonomous delegation is ready; open or select a browser page so specialist agents can work with live evidence.');
+    }
+
+    chat.actions = this.autonomousRuntimeActions(message, chat.actions);
+    if (!notes.length) return response;
+    return `${response}\n\nAutonomous runtime: ${notes.join(' ')}`;
+  }
+
+  private shouldDelegateAutonomously(intent: string): boolean {
+    return /autonomous|autopilot|developer employee|delegate|agents work|vibe coding browser|one of a kind/.test(intent);
+  }
+
+  private autonomousAgentsForIntent(intent: string): string[] {
+    const agents = new Set<string>(['research-agent', 'opencode-build-agent', 'qa-agent', 'memory-agent']);
+    if (/api|backend|database|server|auth|stripe|github/.test(intent)) agents.add('backend-observer-agent').add('api-agent').add('integration-agent');
+    if (/ui|design|figma|tailwind|mobile|visual/.test(intent)) agents.add('browser-ui-agent').add('creative-mind-agent').add('tailwind-agent');
+    if (/repair|debug|fix|error|broken/.test(intent)) agents.add('build-doctor-agent').add('auto-heal-agent');
+    return Array.from(agents);
+  }
+
+  private shouldCreateAutonomousSchedule(intent: string): boolean {
+    return /schedule|recurring|nightly|daily|weekly|every \d+/.test(intent);
+  }
+
+  private parseAutonomousInterval(intent: string): number {
+    const match = intent.match(/every\s+(\d+)\s*(minute|minutes|hour|hours|day|days)/);
+    if (!match) {
+      if (/weekly/.test(intent)) return 7 * 24 * 60 * 60 * 1000;
+      if (/nightly|daily/.test(intent)) return 24 * 60 * 60 * 1000;
+      return 60 * 60 * 1000;
+    }
+    const value = Number(match[1]);
+    const unit = match[2];
+    if (unit.startsWith('minute')) return value * 60 * 1000;
+    if (unit.startsWith('hour')) return value * 60 * 60 * 1000;
+    return value * 24 * 60 * 60 * 1000;
+  }
+
+  private scheduleNameForIntent(intent: string): string {
+    if (/qa|test|visual|mobile/.test(intent)) return 'Autonomous QA Watch';
+    if (/dependency|security|audit/.test(intent)) return 'Autonomous Dependency Audit';
+    if (/research|competitor|market/.test(intent)) return 'Autonomous Research Sweep';
+    return 'Autonomous Vibe Coding Loop';
+  }
+
+  private autonomousRuntimeActions(message: string, existing: BuilderChatAction[]): BuilderChatAction[] {
+    const actions: BuilderChatAction[] = [
+      { id: 'runtime-memory-search', label: 'Search Memory', description: 'Find prior decisions, fixes, and user preferences for this request.', prompt: `Search runtime memory for ${message}` },
+      { id: 'runtime-delegate', label: 'Delegate Agents', description: 'Launch specialist agents against the current browser session.', prompt: `Autonomously delegate agents for: ${message}` },
+      { id: 'runtime-schedule', label: 'Schedule Loop', description: 'Create a recurring autonomous QA/build/research loop.', prompt: `Schedule daily autonomous QA and memory updates for: ${message}` },
+      { id: 'runtime-skill', label: 'Save Skill', description: 'Turn this workflow into a reusable coding skill.', prompt: `Create a reusable Nexus skill from this workflow: ${message}` },
+      ...existing,
+    ];
+    const seen = new Set<string>();
+    return actions.filter((action) => {
+      if (seen.has(action.id)) return false;
+      seen.add(action.id);
+      return true;
+    }).slice(0, 5);
+  }
+
+  private isAgentBrowserCommand(message: string): boolean {
+    return /^\s*(?:\/agent-browser|\/ab|agent-browser:)\b/i.test(message);
+  }
+
+  private async runAgentBrowserChat(message: string, sessionId: string): Promise<BuilderChatResult> {
+    const input = message
+      .replace(/^\s*\/agent-browser\b/i, '')
+      .replace(/^\s*\/ab\b/i, '')
+      .replace(/^\s*agent-browser:\s*/i, '')
+      .trim();
+    if (!input) {
+      return {
+        response: 'Agent Browser is available in chat. Use `/agent-browser open example.com`, `/agent-browser snapshot`, or `/agent-browser chat "find the pricing page"`.',
+        actions: this.agentBrowserActions(),
+        source: 'agent-browser',
+      };
+    }
+
+    try {
+      const args = this.agentBrowserArgs(input);
+      const output = await this.runAgentBrowserCommand(args, sessionId);
+      const trimmed = this.trimAgentBrowserOutput(output);
+      this.storeAgentBrowserObservation({ id: uuid(), sessionId, command: input, args, output: trimmed, ok: true, collectedAt: new Date().toISOString() });
+      return {
+        response: `Agent Browser evidence saved into Nexus shared context. Future questions, builds, and QA can use it.\n\n\`\`\`text\n${trimmed}\n\`\`\``,
+        actions: this.agentBrowserActions(),
+        source: 'agent-browser',
+      };
+    } catch (error: any) {
+      this.storeAgentBrowserObservation({ id: uuid(), sessionId, command: input, args: this.agentBrowserArgs(input), output: error.message, ok: false, collectedAt: new Date().toISOString() });
+      return {
+        response: `Agent Browser failure saved into Nexus shared context.\n\n${error.message}\n\nInstall/setup if needed: \`npm install\` then \`npx agent-browser install\`.`,
+        actions: this.agentBrowserActions(),
+        source: 'agent-browser',
+      };
+    }
+  }
+
+  private agentBrowserArgs(input: string): string[] {
+    const parts = this.splitCommandArgs(input);
+    const command = (parts[0] || '').toLowerCase();
+    const directCommands = new Set([
+      'open', 'goto', 'navigate', 'read', 'click', 'dblclick', 'focus', 'type', 'fill', 'press', 'key',
+      'hover', 'select', 'check', 'uncheck', 'scroll', 'scrollintoview', 'scrollinto', 'drag', 'upload',
+      'screenshot', 'pdf', 'snapshot', 'eval', 'connect', 'stream', 'webmcp', 'get', 'is', 'find', 'wait',
+      'clipboard', 'mouse', 'set', 'cookies', 'storage', 'network', 'tab', 'window', 'frame', 'dialog',
+      'diff', 'trace', 'profiler', 'record', 'console', 'errors', 'highlight', 'inspect', 'state', 'back',
+      'forward', 'reload', 'pushstate', 'react', 'vitals', 'a11y', 'batch', 'doctor', 'mcp', 'session', 'profiles',
+      'install', 'upgrade', 'skills', 'close', 'chat', 'help'
+    ]);
+    if (directCommands.has(command)) return parts;
+    return ['chat', input];
+  }
+
+  private splitCommandArgs(input: string): string[] {
+    const args: string[] = [];
+    const pattern = /"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|\S+/g;
+    for (const match of input.matchAll(pattern)) {
+      args.push((match[1] ?? match[2] ?? match[0]).replace(/\\(["'\\])/g, '$1'));
+    }
+    return args;
+  }
+
+  private runAgentBrowserCommand(args: string[], sessionId: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const bin = this.agentBrowserBin();
+      const child = spawn(bin.command, bin.args.concat(args), {
+        cwd: process.cwd(),
+        env: { ...process.env, AGENT_BROWSER_SESSION: `nexus-${sessionId || 'default'}` },
+        windowsHide: true,
+      });
+      let stdout = '';
+      let stderr = '';
+      const timer = setTimeout(() => {
+        child.kill();
+        reject(new Error('agent-browser timed out after 120s'));
+      }, 120000);
+      child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+      child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+      child.on('error', (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+      child.on('close', (code) => {
+        clearTimeout(timer);
+        const output = [stdout.trim(), stderr.trim()].filter(Boolean).join('\n\n');
+        if (code === 0) resolve(output || 'agent-browser completed with no output.');
+        else reject(new Error(output || `agent-browser exited with code ${code}`));
+      });
+    });
+  }
+
+  private agentBrowserBin(): { command: string; args: string[] } {
+    const localBin = path.join(process.cwd(), 'node_modules', '.bin', process.platform === 'win32' ? 'agent-browser.cmd' : 'agent-browser');
+    if (fs.existsSync(localBin)) return { command: localBin, args: [] };
+    return { command: process.platform === 'win32' ? 'npx.cmd' : 'npx', args: ['agent-browser'] };
+  }
+
+  private trimAgentBrowserOutput(output: string): string {
+    const max = 10000;
+    const text = output.trim();
+    return text.length > max ? `${text.slice(0, max)}\n...truncated...` : text;
+  }
+
+  private agentBrowserActions(): BuilderChatAction[] {
+    return [
+      { id: 'agent-browser-open', label: 'Open Site', description: 'Launch or navigate the Agent Browser session.', prompt: '/agent-browser open example.com' },
+      { id: 'agent-browser-snapshot', label: 'Snapshot', description: 'Read the active page accessibility tree with refs.', prompt: '/agent-browser snapshot' },
+      { id: 'agent-browser-chat', label: 'Agent Chat', description: 'Let Agent Browser control the page from natural language.', prompt: '/agent-browser chat "summarize the current page and find the primary action"' },
+    ];
   }
 
   private parseBuilderConductorJson(content: string): { response: string; actions: BuilderChatAction[] } {

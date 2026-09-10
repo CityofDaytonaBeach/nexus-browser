@@ -19,6 +19,16 @@ export interface NexusConfig {
     anthropicModel: string;
     provider: 'openai' | 'anthropic' | 'local';
   };
+  codeExecution: {
+    mode: 'local' | 'remote' | 'custom';
+    localCli: string;
+    localArgs: string[];
+    remoteUrl: string;
+    remoteApiKey: string;
+    remoteKind: 'opencode' | 'codex' | 'custom';
+    ollamaBaseUrl: string;
+    ollamaModel: string;
+  };
   browser: {
     headless: boolean;
     slowMo: number;
@@ -50,6 +60,16 @@ const defaults: NexusConfig = {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
     anthropicModel: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
     provider: (process.env.LLM_PROVIDER as any) || 'openai',
+  },
+  codeExecution: {
+    mode: (process.env.CODE_EXECUTION_MODE as any) || 'local',
+    localCli: process.env.CODE_EXECUTION_LOCAL_CLI || process.env.OPENCODE_CLI || 'opencode',
+    localArgs: (process.env.CODE_EXECUTION_LOCAL_ARGS || 'run').split(/\s+/).filter(Boolean),
+    remoteUrl: process.env.CODE_EXECUTION_REMOTE_URL || '',
+    remoteApiKey: process.env.CODE_EXECUTION_REMOTE_API_KEY || '',
+    remoteKind: (process.env.CODE_EXECUTION_REMOTE_KIND as any) || 'opencode',
+    ollamaBaseUrl: process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434',
+    ollamaModel: process.env.OLLAMA_MODEL || 'qwen2.5-coder',
   },
   browser: {
     headless: process.env.BROWSER_HEADLESS === 'true',
