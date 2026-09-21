@@ -1014,7 +1014,7 @@ export class CloudServer {
           update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode, browserContext: `${browserContext}\n\n${readinessContext}`, ...brainOptions });
           messages.push({
             role: 'assistant',
-            content: `App update started.\n\nWorkspace: ${update.workspace}\nSession: ${update.session.id}\nLog: ${update.logPath}\nI will restart the preview when the update command finishes.`,
+            content: `App update ${update.status === 'queued' ? 'queued behind the active build' : 'started'}.\n\nWorkspace: ${update.workspace}\nSession: ${update.session.id}\nLog: ${update.logPath}\nI will restart the preview after the update finishes.`,
             timestamp: Date.now(),
           });
         } else if (this.shouldStartBuild(message, mode)) {

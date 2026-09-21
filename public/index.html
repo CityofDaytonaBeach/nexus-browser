@@ -1921,9 +1921,10 @@
       activeBuildId = update.buildId;
       localStorage.setItem('nexus-active-build-id', update.buildId);
       document.getElementById('outputPath').textContent = update.workspace;
-      document.getElementById('taskStream').textContent = `Conversational app update started\n\nRequest:\n${update.userMessage}\n\nWorkspace:\n${update.workspace}\n\nSession: ${update.session.id}\nLog:\n${update.logPath}`;
-      document.getElementById('qaStream').textContent = `OpenCode is updating the existing app from chat. Preview will restart when the update command exits. Use Build Doctor or Staging Studio after it completes.`;
-      addMessage('assistant', `Updating existing app from chat. Log: ${update.logPath}`);
+      const state = update.status === 'queued' ? 'queued behind the active build' : 'started';
+      document.getElementById('taskStream').textContent = `Conversational app update ${state}\n\nRequest:\n${update.userMessage}\n\nWorkspace:\n${update.workspace}\n\nSession: ${update.session.id}\nLog:\n${update.logPath}`;
+      document.getElementById('qaStream').textContent = `OpenCode update is ${state}. Preview will restart after all queued work finishes.`;
+      addMessage('assistant', `App update ${state}. Log: ${update.logPath}`);
       monitorBuildProgress(update.buildId, update.id);
     }
 
@@ -1940,7 +1941,8 @@
           const tail = (activity.log || '').split('\n').slice(-45).join('\n').trim();
           const recent = tail.split('\n').map((line) => line.trim()).filter(Boolean).slice(-3).join('\n');
           document.getElementById('taskStream').textContent = `${label} ${activity.status}\n\n${tail || 'Executor is starting...'}`;
-          progressMessage.textContent = `${label}: ${activity.status}${recent ? `\n${recent}` : ''}`;
+          const queued = activity.pendingUpdates ? `\n${activity.pendingUpdates} follow-up${activity.pendingUpdates === 1 ? '' : 's'} queued or running` : '';
+          progressMessage.textContent = `${label}: ${activity.status}${queued}${recent ? `\n${recent}` : ''}`;
           setLaunchStatus(`${label}: ${activity.status}\n${activity.build.root}`);
           if (activity.terminal) {
             buildProgressTimer = null;

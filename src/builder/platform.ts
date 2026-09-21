@@ -87,6 +87,7 @@ export interface BuildActivity {
   kind: 'build' | 'update';
   status: BuildWorkspace['status'] | BuildUpdateRun['status'];
   terminal: boolean;
+  pendingUpdates: number;
   log: string;
 }
 
@@ -190,7 +191,7 @@ export interface BuildUpdateRun {
   createdAt: string;
   workspace: string;
   userMessage: string;
-  status: 'running' | 'completed' | 'failed';
+  status: 'queued' | 'running' | 'completed' | 'failed';
   prompt: string;
   logPath: string;
   session: OpenCodeSessionStub;
@@ -249,6 +250,7 @@ export class BuilderPlatform {
   private sessions: Map<string, OpenCodeSessionStub> = new Map();
   private builds: Map<string, BuildWorkspace> = new Map();
   private buildProcesses: Map<string, ChildProcess> = new Map();
+  private buildUpdateProcesses: Map<string, ChildProcess> = new Map();
   private previewProcesses: Map<string, ChildProcess> = new Map();
   private doctorReports: Map<string, BuildDoctorReport> = new Map();
   private autoHealLoops: Map<string, AutoHealLoopRun> = new Map();
@@ -568,13 +570,19 @@ export class BuilderPlatform {
 
     try {
       session.status = 'running';
-      const child = this.launchCodeExecution(root, opencodePrompt, options.mode || 'build', logPath, (code) => {
+      let settled = false;
+      const finish = (status: BuildWorkspace['status'], sessionStatus: OpenCodeSessionStub['status']) => {
+        if (settled) return;
+        settled = true;
         this.buildProcesses.delete(id);
-        build.status = code === 0 ? 'completed' : 'failed';
-        session.status = code === 0 ? 'completed' : 'failed';
+        build.status = status;
+        session.status = sessionStatus;
+        this.startNextQueuedUpdate(id);
+      };
+      const child = this.launchCodeExecution(root, opencodePrompt, options.mode || 'build', logPath, (code) => {
+        finish(code === 0 ? 'completed' : 'failed', code === 0 ? 'completed' : 'failed');
       }, () => {
-        build.status = 'opencode-unavailable';
-        session.status = 'failed';
+        finish('opencode-unavailable', 'failed');
       }, promptFile);
       if (child) this.buildProcesses.set(id, child);
       build.status = 'opencode-running';
@@ -600,22 +608,23 @@ export class BuilderPlatform {
   getBuildActivity(buildId: string, updateId?: string): BuildActivity {
     const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
-    const matchingUpdates = this.getBuildUpdates().filter((item) => item.buildId === buildId);
     const update = updateId
-      ? matchingUpdates.find((item) => item.id === updateId)
-      : matchingUpdates[matchingUpdates.length - 1];
+      ? this.getBuildUpdates().find((item) => item.buildId === buildId && item.id === updateId)
+      : undefined;
     if (updateId && !update) throw new Error('Build update not found');
     const session = update?.session || (build.executorSessionId ? this.sessions.get(build.executorSessionId) : undefined);
     const logPath = update?.logPath || build.logPath;
     const log = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').slice(-20000) : '';
     const status = update?.status || build.status;
+    const pendingUpdates = updateId ? 0 : this.getBuildUpdates().filter((item) => item.buildId === buildId && ['queued', 'running'].includes(item.status)).length;
     return {
       build,
       update,
       session,
       kind: update ? 'update' : 'build',
       status,
-      terminal: ['completed', 'failed', 'opencode-unavailable'].includes(status),
+      terminal: ['completed', 'failed', 'opencode-unavailable'].includes(status) && pendingUpdates === 0,
+      pendingUpdates,
       log,
     };
   }
@@ -626,8 +635,6 @@ export class BuilderPlatform {
     const id = uuid().slice(0, 8);
     const outputDir = path.join(build.root, '.nexus', 'chat-updates', id);
     fs.mkdirSync(outputDir, { recursive: true });
-    this.createSnapshot(build.root, `chat update ${id}: ${message.slice(0, 120)}`);
-    this.applyDeterministicAppUpdate(build, message);
     const brain = this.createBuildBrain(options.brainMode || build.brain?.mode || 'hybrid', options.aiProvider || build.brain?.provider || 'openai', options.aiModel || build.brain?.model);
     build.brain = brain;
     const prompt = this.buildChatUpdatePrompt(build, message, options.uiLook || 'modern-saas', brain, options.browserContext);
@@ -635,33 +642,68 @@ export class BuilderPlatform {
     const promptFile = path.join(outputDir, 'opencode-update-prompt.md');
     fs.writeFileSync(promptFile, prompt);
     const session = this.createOpenCodeSession(build.root, prompt, options.mode || 'update');
-    session.status = 'running';
-    const run: BuildUpdateRun = { id, buildId, createdAt: new Date().toISOString(), workspace: build.root, userMessage: message, status: 'running', prompt, logPath, session };
+    const run: BuildUpdateRun = { id, buildId, createdAt: new Date().toISOString(), workspace: build.root, userMessage: message, status: 'queued', prompt, logPath, session };
     this.buildUpdates.set(id, run);
     if (options.launch === false) {
+      this.prepareBuildUpdate(build, run);
       run.status = 'completed';
       session.status = 'completed';
       fs.writeFileSync(logPath, 'Chat update launch skipped.\n');
       this.addProjectMemory(buildId, { type: 'decision', summary: `Chat update requested: ${message}`, evidence: [outputDir], tags: ['chat-update', options.uiLook || 'modern-saas'] });
       return run;
     }
-    try {
-      this.launchCodeExecution(build.root, prompt, options.mode || 'update', logPath, (code) => {
-        run.status = code === 0 ? 'completed' : 'failed';
-        session.status = run.status;
-        this.stopPreview(buildId);
-        this.startPreview(buildId);
-      }, () => {
-        run.status = 'failed';
-        session.status = 'failed';
-      }, promptFile);
-    } catch (error: any) {
-      fs.writeFileSync(logPath, `Chat update could not launch: ${error.message}\n`);
-      run.status = 'failed';
-      session.status = 'failed';
+    if (build.status === 'opencode-running' || this.hasRunningBuildUpdate(buildId)) {
+      fs.writeFileSync(logPath, `Queued behind the active Nexus executor for build ${buildId}.\n`);
+    } else {
+      this.launchBuildUpdate(build, run, promptFile);
     }
     this.addProjectMemory(buildId, { type: 'decision', summary: `Chat update requested: ${message}`, evidence: [outputDir], tags: ['chat-update', options.uiLook || 'modern-saas'] });
     return run;
+  }
+
+  private prepareBuildUpdate(build: BuildWorkspace, run: BuildUpdateRun): void {
+    this.createSnapshot(build.root, `chat update ${run.id}: ${run.userMessage.slice(0, 120)}`);
+    this.applyDeterministicAppUpdate(build, run.userMessage);
+  }
+
+  private hasRunningBuildUpdate(buildId: string): boolean {
+    return this.getBuildUpdates().some((item) => item.buildId === buildId && item.status === 'running');
+  }
+
+  private startNextQueuedUpdate(buildId: string): boolean {
+    if (this.hasRunningBuildUpdate(buildId)) return false;
+    const build = this.getBuild(buildId);
+    const next = this.getBuildUpdates().find((item) => item.buildId === buildId && item.status === 'queued');
+    if (!build || !next) return false;
+    this.launchBuildUpdate(build, next, path.join(path.dirname(next.logPath), 'opencode-update-prompt.md'));
+    return true;
+  }
+
+  private launchBuildUpdate(build: BuildWorkspace, run: BuildUpdateRun, promptFile: string): void {
+    let finished = false;
+    const finish = (status: 'completed' | 'failed') => {
+      if (finished) return;
+      finished = true;
+      this.buildUpdateProcesses.delete(build.id);
+      run.status = status;
+      run.session.status = status;
+      if (!this.startNextQueuedUpdate(build.id)) {
+        this.stopPreview(build.id);
+        this.startPreview(build.id);
+      }
+    };
+    try {
+      this.prepareBuildUpdate(build, run);
+      run.status = 'running';
+      run.session.status = 'running';
+      const child = this.launchCodeExecution(build.root, run.prompt, run.session.mode, run.logPath, (code) => {
+        finish(code === 0 ? 'completed' : 'failed');
+      }, () => finish('failed'), promptFile);
+      if (child) this.buildUpdateProcesses.set(build.id, child);
+    } catch (error: any) {
+      fs.writeFileSync(run.logPath, `Chat update could not launch: ${error.message}\n`, { flag: 'a' });
+      finish('failed');
+    }
   }
 
   getBuildUpdates(): BuildUpdateRun[] {

@@ -76,6 +76,18 @@ describe('BuilderPlatform intelligence systems', () => {
     expect(memory.entries.some((entry) => entry.tags.includes('chat-update'))).toBe(true);
   });
 
+  test('queues chat updates while the initial build executor is running', () => {
+    build.status = 'opencode-running';
+    const update = platform.updateBuildFromChat(build.id, 'make every section responsive on phone and tablet', { mode: 'build' });
+
+    expect(update.status).toBe('queued');
+    expect(update.session.status).toBe('created');
+    expect(fs.readFileSync(update.logPath, 'utf8')).toContain('Queued behind the active Nexus executor');
+    build.status = 'completed';
+    expect(platform.getBuildActivity(build.id).pendingUpdates).toBe(1);
+    expect(platform.getBuildActivity(build.id).terminal).toBe(false);
+  });
+
   test('passes long OpenCode briefs by file on local builds', () => {
     const prompt = 'Build this app from browser evidence. '.repeat(1000);
     const promptFile = path.join(root, 'OPENCODE_BUILD_PROMPT.md');

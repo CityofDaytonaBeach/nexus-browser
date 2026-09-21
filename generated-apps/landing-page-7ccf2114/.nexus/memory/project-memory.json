@@ -1,7 +1,7 @@
 {
   "buildId": "7ccf2114",
   "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-7ccf2114",
-  "updatedAt": "2026-09-21T20:28:27.584Z",
+  "updatedAt": "2026-09-21T20:35:21.468Z",
   "entries": [
     {
       "type": "decision",
@@ -15,6 +15,21 @@
       ],
       "id": "3ec70fa2",
       "createdAt": "2026-09-21T20:28:27.584Z"
+    },
+    {
+      "type": "qa",
+      "summary": "Staging Studio ready: preview running, 3 devices, health 92/100, creative uniqueness 93/100.",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-7ccf2114\\.nexus\\staging\\32e86e0f",
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "tags": [
+        "staging-studio",
+        "ready",
+        "creative-93"
+      ],
+      "id": "ec168ea5",
+      "createdAt": "2026-09-21T20:35:21.468Z"
     }
   ],
   "preferences": {},

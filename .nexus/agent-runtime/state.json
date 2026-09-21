@@ -1,6 +1,19 @@
 {
   "memories": [
     {
+      "id": "b4e5e2c9-4739-4c4a-abe5-e0bd9128f6dc",
+      "scope": "session",
+      "content": "User asked: Ask mode: what can you do?\nMode: chat\nActive build: 7ccf2114",
+      "tags": [
+        "builder-chat",
+        "chat",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790023051082,
+      "updatedAt": 1790023051082
+    },
+    {
       "id": "f306b0f5-a047-484e-9e08-2d5793cec797",
       "scope": "session",
       "content": "User asked: build landing page for daytona bike week\nMode: build\nActive build: none",
