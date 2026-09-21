@@ -64,11 +64,30 @@ describe('BuilderPlatform intelligence systems', () => {
   test('creates bounded conversational update runs for existing builds', () => {
     const update = platform.updateBuildFromChat(build.id, 'make the homepage feel more cinematic and add a mobile empty state', { uiLook: 'dark-neon', mode: 'build', launch: false });
     const memory = platform.getProjectMemory(build.id);
+    const activity = platform.getBuildActivity(build.id, update.id);
     expect(update.buildId).toBe(build.id);
     expect(update.prompt).toContain('User follow-up request');
     expect(update.prompt).toContain('make the homepage feel more cinematic');
+    expect(activity.kind).toBe('update');
+    expect(activity.status).toBe('completed');
+    expect(activity.terminal).toBe(true);
+    expect(activity.log).toContain('launch skipped');
     expect(fs.existsSync(path.join(path.dirname(update.logPath), 'opencode-update-prompt.md'))).toBe(true);
     expect(memory.entries.some((entry) => entry.tags.includes('chat-update'))).toBe(true);
+  });
+
+  test('passes long OpenCode briefs by file on local builds', () => {
+    const prompt = 'Build this app from browser evidence. '.repeat(1000);
+    const promptFile = path.join(root, 'OPENCODE_BUILD_PROMPT.md');
+    fs.writeFileSync(promptFile, prompt);
+    const args = (platform as any).localCodeExecutionArgs(prompt, 'build', promptFile) as string[];
+    const command = (platform as any).codeExecutionCommand(prompt, 'build', promptFile) as string;
+
+    expect(args).toContain('--file');
+    expect(args).toContain(promptFile);
+    expect(args[args.length - 1]).toBe(promptFile);
+    expect(args).not.toContain(prompt);
+    expect(command).not.toContain(prompt);
   });
 
   test('rehydrates generated builds from disk after restart', () => {

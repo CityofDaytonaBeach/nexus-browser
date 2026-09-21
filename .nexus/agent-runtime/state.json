@@ -1,6 +1,116 @@
 {
   "memories": [
     {
+      "id": "f306b0f5-a047-484e-9e08-2d5793cec797",
+      "scope": "session",
+      "content": "User asked: build landing page for daytona bike week\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790022647804,
+      "updatedAt": 1790022647804
+    },
+    {
+      "id": "17254e14-b35d-4152-a816-c1f04c0a5a9d",
+      "scope": "session",
+      "content": "User asked: Does it own all screen sizes now why you contiune to chat and build\nMode: build\nActive build: 7ccf2114",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790022507516,
+      "updatedAt": 1790022507516
+    },
+    {
+      "id": "a8b2e421-ee87-463c-87cd-786af3dd6ca9",
+      "scope": "session",
+      "content": "User asked: bike landing page\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790022402943,
+      "updatedAt": 1790022402943
+    },
+    {
+      "id": "88d37e95-47f9-4ef2-9133-352ddf20f5af",
+      "scope": "session",
+      "content": "User asked: bike landing page\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790022201545,
+      "updatedAt": 1790022201545
+    },
+    {
+      "id": "93c8d658-f8f1-4663-878c-848c084678b0",
+      "scope": "session",
+      "content": "User asked: build a bike week landing page\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790022140375,
+      "updatedAt": 1790022140375
+    },
+    {
+      "id": "d39faa21-96ee-4602-854d-0f2ee9c2868d",
+      "scope": "session",
+      "content": "User asked: bike landing page\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790022086609,
+      "updatedAt": 1790022086609
+    },
+    {
+      "id": "6f9fa5b6-1901-44a8-9f39-d79314af72c3",
+      "scope": "session",
+      "content": "User asked: bike landing page\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790021909885,
+      "updatedAt": 1790021909885
+    },
+    {
+      "id": "f2086b42-6202-4c3d-a1e5-6f05a6d55454",
+      "scope": "session",
+      "content": "User asked: daytona bike week landing page\nMode: ui-builder\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "ui-builder"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790020196669,
+      "updatedAt": 1790020196669
+    },
+    {
+      "id": "80a4a2b1-1642-49c3-b926-1765f97c5b16",
+      "scope": "session",
+      "content": "User asked: bike landing page\nMode: ui-builder\nActive build: 4126306b",
+      "tags": [
+        "builder-chat",
+        "ui-builder",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790020147033,
+      "updatedAt": 1790020147033
+    },
+    {
       "id": "7e73583d-3bc5-4e41-ba82-aab92a11803a",
       "scope": "session",
       "content": "User asked: Plan mode: create architecture and setup plan for this app\nMode: plan\nActive build: 02cc01d0",
@@ -300,6 +410,9 @@
       "successCount": 0,
       "failureCount": 0,
       "lessons": [
+        "Refreshed from chat intent: build landing page for daytona bike week",
+        "Refreshed from chat intent: Does it own all screen sizes now why you contiune to chat and build",
+        "Refreshed from chat intent: build a bike week landing page",
         "Refreshed from chat intent: Decide and build from https://example.com with a clean accessible landing page and run QA",
         "Refreshed from chat intent: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live previe",
         "Refreshed from chat intent: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live previe",
@@ -313,7 +426,7 @@
         "Refreshed from chat intent: build bike wekk"
       ],
       "createdAt": 1789045061311,
-      "updatedAt": 1789051309450
+      "updatedAt": 1790022647808
     }
   ],
   "delegations": [],

@@ -1,6 +1,21 @@
 import { CloudServer } from '../server';
 
 describe('CloudServer deploy helpers', () => {
+  test('routes terse product prompts into an executable build', () => {
+    const server = new CloudServer() as any;
+    expect(server.detectBuilderMode('bike landing page', 'ui-builder')).toBe('build');
+    expect(server.shouldStartBuild('bike landing page', 'build')).toBe(true);
+    expect(server.shouldRequireBrowserGrounding('bike landing page', 'build', 'No active page is available')).toBe(false);
+    server.stop?.();
+  });
+
+  test('keeps Ask mode conversational even for product wording', () => {
+    const server = new CloudServer() as any;
+    expect(server.shouldStartBuild('bike landing page', 'chat')).toBe(false);
+    expect(server.shouldUpdateBuild('fix the bike landing page', 'chat')).toBe(false);
+    server.stop?.();
+  });
+
   test('extracts deploy URLs from provider output', () => {
     const server = new CloudServer() as any;
     const urls = server.extractDeployUrls('Preview: https://demo-abc.vercel.app\nWebsite URL: https://nexus.netlify.app.\nIgnore https://example.com');

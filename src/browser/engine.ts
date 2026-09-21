@@ -1,4 +1,4 @@
-import { chromium, Browser, BrowserContext, Page, CDPSession } from 'playwright';
+import { Browser, BrowserContext, Page, CDPSession } from 'playwright';
 import { EventEmitter } from 'events';
 import { v4 as uuid } from 'uuid';
 import { config } from '../core/config';
@@ -9,6 +9,7 @@ import { AgentSwarmPlan, buildAgentFiles, getProjectAgentSwarm } from '../projec
 import * as fs from 'fs';
 import * as path from 'path';
 import sharp from 'sharp';
+import { launchChromium } from './launch';
 
 const log = createLogger('Browser');
 
@@ -259,7 +260,7 @@ export class BrowserEngine extends EventEmitter {
 
     log.info(`Creating session ${id}`);
 
-    const browser = await chromium.launch({
+    const browser = await launchChromium({
       headless: cfg.headless,
       slowMo: cfg.slowMo,
       args: [

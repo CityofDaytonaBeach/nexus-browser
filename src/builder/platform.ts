@@ -1,9 +1,10 @@
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { v4 as uuid } from 'uuid';
-import { chromium } from 'playwright';
 import { config } from '../core/config';
+import { launchChromium } from '../browser/launch';
 import { getLanguageExperts, LanguageExpertProfile } from '../languages/registry';
 import { getProjectAgentSwarm } from '../project-agents/registry';
 
@@ -66,7 +67,7 @@ export interface BuildWorkspace {
   name: string;
   root: string;
   prompt: string;
-  status: 'created' | 'opencode-running' | 'opencode-unavailable' | 'failed';
+  status: 'created' | 'opencode-running' | 'completed' | 'opencode-unavailable' | 'failed';
   previewStatus: 'stopped' | 'starting' | 'running' | 'failed';
   previewUrl?: string;
   previewPort?: number;
@@ -75,7 +76,18 @@ export interface BuildWorkspace {
   previewLogPath: string;
   previewCommand: string;
   brain: BuildBrainProfile;
+  executorSessionId?: string;
   createdAt: string;
+}
+
+export interface BuildActivity {
+  build: BuildWorkspace;
+  update?: BuildUpdateRun;
+  session?: OpenCodeSessionStub;
+  kind: 'build' | 'update';
+  status: BuildWorkspace['status'] | BuildUpdateRun['status'];
+  terminal: boolean;
+  log: string;
 }
 
 export interface BuildDoctorIssue {
@@ -358,15 +370,33 @@ export class BuilderPlatform {
     return 'remote OpenCode server';
   }
 
-  private codeExecutionCommand(prompt: string): string {
+  private isOpenCodeLocalCli(): boolean {
+    const cli = path.basename(config.get().codeExecution.localCli).toLowerCase().replace(/\.(cmd|exe|ps1)$/, '');
+    return cli === 'opencode';
+  }
+
+  private localCodeExecutionArgs(prompt: string, mode: string, promptFile?: string): string[] {
     const cfg = config.get().codeExecution;
-    if (cfg.mode === 'local') return `${cfg.localCli} ${cfg.localArgs.concat([JSON.stringify(prompt)]).join(' ')}`;
+    if (promptFile && this.isOpenCodeLocalCli()) {
+      const instruction = `Read the attached Nexus ${mode} brief, complete the requested work in the current workspace, run appropriate checks, and summarize the result.`;
+      return [...cfg.localArgs, instruction, '--file', promptFile];
+    }
+    return [...cfg.localArgs, prompt];
+  }
+
+  private codeExecutionCommand(prompt: string, mode: string, promptFile?: string): string {
+    const cfg = config.get().codeExecution;
+    if (cfg.mode === 'local') {
+      return [cfg.localCli, ...this.localCodeExecutionArgs(prompt, mode, promptFile)]
+        .map((part) => /\s/.test(part) ? JSON.stringify(part) : part)
+        .join(' ');
+    }
     return `${cfg.remoteKind} server ${cfg.remoteUrl || '(CODE_EXECUTION_REMOTE_URL not set)'}`;
   }
 
-  private launchCodeExecution(workspace: string, prompt: string, mode: string, logPath: string, onExit?: (code: number | null) => void, onError?: (error: Error) => void): ChildProcess | undefined {
+  private launchCodeExecution(workspace: string, prompt: string, mode: string, logPath: string, onExit?: (code: number | null) => void, onError?: (error: Error) => void, promptFile?: string): ChildProcess | undefined {
     const cfg = config.get().codeExecution;
-    fs.writeFileSync(logPath, `Nexus code execution backend: ${cfg.mode} (${cfg.remoteKind})\nWorkspace: ${workspace}\nMode: ${mode}\n\n`, { flag: 'a' });
+    fs.writeFileSync(logPath, `Nexus code execution backend: ${cfg.mode} (${cfg.remoteKind})\nWorkspace: ${workspace}\nMode: ${mode}\nPrompt file: ${promptFile || 'inline'}\n\n`, { flag: 'a' });
 
     if (cfg.mode === 'remote' || cfg.mode === 'custom') {
       void this.callRemoteCodeExecution(workspace, prompt, mode, logPath)
@@ -375,16 +405,14 @@ export class BuilderPlatform {
       return undefined;
     }
 
+    const localArgs = this.localCodeExecutionArgs(prompt, mode, promptFile);
     const commandParts = process.platform === 'win32'
-      ? { command: 'cmd.exe', args: ['/c', cfg.localCli, ...cfg.localArgs, prompt] }
-      : { command: cfg.localCli, args: [...cfg.localArgs, prompt] };
+      ? { command: 'cmd.exe', args: ['/c', cfg.localCli, ...localArgs] }
+      : { command: cfg.localCli, args: localArgs };
+    const runtime = this.prepareCodeExecutionEnvironment(workspace);
     const child = spawn(commandParts.command, commandParts.args, {
       cwd: workspace,
-      env: {
-        ...process.env,
-        OLLAMA_BASE_URL: cfg.ollamaBaseUrl,
-        OLLAMA_MODEL: cfg.ollamaModel,
-      },
+      env: runtime.env,
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
       windowsHide: true,
@@ -400,12 +428,56 @@ export class BuilderPlatform {
       safeLogWrite(`\nCode executor exited with code ${code}\n`);
       if (!log.destroyed) log.end();
       onExit?.(code);
+      runtime.cleanup();
     });
     child.on('error', (error) => {
       safeLogWrite(`\nCode executor failed to start: ${error.message}\n`);
       onError?.(error);
+      runtime.cleanup();
     });
     return child;
+  }
+
+  private prepareCodeExecutionEnvironment(workspace: string): { env: NodeJS.ProcessEnv; cleanup: () => void } {
+    const cfg = config.get().codeExecution;
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      OLLAMA_BASE_URL: cfg.ollamaBaseUrl,
+      OLLAMA_MODEL: cfg.ollamaModel,
+      npm_config_cache: path.join(workspace, '.nexus', 'npm-cache'),
+    };
+    if (!this.isOpenCodeLocalCli()) return { env, cleanup: () => undefined };
+
+    const authSource = path.join(os.homedir(), '.local', 'share', 'opencode', 'auth.json');
+    if (!fs.existsSync(authSource)) return { env, cleanup: () => undefined };
+
+    const runtimeRoot = path.join(os.tmpdir(), 'nexus-browser-opencode', uuid());
+    const dataHome = path.join(runtimeRoot, 'data');
+    const isolatedOpenCode = path.join(dataHome, 'opencode');
+    try {
+      fs.mkdirSync(isolatedOpenCode, { recursive: true });
+      const isolatedAuth = path.join(isolatedOpenCode, 'auth.json');
+      try {
+        fs.linkSync(authSource, isolatedAuth);
+      } catch {
+        fs.copyFileSync(authSource, isolatedAuth);
+        fs.chmodSync(isolatedAuth, 0o600);
+      }
+      env.XDG_DATA_HOME = dataHome;
+    } catch {
+      fs.rmSync(runtimeRoot, { recursive: true, force: true });
+      return { env, cleanup: () => undefined };
+    }
+    return {
+      env,
+      cleanup: () => {
+        try {
+          fs.rmSync(runtimeRoot, { recursive: true, force: true });
+        } catch {
+          // The OS can briefly retain OpenCode handles after exit; temp cleanup will catch them later.
+        }
+      },
+    };
   }
 
   private async callRemoteCodeExecution(workspace: string, prompt: string, mode: string, logPath: string): Promise<void> {
@@ -435,7 +507,7 @@ export class BuilderPlatform {
     if (!response.ok) throw new Error(`Remote code executor failed: ${response.status} ${text}`);
   }
 
-  private async runCodeExecutionBlocking(workspace: string, prompt: string, mode: string, logPath: string, timeoutMs: number): Promise<{ stdout: string; stderr: string; code: number | null; timedOut: boolean }> {
+  private async runCodeExecutionBlocking(workspace: string, prompt: string, mode: string, logPath: string, timeoutMs: number, promptFile?: string): Promise<{ stdout: string; stderr: string; code: number | null; timedOut: boolean }> {
     const cfg = config.get().codeExecution;
     if (cfg.mode === 'remote' || cfg.mode === 'custom') {
       try {
@@ -446,10 +518,16 @@ export class BuilderPlatform {
       }
     }
 
+    const localArgs = this.localCodeExecutionArgs(prompt, mode, promptFile);
     const commandParts = process.platform === 'win32'
-      ? { command: 'cmd.exe', args: ['/c', cfg.localCli, ...cfg.localArgs, prompt] }
-      : { command: cfg.localCli, args: [...cfg.localArgs, prompt] };
-    return this.runCommand(workspace, commandParts.command, commandParts.args, timeoutMs);
+      ? { command: 'cmd.exe', args: ['/c', cfg.localCli, ...localArgs] }
+      : { command: cfg.localCli, args: localArgs };
+    const runtime = this.prepareCodeExecutionEnvironment(workspace);
+    try {
+      return await this.runCommand(workspace, commandParts.command, commandParts.args, timeoutMs, runtime.env);
+    } finally {
+      runtime.cleanup();
+    }
   }
 
   getOpenCodeSessions(): OpenCodeSessionStub[] {
@@ -467,9 +545,11 @@ export class BuilderPlatform {
 
     fs.mkdirSync(path.join(root, 'src'), { recursive: true });
     this.writeStarterApp(root, name, prompt);
-    fs.writeFileSync(path.join(root, 'OPENCODE_BUILD_PROMPT.md'), opencodePrompt);
+    const promptFile = path.join(root, 'OPENCODE_BUILD_PROMPT.md');
+    fs.writeFileSync(promptFile, opencodePrompt);
 
-    const command = this.codeExecutionCommand(opencodePrompt);
+    const command = this.codeExecutionCommand(opencodePrompt, options.mode || 'build', promptFile);
+    const session = this.createOpenCodeSession(root, opencodePrompt, options.mode || 'build');
     const build: BuildWorkspace = {
       id,
       name,
@@ -482,24 +562,29 @@ export class BuilderPlatform {
       previewLogPath,
       previewCommand: 'npm install && npm run dev',
       brain,
+      executorSessionId: session.id,
       createdAt: new Date().toISOString(),
     };
 
     try {
-      const child = this.launchCodeExecution(root, opencodePrompt, options.mode || 'build', logPath, () => {
+      session.status = 'running';
+      const child = this.launchCodeExecution(root, opencodePrompt, options.mode || 'build', logPath, (code) => {
         this.buildProcesses.delete(id);
+        build.status = code === 0 ? 'completed' : 'failed';
+        session.status = code === 0 ? 'completed' : 'failed';
       }, () => {
         build.status = 'opencode-unavailable';
-      });
+        session.status = 'failed';
+      }, promptFile);
       if (child) this.buildProcesses.set(id, child);
       build.status = 'opencode-running';
     } catch (error: any) {
       fs.writeFileSync(logPath, `Code executor could not be launched automatically. Run this manually from ${root}:\n${command}\n\n${error.message}\n`);
       build.status = 'opencode-unavailable';
+      session.status = 'failed';
     }
 
     this.builds.set(id, build);
-    this.createOpenCodeSession(root, opencodePrompt, options.mode || 'build');
     return build;
   }
 
@@ -510,6 +595,29 @@ export class BuilderPlatform {
 
   getBuild(buildId: string): BuildWorkspace | undefined {
     return this.builds.get(buildId) || this.hydrateGeneratedBuild(buildId);
+  }
+
+  getBuildActivity(buildId: string, updateId?: string): BuildActivity {
+    const build = this.getBuild(buildId);
+    if (!build) throw new Error('Build not found');
+    const matchingUpdates = this.getBuildUpdates().filter((item) => item.buildId === buildId);
+    const update = updateId
+      ? matchingUpdates.find((item) => item.id === updateId)
+      : matchingUpdates[matchingUpdates.length - 1];
+    if (updateId && !update) throw new Error('Build update not found');
+    const session = update?.session || (build.executorSessionId ? this.sessions.get(build.executorSessionId) : undefined);
+    const logPath = update?.logPath || build.logPath;
+    const log = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').slice(-20000) : '';
+    const status = update?.status || build.status;
+    return {
+      build,
+      update,
+      session,
+      kind: update ? 'update' : 'build',
+      status,
+      terminal: ['completed', 'failed', 'opencode-unavailable'].includes(status),
+      log,
+    };
   }
 
   updateBuildFromChat(buildId: string, message: string, options: { uiLook?: string; mode?: string; launch?: boolean; browserContext?: string; brainMode?: BuildBrainMode; aiProvider?: string; aiModel?: string } = {}): BuildUpdateRun {
@@ -524,7 +632,8 @@ export class BuilderPlatform {
     build.brain = brain;
     const prompt = this.buildChatUpdatePrompt(build, message, options.uiLook || 'modern-saas', brain, options.browserContext);
     const logPath = path.join(outputDir, 'opencode-update.log');
-    fs.writeFileSync(path.join(outputDir, 'opencode-update-prompt.md'), prompt);
+    const promptFile = path.join(outputDir, 'opencode-update-prompt.md');
+    fs.writeFileSync(promptFile, prompt);
     const session = this.createOpenCodeSession(build.root, prompt, options.mode || 'update');
     session.status = 'running';
     const run: BuildUpdateRun = { id, buildId, createdAt: new Date().toISOString(), workspace: build.root, userMessage: message, status: 'running', prompt, logPath, session };
@@ -545,7 +654,7 @@ export class BuilderPlatform {
       }, () => {
         run.status = 'failed';
         session.status = 'failed';
-      });
+      }, promptFile);
     } catch (error: any) {
       fs.writeFileSync(logPath, `Chat update could not launch: ${error.message}\n`);
       run.status = 'failed';
@@ -578,7 +687,7 @@ export class BuilderPlatform {
 
     const child = spawn(commandParts.command, commandParts.args, {
       cwd: build.root,
-      env: { ...process.env, PORT: String(port) },
+      env: { ...process.env, PORT: String(port), npm_config_cache: path.join(build.root, '.nexus', 'npm-cache') },
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
       windowsHide: true,
@@ -624,9 +733,14 @@ export class BuilderPlatform {
   getPreviewLog(buildId: string): { buildId: string; log: string } {
     const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
-    if (!fs.existsSync(build.previewLogPath)) return { buildId, log: '' };
+    return { buildId, log: this.readCurrentPreviewLog(build, 20000) };
+  }
+
+  private readCurrentPreviewLog(build: BuildWorkspace, maxLength: number): string {
+    if (!fs.existsSync(build.previewLogPath)) return '';
     const log = fs.readFileSync(build.previewLogPath, 'utf8');
-    return { buildId, log: log.slice(-20000) };
+    const currentRun = log.lastIndexOf('Starting preview for ');
+    return (currentRun >= 0 ? log.slice(currentRun) : log).slice(-maxLength);
   }
 
   async runBuildDoctor(buildId: string, options: { runBuild?: boolean; autoHeal?: boolean } = {}): Promise<BuildDoctorReport> {
@@ -668,7 +782,7 @@ export class BuilderPlatform {
     if (!checks.files.envExample && this.promptLikelyNeedsEnv(build.prompt)) issues.push(this.issue('medium', 'env', 'No .env.example for integration-heavy app', build.prompt, 'Create .env.example documenting required API, auth, database, and deployment variables.'));
 
     if (fs.existsSync(build.previewLogPath)) {
-      const previewLog = fs.readFileSync(build.previewLogPath, 'utf8').slice(-12000);
+      const previewLog = this.readCurrentPreviewLog(build, 12000);
       checks.logs.preview = previewLog.slice(-2000);
       if (/error|failed|eaddrinuse|module not found|cannot find|syntaxerror|vite.*error/i.test(previewLog)) {
         issues.push(this.issue('high', 'preview', 'Preview log contains runtime errors', previewLog.slice(-4000), 'Fix dev server/runtime errors, dependency failures, occupied ports, or import problems.'));
@@ -816,7 +930,7 @@ export class BuilderPlatform {
     const id = uuid().slice(0, 8);
     const outputDir = path.join(build.root, '.nexus', 'staging', id);
     fs.mkdirSync(outputDir, { recursive: true });
-    const previewLog = fs.existsSync(build.previewLogPath) ? fs.readFileSync(build.previewLogPath, 'utf8').slice(-20000) : '';
+    const previewLog = this.readCurrentPreviewLog(build, 20000);
     const errors = this.extractPreviewErrors(previewLog);
     await this.waitForPreview(build.previewUrl!, 12000);
     const deviceChecks = await this.captureStagingDevices(build.previewUrl!, devices, outputDir);
@@ -882,7 +996,14 @@ export class BuilderPlatform {
 
       const healLogPath = path.join(report.outputDir, `auto-heal-loop-pass-${pass}.log`);
       fs.writeFileSync(healLogPath, `Auto-heal loop ${id}, pass ${pass}\n\n`, { flag: 'a' });
-      const result = await this.runCodeExecutionBlocking(build.root, report.repairPrompt, 'auto-heal-loop', healLogPath, timeoutMs);
+      const result = await this.runCodeExecutionBlocking(
+        build.root,
+        report.repairPrompt,
+        'auto-heal-loop',
+        healLogPath,
+        timeoutMs,
+        path.join(report.outputDir, 'opencode-auto-heal-prompt.md'),
+      );
       fs.writeFileSync(healLogPath, `${result.stdout}\n${result.stderr}\n`, { flag: 'a' });
       healLogs.push({ pass, code: result.code, timedOut: result.timedOut, logPath: healLogPath });
       this.stopPreview(buildId);
@@ -1016,7 +1137,7 @@ export class BuilderPlatform {
     const memory = this.loadProjectMemory(build);
     const latestCreative = Array.from(this.creativeDirections.values()).filter((item) => item.buildId === build.id).slice(-1)[0];
     const latestRoute = Array.from(this.expertRoutes.values()).filter((item) => item.buildId === build.id).slice(-1)[0];
-    const previewLog = fs.existsSync(build.previewLogPath) ? fs.readFileSync(build.previewLogPath, 'utf8').slice(-5000) : '';
+    const previewLog = this.readCurrentPreviewLog(build, 5000);
     const swarm = getProjectAgentSwarm();
     return `You are OpenCode updating an existing NexusBrowser generated app from a conversational user request.\n\nWorkspace: ${build.root}\nOriginal app goal: ${build.prompt}\nUser follow-up request: ${message}\nCurrent preview URL: ${build.previewUrl || 'not running'}\nRequested look/mode: ${uiLook}\n\nBuild brain:\n- Mode: ${brain.mode}\n- Provider: ${brain.provider}\n- Model: ${brain.model || 'default'}\n- Executor: ${brain.executor}\n${brain.notes.map((note) => `- ${note}`).join('\n')}\n\nLive browser intelligence packet:\n${browserContext || 'No live browser packet was available. Use files, logs, and preview evidence.'}\n\nShared Nexus agent knowledge to apply:\n${swarm.sharedKnowledge.map((item) => `- ${item}`).join('\n')}\n\nProject memory:\n${memory.entries.slice(-20).map((entry) => `- [${entry.type}] ${entry.summary}`).join('\n') || '- No memory yet.'}\n\n${latestCreative ? `Creative direction to preserve and improve:\n${latestCreative.prompt.slice(0, 6000)}` : 'No creative direction exists yet. Create a distinct, anti-template design direction before changing UI.'}\n\n${latestRoute ? `Relevant expert routing context:\n${latestRoute.selectedExperts.map((expert) => `- ${expert.name}: ${expert.reasons.join('; ')}`).join('\n')}` : 'No expert route exists yet. Infer needed experts from package.json, files, and errors.'}\n\nRecent preview log:\n${previewLog || 'No preview log yet.'}\n\nNexusBrowser advantage to preserve:\n- Use the browser and DevTools-style evidence as the main development loop, not an afterthought.\n- Connect visible UI, DOM structure, computed styles, console errors, network calls, storage state, screenshots, and visual QA to concrete code edits.\n- If the request is vague, improve the app in the direction that makes the browser-powered coding loop clearer, smarter, and more useful.\n\nUpdate rules:\n- Treat the user message as a modification to the existing app, not a request to start over.\n- Inspect files before editing.\n- Make the smallest complete code changes that satisfy the request.\n- If UI changes are requested, make them visually distinctive and avoid generic templates.\n- Preserve existing working functionality unless the user explicitly asks to replace it.\n- Update related loading, empty, error, hover, focus, mobile, and reduced-motion states when relevant.\n- Run npm install only if dependencies change.\n- Run npm run build and fix any failures.\n- Leave a concise summary in .nexus/memory/project-memory.md if you learn a durable decision.\n`;
   }
@@ -1056,7 +1177,7 @@ export class BuilderPlatform {
   }
 
   private async captureStagingDevices(url: string, devices: StagingDevicePreset[], outputDir: string): Promise<StagingDeviceCheck[]> {
-    const browser = await chromium.launch({ headless: true });
+    const browser = await launchChromium({ headless: true });
     try {
       const checks: StagingDeviceCheck[] = [];
       for (const device of devices) {
@@ -1170,7 +1291,7 @@ export class BuilderPlatform {
         session.status = code === 0 ? 'completed' : 'failed';
       }, () => {
         session.status = 'failed';
-      });
+      }, path.join(report.outputDir, 'opencode-auto-heal-prompt.md'));
     } catch (error: any) {
       fs.writeFileSync(healLogPath, `Auto-heal could not launch: ${error.message}\n`);
       session.status = 'failed';
@@ -1186,9 +1307,9 @@ export class BuilderPlatform {
     return `You are the NexusBrowser Build Doctor Auto-Heal Agent. You understand the full app-building lifecycle: package setup, dev server, React/Vite/Next structure, API clients, env vars, database wiring, tests, visual QA, deployment readiness, and safe agent repair.\n\nWorkspace: ${build.root}\nOriginal user request: ${build.prompt}\nPreview URL: ${build.previewUrl || 'not running'}\n\nDiagnosed issues:\n${issues.map((item) => `- [${item.severity}] ${item.area}: ${item.issue}\n  Evidence: ${item.evidence.slice(0, 1000)}\n  Fix: ${item.fix}`).join('\n') || '- No hard failures found; improve production readiness.'}\n\nChecks JSON:\n${JSON.stringify(checks, null, 2).slice(0, 12000)}\n\nAuto-heal rules:\n- Inspect files before editing.\n- Fix package scripts, dependencies, imports, missing files, TypeScript errors, Vite/runtime errors, API/env setup, and broken preview wiring.\n- Create .env.example when APIs, auth, payments, database, email, storage, AI, or deployment are implied.\n- Add safe mocks or local fallbacks when live APIs require secrets.\n- Preserve maintainable React/Tailwind code.\n- Never hardcode secrets or captured cookies.\n- Run npm install when dependencies change.\n- Run npm run build and fix failures.\n- If preview failed, ensure npm run dev works.\n- Update README with setup, env vars, scripts, and known limitations.\n- Keep changes minimal but complete enough for a working app.\n`;
   }
 
-  private async runCommand(cwd: string, command: string, args: string[], timeoutMs: number): Promise<{ code: number | null; stdout: string; stderr: string; timedOut: boolean }> {
+  private async runCommand(cwd: string, command: string, args: string[], timeoutMs: number, env?: NodeJS.ProcessEnv): Promise<{ code: number | null; stdout: string; stderr: string; timedOut: boolean }> {
     return new Promise((resolve) => {
-      const child = spawn(command, args, { cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], shell: false, windowsHide: true });
+      const child = spawn(command, args, { cwd, env: env || { ...process.env, npm_config_cache: path.join(cwd, '.nexus', 'npm-cache') }, stdio: ['ignore', 'pipe', 'pipe'], shell: false, windowsHide: true });
       let stdout = '';
       let stderr = '';
       let settled = false;

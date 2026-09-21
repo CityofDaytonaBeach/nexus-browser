@@ -181,9 +181,27 @@
     .chat-action b { display: block; font-size: 12px; margin-bottom: 2px; }
     .chat-action span { display: block; color: var(--muted); font-size: 11px; line-height: 1.35; }
     .chat-source { color: var(--muted); font-size: 10px; padding-left: 2px; }
-    .composer { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 14px; border-top: 1px solid rgba(17,24,39,.1); }
-    .composer textarea { min-height: 84px; resize: none; border: 1px solid rgba(17,24,39,.12); border-radius: 18px; padding: 12px; color: var(--text); background: rgba(255,255,255,.95); outline: none; font-size: 14px; box-shadow: inset 0 0 28px rgba(17,24,39,.03); }
+    .panel-title-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; }
+    .panel-title-actions .btn { padding: 4px 7px; border-radius: 8px; font-size: 10px; }
+    body.chat-first .panel-title .panel-title-actions button, body.project-live .panel-title .panel-title-actions button { display: inline-flex; }
+    .card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .card-actions .btn { padding: 5px 8px; border-radius: 8px; }
+    .manager-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; align-items: start; }
+    .agent-console { display: grid; grid-template-columns: minmax(240px, 320px) 1fr; gap: 12px; align-items: start; }
+    .runtime-panel { border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.78); padding: 12px; display: grid; gap: 8px; }
+    .runtime-panel h2 { font-size: 15px; letter-spacing: 0; margin: 0; }
+    .runtime-stat { display: grid; grid-template-columns: 1fr auto; gap: 6px; color: var(--muted); font-size: 12px; }
+    .agent-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+    .agent-card { border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.78); padding: 12px; display: grid; gap: 7px; }
+    .agent-card b { font-size: 14px; }
+    .agent-card small, .runtime-panel small { color: var(--muted); line-height: 1.35; }
+    @media (max-width: 920px) { .agent-console { grid-template-columns: 1fr; } }
+    .composer { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; gap: 10px; padding: 14px; border-top: 1px solid rgba(17,24,39,.1); }
+    .composer-main { min-width: 0; display: grid; gap: 8px; }
+    .composer textarea { width: 100%; min-height: 72px; resize: none; border: 1px solid rgba(17,24,39,.12); border-radius: 16px; padding: 12px; color: var(--text); background: rgba(255,255,255,.95); outline: none; font-size: 14px; box-shadow: inset 0 0 28px rgba(17,24,39,.03); }
     .composer textarea:focus { border-color: rgba(17,24,39,.48); box-shadow: 0 0 0 3px rgba(109,94,252,.1), inset 0 0 28px rgba(17,24,39,.04); }
+    .composer-mode { width: fit-content; max-width: 100%; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); color: var(--text); padding: 6px 28px 6px 9px; outline: none; font-size: 12px; font-weight: 650; cursor: pointer; }
+    .composer > .btn { min-width: 58px; height: 36px; }
     .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .metric { border: 1px solid var(--line); border-radius: 9px; padding: 7px; background: var(--panel-2); }
     .metric b { display: block; font-size: 16px; }
@@ -216,20 +234,6 @@
     <main class="workspace">
       <aside class="panel" id="toolsPanel">
         <div class="panel-title"><span>Tools</span><button class="btn" onclick="toggleTools(false)">Close</button></div>
-        <div class="section">
-          <div class="label">AI Build Mode</div>
-          <select id="builderMode" class="select">
-            <option value="research">Research to Code</option>
-            <option value="plan">Plan Mode</option>
-            <option value="build">Build Mode</option>
-            <option value="ui-builder" selected>Visual UI Builder</option>
-            <option value="api-mcp">API + MCP Factory</option>
-            <option value="database">Database Architect</option>
-            <option value="integrations">Integration Factory</option>
-            <option value="visual-qa">Visual QA Repair</option>
-            <option value="ship">Ship Ready App</option>
-          </select>
-        </div>
         <div class="section">
           <div class="label">Change UI Look</div>
           <select id="uiLook" class="select">
@@ -332,10 +336,10 @@
           <div class="empty">
             <div class="landing-builder landing-minimal">
               <form class="landing-chat" id="landingForm" action="/" method="get">
-                <input id="landingChatInput" name="start" placeholder="Enter a URL to research and build from" autocomplete="url">
-                <button class="btn primary" id="landingSubmit" type="submit">Open</button>
+                <input id="landingChatInput" name="start" placeholder="Ask Nexus to build, research, or fix something - or enter a URL" autocomplete="off">
+                <button class="btn primary" id="landingSubmit" type="submit">Start</button>
               </form>
-              <div class="landing-status" id="landingStatus">Press Enter or Open to start.</div>
+              <div class="landing-status" id="landingStatus">Press Enter or Start to begin.</div>
             </div>
           </div>
         </div>
@@ -347,7 +351,15 @@
       </section>
 
       <aside class="panel right open" id="chatPanel">
-        <div class="panel-title"><span>Nexus Chat</span><span id="wsBadge"><span class="dot bad"></span>offline</span></div>
+        <div class="panel-title">
+          <span id="activeChatTitle">Nexus Chat</span>
+          <span class="panel-title-actions">
+            <button class="btn" onclick="createNewChat()">New</button>
+            <button class="btn" onclick="showChatManager()">Chats</button>
+            <button class="btn" onclick="popoutChat()">Popout</button>
+            <span id="wsBadge"><span class="dot bad"></span>offline</span>
+          </span>
+        </div>
         <div class="chat">
           <div class="chat-briefing">
             <div class="label">Unified Nexus Brain</div>
@@ -369,8 +381,17 @@
             <div class="msg system">Nexus Command Chat shares evidence across Gatherer, Agent Browser, Backend Observer, OpenCode builds, connectors, and QA before it answers or builds.</div>
           </div>
           <div class="composer">
-            <textarea id="chatInput" placeholder="Ask, build, fix, QA, deploy, or use /agent-browser snapshot. Nexus will combine all evidence." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
-            <button class="btn primary" onclick="sendChat()">Send</button>
+            <div class="composer-main">
+              <textarea id="chatInput" placeholder="Ask Nexus to build, plan, research, or fix something" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+              <select id="builderMode" class="composer-mode" aria-label="Chat mode" title="Choose how Nexus handles the next prompt">
+                <option value="build" selected>Agent</option>
+                <option value="chat">Ask</option>
+                <option value="plan">Plan</option>
+                <option value="ui-builder">Visual edit</option>
+                <option value="research">Research</option>
+              </select>
+            </div>
+            <button class="btn primary" id="chatSendButton" onclick="sendChat()">Send</button>
           </div>
         </div>
       </aside>
@@ -395,6 +416,7 @@
     let pendingNavigateUrl = null;
     let activeBuildId = localStorage.getItem('nexus-active-build-id') || null;
     let previewLogTimer = null;
+    let buildProgressTimer = null;
     let browserIntelTimer = null;
     let pendingResearchAfterLoad = false;
     let lastBrowserIntelligence = '';
@@ -403,7 +425,10 @@
     let lastBackendObservationCount = 0;
     let activeTabId = 'home';
     let landingStartInProgress = false;
+    let chatRequestInProgress = false;
+    let builderModeTouched = Boolean(localStorage.getItem('nexus-builder-mode'));
     let csrfToken = '';
+    let activeChatId = localStorage.getItem('nexus-active-chat-id') || '';
     const nexusStatusLog = [];
     const browserTabs = [{ id: 'home', title: 'Home', kind: 'home', url: '' }];
 
@@ -475,6 +500,7 @@
         await refreshBackendObserver(true);
         addMessage('user', message);
         const result = await api('/api/builder/chat', {
+          chatId: chatApiId(),
           sessionId: currentSessionId,
           pageId: currentPageId,
           activeBuildId,
@@ -484,12 +510,17 @@
           uiLook: document.getElementById('uiLook').value,
           ...buildBrainOptions(),
         });
+        if (result.chatId) {
+          const currentTitle = document.getElementById('activeChatTitle')?.textContent || '';
+          setActiveChat(result.chatId, currentTitle && currentTitle !== 'Nexus Chat' ? currentTitle : message);
+        }
         addMessage('assistant', result.response);
         if (result.build) showBuildStarted(result.build);
         if (result.update) showBuildUpdateStarted(result.update);
         if (!result.build && !result.update) {
           setLaunchStatus('No build was returned from chat. Forcing OpenCode build start from the loaded URL...');
           const build = await api('/api/builder/start-build', {
+            chatId: chatApiId(),
             sessionId: currentSessionId,
             prompt: message,
             browserContext: `${lastBrowserIntelligence}\n\n${lastBackendObservation}`.trim(),
@@ -556,10 +587,55 @@
       };
     }
 
-    async function api(path, body) {
-      const res = await fetch(path, { method: 'POST', headers: headers(), body: JSON.stringify(body || {}) });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
+    function chatApiId() {
+      return activeChatId || currentSessionId || 'default';
+    }
+
+    function setActiveChat(id, title) {
+      activeChatId = id || '';
+      if (activeChatId) localStorage.setItem('nexus-active-chat-id', activeChatId);
+      else localStorage.removeItem('nexus-active-chat-id');
+      setText('activeChatTitle', title ? compactLabel(title, 34) : 'Nexus Chat');
+    }
+
+    function renderChatMessages(messages, title) {
+      const el = document.getElementById('messages');
+      el.innerHTML = '';
+      if (!Array.isArray(messages) || !messages.length) {
+        addMessage('system', 'New Nexus chat ready. Ask, build, fix, QA, deploy, or call an agent.');
+      } else {
+        messages.forEach((message) => addMessage(message.role || 'system', message.content || ''));
+      }
+      if (title) setText('activeChatTitle', compactLabel(title, 34));
+    }
+
+    function compactLabel(value, max = 72) {
+      const text = String(value || '').replace(/\s+/g, ' ').trim();
+      return text.length > max ? `${text.slice(0, max - 3)}...` : text;
+    }
+
+    function formatTime(value) {
+      if (!value) return 'not updated yet';
+      return new Date(value).toLocaleString();
+    }
+
+    async function api(path, body, options = {}) {
+      const controller = new AbortController();
+      const timeoutMs = Number(options.timeoutMs || 0);
+      const timeout = timeoutMs ? setTimeout(() => controller.abort(), timeoutMs) : null;
+      try {
+        const res = await fetch(path, { method: 'POST', headers: headers(), body: JSON.stringify(body || {}), signal: controller.signal });
+        const text = await res.text();
+        let payload = {};
+        try { payload = text ? JSON.parse(text) : {}; } catch { payload = { error: text }; }
+        if (!res.ok) throw new Error(payload.error || text || `Request failed (${res.status})`);
+        return payload;
+      } catch (error) {
+        if (error.name === 'AbortError') throw new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds.`);
+        throw error;
+      } finally {
+        if (timeout) clearTimeout(timeout);
+      }
     }
 
     async function deleteApi(path) {
@@ -1103,9 +1179,34 @@
     async function showChatManager() {
       try {
         const chats = await getApi('/api/chats');
-        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Chats</span><span class="pill">${chats.length}</span></div><div class="search-page"><h1>Chat Sessions</h1><div class="preview-actions"><button class="btn" onclick="clearAllChats()">Bulk Clear</button></div>${chats.map(chat => `<article class="search-result"><b>${escapeHtml(chat.title)}</b><small>${chat.id} · ${chat.messages} messages</small><div class="preview-actions"><button class="btn" onclick="renameChat('${escapeJs(chat.id)}')">Rename</button><button class="btn" onclick="deleteChat('${escapeJs(chat.id)}')">Delete</button></div></article>`).join('') || '<p>No chats yet.</p>'}</div>`;
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Chats</span><span class="pill">${chats.length}</span><span class="pill">${escapeHtml(activeChatId || 'no active chat')}</span></div><div class="search-page"><h1>Nexus Chats</h1><p>Browser-based task threads persist locally and keep their own chat history while sharing the active browser page, agents, builds, and QA context.</p><div class="card-actions"><button class="btn primary" onclick="createNewChat()">New Chat</button><button class="btn" onclick="showAgentSwarm()">Agents</button><button class="btn amber" onclick="clearAllChats()">Clear All</button></div><div class="manager-grid">${chats.map(chat => `<article class="search-result" onclick="openChat('${escapeJs(chat.id)}')"><b>${escapeHtml(chat.title)}</b><small>${escapeHtml(chat.id)} · ${chat.messages} messages · ${escapeHtml(formatTime(chat.updatedAt))}</small><p>${escapeHtml(chat.lastMessage || 'No messages yet.')}</p><div class="card-actions"><button class="btn primary" onclick="event.stopPropagation(); openChat('${escapeJs(chat.id)}')">Open</button><button class="btn" onclick="event.stopPropagation(); renameChat('${escapeJs(chat.id)}')">Rename</button><button class="btn amber" onclick="event.stopPropagation(); deleteChat('${escapeJs(chat.id)}')">Delete</button></div></article>`).join('') || '<p>No chats yet. Create one or send a message to start.</p>'}</div></div>`;
       } catch (error) {
         addMessage('system', `Chat manager failed: ${error.message}`);
+      }
+    }
+
+    async function createNewChat() {
+      try {
+        const title = prompt('Chat title') || 'New Nexus Chat';
+        const chat = await api('/api/chats', { title });
+        setActiveChat(chat.id, chat.title);
+        renderChatMessages(chat.messages || [], chat.title);
+        toggleChat(true);
+        showChatManager();
+      } catch (error) {
+        addMessage('system', `New chat failed: ${error.message}`);
+      }
+    }
+
+    async function openChat(id) {
+      try {
+        const chat = await getApi(`/api/chats/${encodeURIComponent(id)}`);
+        setActiveChat(chat.id, chat.title);
+        renderChatMessages(chat.messages || [], chat.title);
+        toggleChat(true);
+        addMessage('system', `Opened chat: ${chat.title}`);
+      } catch (error) {
+        addMessage('system', `Open chat failed: ${error.message}`);
       }
     }
 
@@ -1113,16 +1214,23 @@
       const title = prompt('New chat title');
       if (!title) return;
       await fetch(`/api/chats/${encodeURIComponent(id)}`, { method: 'PUT', headers: headers(), body: JSON.stringify({ title }) });
+      if (id === activeChatId) setActiveChat(id, title);
       showChatManager();
     }
 
     async function deleteChat(id) {
       await deleteApi(`/api/chats/${encodeURIComponent(id)}`);
+      if (id === activeChatId) {
+        setActiveChat('', '');
+        renderChatMessages([], '');
+      }
       showChatManager();
     }
 
     async function clearAllChats() {
       await deleteApi('/api/chats');
+      setActiveChat('', '');
+      renderChatMessages([], '');
       showChatManager();
     }
 
@@ -1189,14 +1297,100 @@
 
     async function showAgentSwarm() {
       try {
-        const swarm = await getApi('/api/builder/agents');
+        const [swarm, runtime, tasks] = await Promise.all([
+          getApi('/api/builder/agents'),
+          getApi('/api/agent-runtime'),
+          getApi('/api/agent-runtime/tasks').catch(() => []),
+        ]);
+        const nativeCount = swarm.agents.filter(agent => agent.runtime === 'nexus-native').length;
+        const workflows = swarm.workflows.map(flow => `<article class="agent-card"><b>${escapeHtml(flow.name)}</b><small>${escapeHtml(flow.trigger)}</small><p>${escapeHtml(flow.output)}</p><div class="card-actions"><button class="btn primary" onclick="startAgentDelegation('${escapeJs(flow.name)}','${escapeJs(flow.agents.join(','))}','${escapeJs(flow.trigger)}')">Run</button><button class="btn" onclick="createRuntimeJobFromPrompt('${escapeJs(flow.name)}','${escapeJs(flow.agents.join(','))}','${escapeJs(flow.trigger)}')">Schedule</button></div></article>`).join('');
+        const agents = swarm.agents.map(agent => `<article class="agent-card"><b>${escapeHtml(agent.name)}</b><small>${escapeHtml(agent.id)} · ${escapeHtml(agent.mode)} · ${escapeHtml(agent.runtime || 'nexus')}</small><p>${escapeHtml(agent.role)}</p><small>Tools: ${escapeHtml(agent.tools.slice(0, 5).join(', '))}</small><div class="card-actions"><button class="btn primary" onclick="startAgentDelegation('${escapeJs(agent.name)}','${escapeJs(agent.id)}','${escapeJs(agent.role)}')">Run</button><button class="btn" onclick="saveAgentSkill('${escapeJs(agent.id)}')">Save Skill</button><button class="btn" onclick="sendBuilderPrompt('Use ${escapeJs(agent.name)} for the current chat and explain the next concrete step.')">Chat</button></div></article>`).join('');
+        const jobs = (runtime.jobs || []).slice(0, 8).map(job => `<div class="runtime-stat"><span>${escapeHtml(job.name)} · ${Math.round(job.intervalMs / 60000)}m · ${job.enabled ? 'on' : 'off'}</span><button class="btn" onclick="deleteRuntimeJob('${escapeJs(job.id)}')">Delete</button></div>`).join('') || '<small>No scheduled jobs yet.</small>';
+        const skills = (runtime.skills || []).slice(0, 6).map(skill => `<div class="runtime-stat"><span>${escapeHtml(skill.name)}</span><span>${skill.successCount}/${skill.failureCount}</span></div>`).join('') || '<small>No saved skills yet.</small>';
+        const taskRows = (tasks || []).slice(-8).reverse().map(task => `<div class="runtime-stat"><span>${escapeHtml(task.goal.slice(0, 70))}</span><span>${escapeHtml(task.status)}</span></div>`).join('') || '<small>No browser-agent tasks yet.</small>';
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Agents</span><span class="pill">${swarm.agents.length} total</span><span class="pill">${nativeCount} native</span></div><div class="search-page"><h1>Agent Control Center</h1><div class="card-actions"><button class="btn primary" onclick="createRuntimeMemory()">Remember</button><button class="btn" onclick="createRuntimeSkillFromPrompt()">New Skill</button><button class="btn" onclick="showChatManager()">Chats</button></div><div class="agent-console"><aside class="runtime-panel"><h2>Runtime</h2><div class="runtime-stat"><span>Memory</span><b>${runtime.memories?.length || 0}</b></div><div class="runtime-stat"><span>Skills</span><b>${runtime.skills?.length || 0}</b></div><div class="runtime-stat"><span>Delegations</span><b>${runtime.delegations?.length || 0}</b></div><div class="runtime-stat"><span>Jobs</span><b>${runtime.jobs?.length || 0}</b></div><h2>Jobs</h2>${jobs}<h2>Skills</h2>${skills}<h2>Tasks</h2>${taskRows}</aside><section><h2>Workflows</h2><div class="agent-list">${workflows}</div><h2>Agents</h2><div class="agent-list">${agents}</div></section></div></div>`;
         document.getElementById('researchStream').textContent = swarm.philosophy;
-        document.getElementById('taskStream').textContent = swarm.agents.map(agent => `${agent.name}\n${agent.role}\nMode: ${agent.mode}\nOutputs: ${agent.outputs.join(', ')}`).join('\n\n');
-        document.getElementById('qaStream').textContent = swarm.workflows.map(flow => `${flow.name}: ${flow.trigger}\nAgents: ${flow.agents.join(', ')}\nOutput: ${flow.output}`).join('\n\n');
-        addMessage('assistant', `Loaded ${swarm.agents.length} project/app development agents.`);
+        document.getElementById('taskStream').textContent = swarm.agents.map(agent => `${agent.name}\n${agent.role}\nMode: ${agent.mode}\nRuntime: ${agent.runtime || 'nexus'}\nOutputs: ${agent.outputs.join(', ')}`).join('\n\n');
+        document.getElementById('qaStream').textContent = `Runtime state\nMemory: ${runtime.memories?.length || 0}\nSkills: ${runtime.skills?.length || 0}\nDelegations: ${runtime.delegations?.length || 0}\nJobs: ${runtime.jobs?.length || 0}\nBrowser agent tasks: ${tasks.length || 0}`;
+        addMessage('assistant', `Loaded ${swarm.agents.length} agents, ${runtime.skills?.length || 0} skills, and ${runtime.jobs?.length || 0} scheduled jobs.`);
       } catch (error) {
         addMessage('system', `Agent swarm failed: ${error.message}`);
       }
+    }
+
+    async function ensureAgentBrowserSession() {
+      if (currentSessionId && currentPageId) return true;
+      const session = await api('/api/sessions', {});
+      currentSessionId = session.id;
+      currentPageId = session.activePageId || session.pages?.[0]?.id;
+      if (!currentPageId) throw new Error('Browser session did not create an active page.');
+      setText('sessionPill', currentSessionId.slice(0, 8));
+      addMessage('system', 'Created browser session for agent work.');
+      return true;
+    }
+
+    async function startAgentDelegation(label, agentsCsv, defaultGoal) {
+      try {
+        const goal = prompt(`${label} goal`, defaultGoal || `Run ${label} for the current project`);
+        if (!goal) return;
+        await ensureAgentBrowserSession();
+        const agents = agentsCsv.split(',').map(item => item.trim()).filter(Boolean);
+        addMessage('system', `Starting ${label} with ${agents.join(', ')}...`);
+        const run = await api('/api/agent-runtime/delegations', { goal, agents, sessionId: currentSessionId, pageId: currentPageId });
+        appendStream('qaStream', `Delegation ${run.id}: ${run.status} · ${run.result || run.error || ''}`);
+        addMessage(run.status === 'failed' ? 'system' : 'assistant', `${label} finished: ${run.status}\n${run.result || run.error || ''}`);
+        showAgentSwarm();
+      } catch (error) {
+        addMessage('system', `Agent run failed: ${error.message}`);
+      }
+    }
+
+    async function createRuntimeMemory() {
+      const content = prompt('Memory to save for Nexus agents');
+      if (!content) return;
+      await api('/api/agent-runtime/memory', { scope: 'project', content, tags: ['browser-ui', 'manual'], source: 'agent-control-center' });
+      addMessage('assistant', 'Saved runtime memory for future chats and agents.');
+      showAgentSwarm();
+    }
+
+    async function createRuntimeSkillFromPrompt() {
+      const name = prompt('Skill name');
+      if (!name) return;
+      const trigger = prompt('When should Nexus use it?') || name;
+      const steps = (prompt('Steps separated by semicolons') || '').split(';').map(step => step.trim()).filter(Boolean);
+      await api('/api/agent-runtime/skills', { name, description: trigger, trigger, steps: steps.length ? steps : [trigger] });
+      addMessage('assistant', `Saved skill: ${name}`);
+      showAgentSwarm();
+    }
+
+    async function saveAgentSkill(agentId) {
+      const swarm = await getApi('/api/builder/agents');
+      const agent = swarm.agents.find(item => item.id === agentId);
+      if (!agent) return addMessage('system', `Agent not found: ${agentId}`);
+      await api('/api/agent-runtime/skills', {
+        name: `${agent.name} Workflow`,
+        description: agent.role,
+        trigger: `Use when the chat needs ${agent.name}.`,
+        steps: [`Load browser/backend evidence`, `Run ${agent.name}`, `Write outputs: ${agent.outputs.join(', ')}`, 'Persist useful lessons to memory'],
+      });
+      addMessage('assistant', `Saved ${agent.name} as a reusable runtime skill.`);
+      showAgentSwarm();
+    }
+
+    async function createRuntimeJobFromPrompt(name, agentsCsv, defaultGoal) {
+      const goal = prompt(`${name} recurring goal`, defaultGoal || name);
+      if (!goal) return;
+      const minutes = Math.max(1, Number(prompt('Run every how many minutes?', '60') || 60));
+      const agents = agentsCsv.split(',').map(item => item.trim()).filter(Boolean);
+      const job = await api('/api/agent-runtime/jobs', { name, goal, intervalMs: minutes * 60000, agents });
+      addMessage('assistant', `Scheduled ${job.name} every ${minutes} minutes.`);
+      showAgentSwarm();
+    }
+
+    async function deleteRuntimeJob(id) {
+      await deleteApi(`/api/agent-runtime/jobs/${encodeURIComponent(id)}`);
+      addMessage('assistant', 'Deleted scheduled runtime job.');
+      showAgentSwarm();
     }
 
     async function createWorkspaceSnapshot() {
@@ -1449,28 +1643,48 @@
     async function sendChat() {
       const input = document.getElementById('chatInput');
       const message = input.value.trim();
-      if (!message) return;
+      if (!message || chatRequestInProgress) return;
       input.value = '';
       addMessage('user', message);
+      let pendingMessage = null;
       try {
         applyModeFromMessage(message);
         if (maybeShowChatStatus(message)) return;
         if (prepareBrowserGrounding(message)) return;
+        chatRequestInProgress = true;
+        setChatBusy(true);
+        pendingMessage = addMessage('system', 'Nexus is working...');
+        if (!csrfToken) await loadSecurityToken();
         await refreshBrowserIntelligence(true);
         await refreshBackendObserver(true);
-        const result = await api('/api/builder/chat', { sessionId: currentSessionId, pageId: currentPageId, activeBuildId, message, browserContext: `${lastBrowserIntelligence}\n\n${lastBackendObservation}`.trim(), mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value, ...buildBrainOptions() });
+        const result = await api('/api/builder/chat', { chatId: chatApiId(), sessionId: currentSessionId, pageId: currentPageId, activeBuildId, message, browserContext: `${lastBrowserIntelligence}\n\n${lastBackendObservation}`.trim(), mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value, ...buildBrainOptions() }, { timeoutMs: 120000 });
+        pendingMessage?.remove();
+        pendingMessage = null;
+        if (result.chatId) {
+          const currentTitle = document.getElementById('activeChatTitle')?.textContent || '';
+          setActiveChat(result.chatId, currentTitle && currentTitle !== 'Nexus Chat' ? currentTitle : message);
+        }
         addMessage('assistant', result.response);
-        if (result.source === 'ai' || result.source === 'agent-browser') addActionMessage(result.actions || [], result.source);
+        if (result.actions?.length) addActionMessage(result.actions, result.source);
         if (result.build) showBuildStarted(result.build);
         if (result.update) showBuildUpdateStarted(result.update);
-        if (!result.build && !result.update && pendingAutoBuild !== message) executeChatIntent(message);
+        if (!result.requiresInput && !result.build && !result.update && pendingAutoBuild !== message) executeChatIntent(message);
       } catch (error) {
-        addMessage('system', `Builder chat failed: ${error.message}`);
+        const failure = `Builder chat failed: ${error.message}`;
+        if (pendingMessage) pendingMessage.textContent = failure;
+        else addMessage('system', failure);
+      } finally {
+        chatRequestInProgress = false;
+        setChatBusy(false);
       }
     }
 
     function maybeShowChatStatus(message) {
-      if (!/\b(status|progress|what happened|logs|research stream|tasks|qa stream|show details)\b/i.test(message)) return false;
+      const text = message.trim().toLowerCase();
+      const directStatus = /^(?:show\s+(?:me\s+)?)?(?:the\s+)?(?:current\s+)?(?:status|progress|logs|research stream|task stream|qa stream|details)(?:\s+please)?[?.!]*$/.test(text);
+      const questionStatus = /^(?:what(?:'s| is)|how(?:'s| is))\s+(?:the\s+)?(?:status|progress)(?:\s+(?:of|on)\s+(?:the\s+)?(?:build|project|agents?))?[?.!]*$/.test(text)
+        || /^what happened[?.!]*$/.test(text);
+      if (!directStatus && !questionStatus) return false;
       addMessage('assistant', chatStatusSummary());
       return true;
     }
@@ -1536,27 +1750,54 @@
       setLandingStatus('Starting live project...');
       const looksLikeUrl = /^https?:\/\//i.test(raw) || /^[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?$/i.test(raw);
       if (!looksLikeUrl) {
-        if (input) input.value = '';
-        addMessage('system', 'Enter a URL like example.com or https://example.com to start a live project.');
-        setLandingStatus('Enter a valid URL like example.com or https://example.com.');
-        if (submit) {
-          submit.disabled = false;
-          submit.textContent = 'Open';
+        document.body.classList.remove('landing-first', 'project-live');
+        document.body.classList.add('chat-first');
+        toggleChat(true);
+        const startsFreshBuild = isProductBuildRequest(raw) && !/\b(update|change|fix|repair|continue|resume)\b/i.test(raw);
+        if (isProductBuildRequest(raw) || /\b(build|create|make|generate|code|implement|fix|repair|update|change)\b/i.test(raw)) {
+          document.getElementById('builderMode').value = 'build';
         }
-        landingStartInProgress = false;
+        if (startsFreshBuild) {
+          activeBuildId = null;
+          localStorage.removeItem('nexus-active-build-id');
+        }
+        setActiveChat(`chat-${Date.now()}`, raw);
+        if (input) input.value = '';
+        document.getElementById('chatInput').value = raw;
+        setLandingStatus('Opening Nexus chat...');
+        try {
+          await sendChat();
+        } finally {
+          if (submit) {
+            submit.disabled = false;
+            submit.textContent = 'Start';
+          }
+          landingStartInProgress = false;
+        }
         return;
       }
       const url = raw.startsWith('http') ? raw : `https://${raw}`;
       const message = `Decide and build from ${url}. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live preview, staging, and Visual QA.`;
+      activeBuildId = null;
+      localStorage.removeItem('nexus-active-build-id');
+      setActiveChat(`chat-${Date.now()}`, `Build from ${new URL(url).hostname}`);
       toggleChat(true);
       document.getElementById('builderMode').value = 'build';
       applyModeFromMessage(message);
       document.getElementById('urlInput').value = url;
       enterProjectLiveMode(url, message);
       if (input) input.value = '';
-      startProjectFromUrl(url, message)
-        .catch((error) => addMessage('system', `Project start failed: ${error.message}`))
-        .finally(() => { landingStartInProgress = false; });
+      try {
+        await startProjectFromUrl(url, message);
+      } catch (error) {
+        addMessage('system', `Project start failed: ${error.message}`);
+      } finally {
+        if (submit) {
+          submit.disabled = false;
+          submit.textContent = 'Start';
+        }
+        landingStartInProgress = false;
+      }
     }
 
     async function startProjectFromUrl(url, message) {
@@ -1587,20 +1828,32 @@
       const text = message.toLowerCase();
       const select = document.getElementById('builderMode');
       if (/\bresearch\s+mode\b|\bswitch\s+to\s+research\b/.test(text)) select.value = 'research';
-      if (/\bplan\s+mode\b|\bswitch\s+to\s+plan\b/.test(text)) select.value = 'plan';
-      if (/\bbuild\s+mode\b|\bswitch\s+to\s+build\b/.test(text)) select.value = 'build';
+      else if (/\bplan\s+mode\b|\bswitch\s+to\s+plan\b/.test(text)) select.value = 'plan';
+      else if (/\bask\s+mode\b|\bswitch\s+to\s+ask\b/.test(text)) select.value = 'chat';
+      else if (/\bvisual(?:\s+edit|\s+mode)?\b|\bswitch\s+to\s+visual\b/.test(text)) select.value = 'ui-builder';
+      else if (/\bbuild\s+mode\b|\bagent\s+mode\b|\bswitch\s+to\s+(?:build|agent)\b/.test(text)) select.value = 'build';
+      else if (!builderModeTouched && isProductBuildRequest(message)) select.value = 'build';
       appendStream('researchStream', `Mode: ${select.value}`);
     }
 
+    function isProductBuildRequest(message) {
+      const text = message.trim().toLowerCase();
+      if (!text || text.length > 240 || /\?$/.test(text)) return false;
+      if (/^(what|why|how|when|where|who|can|could|would|should|explain|tell me|show me)\b/.test(text)) return false;
+      if (/\b(status|progress|logs?|staging studio|build doctor|auto heal|expert router|project memory)\b/.test(text)) return false;
+      const product = /\b(landing page|website|web app|application|app|dashboard|portal|tracker|storefront|portfolio|blog|game|tool|site|ui)\b/.test(text);
+      return product || /\b(build|create|make|generate|code|implement)\b/.test(text) && /\b(page|component|frontend|backend|api)\b/.test(text);
+    }
+
     function shouldAutoBuildFromMessage(message) {
-      return /\b(build|plan|clone|research project|start building|app brain|full app)\b/i.test(message) || ['plan', 'build'].includes(document.getElementById('builderMode').value);
+      return isProductBuildRequest(message) || /\b(build|plan|clone|research project|start building|app brain|full app)\b/i.test(message) || ['plan', 'build'].includes(document.getElementById('builderMode').value);
     }
 
     function executeChatIntent(message) {
       const mode = document.getElementById('builderMode').value;
       const text = message.toLowerCase();
       const buildCommand = /\b(staging studio|multi-device preview|device wall|preview wall|staging preview|expert router|route experts|smart agents|creative mind|creative direction|visual dna|anti-template|project memory|memory|auto heal loop|heal loop|build doctor|doctor|auto heal|self heal|stack experts|all experts|official source agents|official-source agents|[a-z0-9-]+ expert)\b/.test(text);
-      if (!currentPageId && !buildCommand && !message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i) && !/\b(build|create|make|generate|code)\b/i.test(message)) {
+      if (!currentPageId && !buildCommand && !message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i) && !isProductBuildRequest(message)) {
         if (mode === 'build' || mode === 'plan') addMessage('system', 'Give me a target URL first, or switch to research mode so I can search the web for one.');
         return;
       }
@@ -1650,10 +1903,10 @@
       localStorage.setItem('nexus-active-build-id', build.id);
       document.getElementById('outputPath').textContent = build.root;
       document.getElementById('taskStream').textContent = `Build workspace created\n\n${build.root}\n\nBrain: ${build.brain?.mode || 'hybrid'} / ${build.brain?.provider || 'openai'} ${build.brain?.model || ''}\nOpenCode status: ${build.status}\n\nPreview command:\n${build.previewCommand}\n\nLog:\n${build.logPath}`;
-      document.getElementById('qaStream').textContent = `OpenCode command:\n${build.opencodeCommand}\n\nStarting live app preview...`;
-      setLaunchStatus(`OpenCode workspace started.\n${build.root}\n\nOpening live preview and staging...`);
+      document.getElementById('qaStream').textContent = `OpenCode command:\n${build.opencodeCommand}\n\nWaiting for implementation to complete before preview and staging.`;
+      setLaunchStatus(`OpenCode is implementing the request.\n${build.root}\n\nLive progress is shown in the task stream.`);
       addMessage('assistant', `Started build workspace: ${build.root}\nStatus: ${build.status}`);
-      startPreviewThenStage();
+      monitorBuildProgress(build.id);
     }
 
     async function startPreviewThenStage() {
@@ -1671,6 +1924,44 @@
       document.getElementById('taskStream').textContent = `Conversational app update started\n\nRequest:\n${update.userMessage}\n\nWorkspace:\n${update.workspace}\n\nSession: ${update.session.id}\nLog:\n${update.logPath}`;
       document.getElementById('qaStream').textContent = `OpenCode is updating the existing app from chat. Preview will restart when the update command exits. Use Build Doctor or Staging Studio after it completes.`;
       addMessage('assistant', `Updating existing app from chat. Log: ${update.logPath}`);
+      monitorBuildProgress(update.buildId, update.id);
+    }
+
+    function monitorBuildProgress(buildId, updateId = '') {
+      if (buildProgressTimer) clearTimeout(buildProgressTimer);
+      let attempts = 0;
+      const progressMessage = addMessage('system', `${updateId ? 'App update' : 'Build'} is running...`);
+      const poll = async () => {
+        attempts += 1;
+        try {
+          const suffix = updateId ? `?updateId=${encodeURIComponent(updateId)}` : '';
+          const activity = await getApi(`/api/builder/builds/${buildId}/activity${suffix}`);
+          const label = activity.kind === 'update' ? 'App update' : 'Build';
+          const tail = (activity.log || '').split('\n').slice(-45).join('\n').trim();
+          const recent = tail.split('\n').map((line) => line.trim()).filter(Boolean).slice(-3).join('\n');
+          document.getElementById('taskStream').textContent = `${label} ${activity.status}\n\n${tail || 'Executor is starting...'}`;
+          progressMessage.textContent = `${label}: ${activity.status}${recent ? `\n${recent}` : ''}`;
+          setLaunchStatus(`${label}: ${activity.status}\n${activity.build.root}`);
+          if (activity.terminal) {
+            buildProgressTimer = null;
+            if (activity.status === 'completed') {
+              progressMessage.textContent = `${label}: completed`;
+              addMessage('assistant', `${label} completed. Starting the live preview and browser checks.`);
+              await startPreviewThenStage();
+            } else {
+              progressMessage.textContent = `${label}: ${activity.status}`;
+              addMessage('system', `${label} stopped with status: ${activity.status}. The executor log is visible in the task stream.`);
+              document.getElementById('qaStream').textContent = `${label} did not complete. Review the executor log, then ask Nexus to fix the build.`;
+            }
+            return;
+          }
+        } catch (error) {
+          setLaunchStatus(`Waiting for build status...\n${error.message}`);
+        }
+        if (attempts < 900) buildProgressTimer = setTimeout(poll, 2000);
+        else addMessage('system', 'Build monitoring timed out after 30 minutes. Ask for status to reconnect to the task.');
+      };
+      poll();
     }
 
     async function startActiveBuildPreview() {
@@ -1891,6 +2182,18 @@
       div.textContent = content;
       messages.appendChild(div);
       messages.scrollTop = messages.scrollHeight;
+      return div;
+    }
+
+    function setChatBusy(busy) {
+      const input = document.getElementById('chatInput');
+      const button = document.getElementById('chatSendButton');
+      if (input) input.disabled = busy;
+      if (button) {
+        button.disabled = busy;
+        button.textContent = busy ? 'Working...' : 'Send';
+      }
+      if (!busy && document.body.classList.contains('chat-first')) input?.focus();
     }
 
     function addActionMessage(actions, source) {
@@ -1931,7 +2234,7 @@
     }
 
     function escapeJs(value) {
-      return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\r?\n/g, '\\n');
     }
 
     function setStatus(ok, text) {
@@ -1964,6 +2267,15 @@
     document.getElementById('urlInput').addEventListener('keydown', (event) => { if (event.key === 'Enter') navigate(); });
     document.getElementById('landingForm')?.addEventListener('submit', (event) => { event.preventDefault(); sendLandingChat(); });
     document.getElementById('uiLook').addEventListener('change', (event) => { setText('lookPill', event.target.value); });
+    const savedBuilderMode = localStorage.getItem('nexus-builder-mode');
+    if (savedBuilderMode && Array.from(document.getElementById('builderMode').options).some((option) => option.value === savedBuilderMode)) {
+      document.getElementById('builderMode').value = savedBuilderMode;
+    }
+    document.getElementById('builderMode').addEventListener('change', (event) => {
+      builderModeTouched = true;
+      localStorage.setItem('nexus-builder-mode', event.target.value);
+      appendStream('researchStream', `Mode: ${event.target.value}`);
+    });
 
     function startFromQueryParam() {
       const raw = new URLSearchParams(location.search).get('start');
@@ -1976,6 +2288,7 @@
 
     initTheme();
     initWindowMode();
+    if (activeChatId) setText('activeChatTitle', compactLabel(activeChatId, 34));
     renderBrowserTabs();
     detectWebGpu();
     loadSecurityToken().finally(() => {

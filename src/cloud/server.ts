@@ -172,6 +172,7 @@ export class CloudServer {
     this.llm = new LLMClient();
     this.builderPlatform = new BuilderPlatform();
     this.loadSecureState();
+    this.loadChatState();
 
     this.app = express();
     this.app.use(cors({ origin: config.get().server.corsOrigin }));
@@ -450,17 +451,40 @@ export class CloudServer {
     });
 
     router.get('/api/chats', this.authenticate, (_req, res) => {
-      res.json(Array.from(this.builderChats.entries()).map(([id, messages]) => ({ id, title: this.chatTitles.get(id) || id, messages: messages.length, updatedAt: messages[messages.length - 1]?.timestamp || 0 })));
+      res.json(Array.from(this.builderChats.entries())
+        .map(([id, messages]) => this.chatSummary(id, messages))
+        .sort((a, b) => b.updatedAt - a.updatedAt));
+    });
+
+    router.post('/api/chats', this.authenticate, (req, res) => {
+      const id = this.safeChatId(String(req.body?.id || `chat-${uuid().slice(0, 8)}`));
+      const title = String(req.body?.title || 'New Nexus Chat').trim().slice(0, 120) || 'New Nexus Chat';
+      if (!this.builderChats.has(id)) this.builderChats.set(id, []);
+      this.chatTitles.set(id, title);
+      this.saveChatState();
+      res.json({ ...this.chatSummary(id, this.builderChats.get(id) || []), messages: this.builderChats.get(id) || [] });
+    });
+
+    router.get('/api/chats/:id', this.authenticate, (req, res) => {
+      const id = this.safeChatId(req.params.id);
+      const messages = this.builderChats.get(id);
+      if (!messages) return res.status(404).json({ error: 'Chat not found' });
+      res.json({ ...this.chatSummary(id, messages), messages });
     });
 
     router.put('/api/chats/:id', this.authenticate, (req, res) => {
-      this.chatTitles.set(req.params.id, String(req.body?.title || req.params.id));
-      res.json({ id: req.params.id, title: this.chatTitles.get(req.params.id) });
+      const id = this.safeChatId(req.params.id);
+      this.chatTitles.set(id, String(req.body?.title || id).trim().slice(0, 120) || id);
+      if (!this.builderChats.has(id)) this.builderChats.set(id, []);
+      this.saveChatState();
+      res.json({ ...this.chatSummary(id, this.builderChats.get(id) || []), messages: this.builderChats.get(id) || [] });
     });
 
     router.delete('/api/chats/:id', this.authenticate, (req, res) => {
-      this.builderChats.delete(req.params.id);
-      this.chatTitles.delete(req.params.id);
+      const id = this.safeChatId(req.params.id);
+      this.builderChats.delete(id);
+      this.chatTitles.delete(id);
+      this.saveChatState();
       res.json({ success: true });
     });
 
@@ -468,6 +492,7 @@ export class CloudServer {
       const count = this.builderChats.size;
       this.builderChats.clear();
       this.chatTitles.clear();
+      this.saveChatState();
       res.json({ success: true, deleted: count });
     });
 
@@ -661,6 +686,10 @@ export class CloudServer {
       res.json(this.agentRuntime.getState());
     });
 
+    router.get('/api/agent-runtime/tasks', this.authenticate, (_req, res) => {
+      res.json(this.agent.getAllTasks());
+    });
+
     router.post('/api/agent-runtime/memory', this.authenticate, (req, res) => {
       res.json(this.agentRuntime.remember({
         scope: req.body?.scope,
@@ -749,8 +778,9 @@ export class CloudServer {
     router.post('/api/builder/start-build', this.authenticate, (req, res) => {
       try {
         const sessionId = String(req.body?.sessionId || 'default');
+        const chatId = this.safeChatId(String(req.body?.chatId || req.body?.conversationId || sessionId || 'default'));
         const prompt = String(req.body?.prompt || 'Build a landing page');
-        const readiness = this.createProjectReadiness(sessionId, prompt, this.builderChats.get(sessionId) || [], String(req.body?.browserContext || ''));
+        const readiness = this.createProjectReadiness(sessionId, prompt, this.builderChats.get(chatId) || [], String(req.body?.browserContext || ''));
         this.projectReadiness.set(sessionId, readiness);
         const brainOptions = this.resolveBrainOptions(req.body);
         const build = this.builderPlatform.startBuildFromPrompt(prompt, {
@@ -768,6 +798,15 @@ export class CloudServer {
 
     router.get('/api/builder/builds', this.authenticate, (_req, res) => {
       res.json(this.builderPlatform.getBuilds());
+    });
+
+    router.get('/api/builder/builds/:id/activity', this.authenticate, (req, res) => {
+      try {
+        const updateId = typeof req.query.updateId === 'string' ? req.query.updateId : undefined;
+        res.json(this.builderPlatform.getBuildActivity(req.params.id, updateId));
+      } catch (error: any) {
+        res.status(404).json({ error: error.message });
+      }
     });
 
     router.get('/api/builder/doctor-reports', this.authenticate, (_req, res) => {
@@ -909,80 +948,94 @@ export class CloudServer {
 
     router.post('/api/builder/chat', this.authenticate, async (req, res) => {
       const sessionId = req.body?.sessionId || 'default';
+      const chatId = this.safeChatId(String(req.body?.chatId || req.body?.conversationId || sessionId || 'default'));
       const pageId = req.body?.pageId || '';
       const message = String(req.body?.message || '').trim();
       const mode = this.detectBuilderMode(message, req.body?.mode || 'ui-builder');
       const uiLook = req.body?.uiLook || 'faithful-clone';
       const brainOptions = this.resolveBrainOptions(req.body);
       const activeBuildId = String(req.body?.activeBuildId || '');
-      const messages = this.builderChats.get(sessionId) || [];
+      const messages = this.builderChats.get(chatId) || [];
       if (message) messages.push({ role: 'user', content: message, timestamp: Date.now() });
-      if (this.isAgentBrowserCommand(message)) {
-        const chat = await this.runAgentBrowserChat(message, sessionId);
-        messages.push({ role: 'assistant', content: chat.response, timestamp: Date.now() });
-        this.builderChats.set(sessionId, messages.slice(-100));
-        return res.json({ response: chat.response, messages: this.builderChats.get(sessionId), actions: chat.actions, source: chat.source });
-      }
-      if (req.body?.browserContext) this.storeExternalGathererObservation(sessionId, pageId, String(req.body.browserContext));
-      const gathererContext = await this.collectGathererObservation(sessionId, pageId)
-        .then((observation) => this.buildGathererContext(sessionId, observation.pageId))
-        .catch((error) => this.buildGathererContext(sessionId, pageId) || `Browser intelligence unavailable: ${error.message}`);
-      const backendContext = activeBuildId
-        ? (() => {
-          try {
-            this.collectBackendObservation(activeBuildId);
-            return this.buildBackendObserverContext(activeBuildId);
-          } catch (error: any) {
-            return `Backend Observer unavailable: ${error.message}`;
-          }
-        })()
-        : 'Backend Observer has no active generated workspace yet. Start or select a build to inspect server/API/data functionality.';
-      const browserContext = this.buildUnifiedChatContext(sessionId, pageId, activeBuildId, gathererContext, backendContext);
-      const readiness = this.createProjectReadiness(sessionId, message, messages, browserContext);
-      this.projectReadiness.set(sessionId, readiness);
-      const readinessContext = this.buildProjectReadinessContext(readiness);
-      if (this.shouldAskProjectReadiness(message, mode, readiness)) {
-        const response = this.projectReadinessQuestionResponse(readiness);
-        const actions = this.projectReadinessActions(readiness);
+      if (message && !this.chatTitles.has(chatId)) this.chatTitles.set(chatId, this.inferChatTitle(message));
+      try {
+        if (this.isAgentBrowserCommand(message)) {
+          const chat = await this.runAgentBrowserChat(message, sessionId);
+          messages.push({ role: 'assistant', content: chat.response, timestamp: Date.now() });
+          this.builderChats.set(chatId, messages.slice(-100));
+          this.saveChatState();
+          return res.json({ chatId, response: chat.response, messages: this.builderChats.get(chatId), actions: chat.actions, source: chat.source });
+        }
+        if (req.body?.browserContext) this.storeExternalGathererObservation(sessionId, pageId, String(req.body.browserContext));
+        const gathererContext = await this.collectGathererObservation(sessionId, pageId)
+          .then((observation) => this.buildGathererContext(sessionId, observation.pageId))
+          .catch((error) => this.buildGathererContext(sessionId, pageId) || `Browser intelligence unavailable: ${error.message}`);
+        const backendContext = activeBuildId
+          ? (() => {
+            try {
+              this.collectBackendObservation(activeBuildId);
+              return this.buildBackendObserverContext(activeBuildId);
+            } catch (error: any) {
+              return `Backend Observer unavailable: ${error.message}`;
+            }
+          })()
+          : 'Backend Observer has no active generated workspace yet. Start or select a build to inspect server/API/data functionality.';
+        const browserContext = this.buildUnifiedChatContext(sessionId, pageId, activeBuildId, gathererContext, backendContext);
+        const readiness = this.createProjectReadiness(sessionId, message, messages, browserContext);
+        this.projectReadiness.set(sessionId, readiness);
+        const readinessContext = this.buildProjectReadinessContext(readiness);
+        if (this.shouldAskProjectReadiness(message, mode, readiness)) {
+          const response = this.projectReadinessQuestionResponse(readiness);
+          const actions = this.projectReadinessActions(readiness);
+          messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
+          this.builderChats.set(chatId, messages.slice(-100));
+          this.saveChatState();
+          return res.json({ chatId, response, messages: this.builderChats.get(chatId), actions, source: 'fallback', requiresInput: true });
+        }
+        const runtimeContext = this.agentRuntime.buildContext(message);
+        const chat = await this.runBuilderConductor(message, mode, uiLook, `${browserContext}\n\n${readinessContext}\n\n${runtimeContext}`, messages, activeBuildId);
+        let response = chat.response;
+        response = this.applyAutonomousRuntimeFromChat(message, mode, sessionId, pageId, activeBuildId, `${browserContext}\n\n${readinessContext}`, chat, response);
         messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
-        this.builderChats.set(sessionId, messages.slice(-100));
-        return res.json({ response, messages: this.builderChats.get(sessionId), actions, source: 'fallback' });
+        let build = undefined;
+        let update = undefined;
+        const needsBrowserGrounding = this.shouldRequireBrowserGrounding(message, mode, gathererContext);
+        if (needsBrowserGrounding) {
+          chat.actions = this.browserGroundingActions(message, chat.actions);
+          response = `${response}\n\nBrowser grounding required before build. Open a target page, run Research Project, then build from the captured DOM, styles, network, console, screenshots, and API evidence.`;
+          messages.push({
+            role: 'assistant',
+            content: 'Browser grounding required before build. Open a target page, run Research Project, then build from the captured DOM, styles, network, console, screenshots, and API evidence.',
+            timestamp: Date.now(),
+          });
+        } else if (activeBuildId && this.shouldUpdateBuild(message, mode)) {
+          const targetBuildId = this.builderPlatform.getBuild(activeBuildId)?.id || this.builderPlatform.getBuilds().slice(-1)[0]?.id;
+          if (!targetBuildId) throw new Error('No generated build workspace yet. Ask Build Mode to create one first.');
+          update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode, browserContext: `${browserContext}\n\n${readinessContext}`, ...brainOptions });
+          messages.push({
+            role: 'assistant',
+            content: `App update started.\n\nWorkspace: ${update.workspace}\nSession: ${update.session.id}\nLog: ${update.logPath}\nI will restart the preview when the update command finishes.`,
+            timestamp: Date.now(),
+          });
+        } else if (this.shouldStartBuild(message, mode)) {
+          build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode, browserContext: `${browserContext}\n\n${readinessContext}`, ...brainOptions });
+          messages.push({
+            role: 'assistant',
+            content: `Build started.\n\nWorkspace: ${build.root}\nStatus: ${build.status}\nPreview command: ${build.previewCommand}\nOpenCode log: ${build.logPath}`,
+            timestamp: Date.now(),
+          });
+        }
+        this.builderChats.set(chatId, messages.slice(-100));
+        this.saveChatState();
+        res.json({ chatId, response, messages: this.builderChats.get(chatId), build, update, actions: chat.actions, source: chat.source });
+      } catch (error: any) {
+        const detail = error?.message || 'Unknown builder chat error';
+        log.error(`Builder chat failed for ${chatId}: ${detail}`);
+        messages.push({ role: 'system', content: `Builder chat failed: ${detail}`, timestamp: Date.now() });
+        this.builderChats.set(chatId, messages.slice(-100));
+        this.saveChatState();
+        if (!res.headersSent) res.status(500).json({ error: detail, chatId, messages: this.builderChats.get(chatId) });
       }
-      const runtimeContext = this.agentRuntime.buildContext(message);
-      const chat = await this.runBuilderConductor(message, mode, uiLook, `${browserContext}\n\n${readinessContext}\n\n${runtimeContext}`, messages, activeBuildId);
-      let response = chat.response;
-      response = this.applyAutonomousRuntimeFromChat(message, mode, sessionId, pageId, activeBuildId, `${browserContext}\n\n${readinessContext}`, chat, response);
-      messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
-      let build = undefined;
-      let update = undefined;
-      const needsBrowserGrounding = this.shouldRequireBrowserGrounding(message, mode, gathererContext);
-      if (needsBrowserGrounding) {
-        chat.actions = this.browserGroundingActions(message, chat.actions);
-        response = `${response}\n\nBrowser grounding required before build. Open a target page, run Research Project, then build from the captured DOM, styles, network, console, screenshots, and API evidence.`;
-        messages.push({
-          role: 'assistant',
-          content: 'Browser grounding required before build. Open a target page, run Research Project, then build from the captured DOM, styles, network, console, screenshots, and API evidence.',
-          timestamp: Date.now(),
-        });
-      } else if (activeBuildId && this.shouldUpdateBuild(message, mode)) {
-        const targetBuildId = this.builderPlatform.getBuild(activeBuildId)?.id || this.builderPlatform.getBuilds().slice(-1)[0]?.id;
-        if (!targetBuildId) throw new Error('No generated build workspace yet. Ask Build Mode to create one first.');
-        update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode, browserContext: `${browserContext}\n\n${readinessContext}`, ...brainOptions });
-        messages.push({
-          role: 'assistant',
-          content: `App update started.\n\nWorkspace: ${update.workspace}\nSession: ${update.session.id}\nLog: ${update.logPath}\nI will restart the preview when the update command finishes.`,
-          timestamp: Date.now(),
-        });
-      } else if (this.shouldStartBuild(message, mode)) {
-        build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode, browserContext: `${browserContext}\n\n${readinessContext}`, ...brainOptions });
-        messages.push({
-          role: 'assistant',
-          content: `Build started.\n\nWorkspace: ${build.root}\nStatus: ${build.status}\nPreview command: ${build.previewCommand}\nOpenCode log: ${build.logPath}`,
-          timestamp: Date.now(),
-        });
-      }
-      this.builderChats.set(sessionId, messages.slice(-100));
-      res.json({ response, messages: this.builderChats.get(sessionId), build, update, actions: chat.actions, source: chat.source });
     });
 
     router.get('/api/sessions', this.authenticate, (_req, res) => {
@@ -1607,6 +1660,63 @@ export class CloudServer {
     });
   }
 
+  private chatSummary(id: string, messages: BuilderMessage[]): any {
+    const last = messages[messages.length - 1];
+    return {
+      id,
+      title: this.chatTitles.get(id) || this.inferChatTitle(messages.find((message) => message.role === 'user')?.content || id),
+      messages: messages.length,
+      updatedAt: last?.timestamp || 0,
+      lastRole: last?.role || 'system',
+      lastMessage: last?.content?.slice(0, 180) || '',
+    };
+  }
+
+  private safeChatId(value: string): string {
+    return value.replace(/[^a-zA-Z0-9._:-]/g, '-').replace(/^-+|-+$/g, '').slice(0, 140) || `chat-${uuid().slice(0, 8)}`;
+  }
+
+  private inferChatTitle(message: string): string {
+    const title = message.replace(/\s+/g, ' ').trim();
+    if (!title) return 'New Nexus Chat';
+    return title.length > 72 ? `${title.slice(0, 69)}...` : title;
+  }
+
+  private chatStatePath(): string {
+    return path.join(process.cwd(), '.nexus', 'browser-chats.json');
+  }
+
+  private loadChatState(): void {
+    const filePath = this.chatStatePath();
+    if (!fs.existsSync(filePath)) return;
+    try {
+      const state = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      const chats = Object.entries(state.builderChats || {}).map(([id, messages]) => [
+        this.safeChatId(id),
+        Array.isArray(messages) ? messages.filter((message: any) => message && ['user', 'assistant', 'system'].includes(message.role) && typeof message.content === 'string').slice(-100) : [],
+      ] as [string, BuilderMessage[]]);
+      this.builderChats = new Map(chats);
+      this.chatTitles = new Map(Object.entries(state.chatTitles || {}).map(([id, title]) => [this.safeChatId(id), String(title)]));
+    } catch (error: any) {
+      log.warn(`Chat state could not be loaded: ${error.message}`);
+    }
+  }
+
+  private saveChatState(): void {
+    try {
+      const filePath = this.chatStatePath();
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify({
+        version: 1,
+        savedAt: new Date().toISOString(),
+        builderChats: Object.fromEntries(this.builderChats),
+        chatTitles: Object.fromEntries(this.chatTitles),
+      }, null, 2));
+    } catch (error: any) {
+      log.warn(`Chat state could not be saved: ${error.message}`);
+    }
+  }
+
   private safeName(value: string): string {
     return value.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || `nexus-${uuid().slice(0, 8)}`;
   }
@@ -1783,20 +1893,32 @@ export class CloudServer {
     if (/\bresearch\s+mode\b|\bswitch\s+to\s+research\b/.test(text)) return 'research';
     if (/\bplan\s+mode\b|\bswitch\s+to\s+plan\b/.test(text)) return 'plan';
     if (/\bbuild\s+mode\b|\bswitch\s+to\s+build\b/.test(text)) return 'build';
+    if (this.isImplicitBuildRequest(message)) return 'build';
     return fallback;
+  }
+
+  private isImplicitBuildRequest(message: string): boolean {
+    const text = message.trim().toLowerCase();
+    if (!text || text.length > 240 || /\?$/.test(text)) return false;
+    if (/^(what|why|how|when|where|who|can|could|would|should|explain|tell me|show me)\b/.test(text)) return false;
+    if (/\b(status|progress|logs?|staging studio|build doctor|auto heal|expert router|project memory)\b/.test(text)) return false;
+    return /\b(landing page|website|web app|application|app|dashboard|portal|tracker|storefront|portfolio|blog|game|tool|site|ui)\b/.test(text);
   }
 
   private shouldStartBuild(message: string, mode: string): boolean {
     const text = message.toLowerCase();
     if (!message.trim()) return false;
+    if (mode === 'chat') return false;
     return mode === 'build'
-      || /\b(build|create|make|generate|code)\b/.test(text) && /\b(app|application|landing page|website|dashboard|saas|ui|page)\b/.test(text)
+      || this.isImplicitBuildRequest(message)
+      || /\b(build|create|make|generate|code|implement)\b/.test(text) && /\b(app|application|landing page|website|dashboard|saas|ui|page|portal|tracker|game|tool|site)\b/.test(text)
       || /\b(build|clone|recreate|redesign)\b/.test(text) && /https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i.test(message);
   }
 
   private shouldUpdateBuild(message: string, mode: string): boolean {
     const text = message.toLowerCase();
     if (!message.trim()) return false;
+    if (mode === 'chat') return false;
     if (/\b(staging studio|multi-device preview|device wall|preview wall|expert router|route experts|creative mind|project memory|stack experts|build doctor|auto heal|heal loop)\b/.test(text)) return false;
     if (mode === 'build' && !this.shouldStartBuild(message, 'chat')) return true;
     return /\b(change|update|edit|modify|fix|improve|add|remove|replace|move|resize|restyle|make it|make this|turn this|connect|wire|debug|repair)\b/.test(text);
@@ -1806,8 +1928,7 @@ export class CloudServer {
     if (!this.shouldStartBuild(message, mode)) return false;
     if (this.hasBrowserEvidence(gathererContext)) return false;
     const text = message.toLowerCase();
-    return mode === 'ui-builder'
-      || /\b(clone|recreate|copy|redesign|improve this|this site|this page|current page|current site|like\s+https?:\/\/|based on\s+https?:\/\/|website|landing page)\b/i.test(text)
+    return /\b(clone|recreate|copy|redesign|improve this|this site|this page|current page|current site|like\s+https?:\/\/|based on\s+https?:\/\/)\b/i.test(text)
       || /https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i.test(message);
   }
 
@@ -2023,12 +2144,12 @@ export class CloudServer {
   }
 
   private createProjectReadiness(sessionId: string, message: string, history: BuilderMessage[], evidence: string): ProjectReadiness {
-    const combined = `${history.slice(-10).map((item) => item.content).join('\n')}\n${message}\n${evidence}`.toLowerCase();
-    const stackSignals = this.detectStackSignals(combined);
-    const features = this.detectProjectFeatures(combined);
-    const projectType = this.detectProjectType(combined, features);
-    const answeredSignals = this.detectAnsweredSignals(combined);
-    const questions = this.projectReadinessQuestions(projectType, features, answeredSignals, combined);
+    const requestContext = `${history.filter((item) => item.role === 'user').slice(-10).map((item) => item.content).join('\n')}\n${message}`.toLowerCase();
+    const stackSignals = this.detectStackSignals(`${requestContext}\n${evidence.toLowerCase()}`);
+    const features = this.detectProjectFeatures(requestContext);
+    const projectType = this.detectProjectType(requestContext, features);
+    const answeredSignals = this.detectAnsweredSignals(requestContext);
+    const questions = this.projectReadinessQuestions(projectType, features, answeredSignals, requestContext);
     return {
       id: uuid(),
       sessionId,
@@ -2039,7 +2160,7 @@ export class CloudServer {
       questions,
       answeredSignals,
       recommendedSetup: this.recommendedProjectSetup(projectType, features, stackSignals),
-      stagingDevices: this.recommendedStagingDevices(projectType, features, combined),
+      stagingDevices: this.recommendedStagingDevices(projectType, features, requestContext),
       needsClarification: questions.length > 0,
     };
   }
@@ -2156,7 +2277,7 @@ export class CloudServer {
     if (!readiness.needsClarification) return false;
     if (!this.shouldStartBuild(message, mode)) return false;
     if (/\b(decide and build|you decide|surprise me|auto decide|agent decide|use defaults|pick for me)\b/i.test(message)) return false;
-    return message.length < 260 || readiness.questions.some((question) => /payment|login|data|deploy|devices|AI features/i.test(question));
+    return readiness.questions.some((question) => /payment|login|data|deploy|devices|AI features/i.test(question));
   }
 
   private projectReadinessQuestionResponse(readiness: ProjectReadiness): string {
@@ -2643,7 +2764,23 @@ Rules:
   }
 
   private createFallbackBuilderChat(message: string, mode: string, uiLook: string, browserContext: string): BuilderChatResult {
-    const response = this.buildBuilderResponse(message, mode, uiLook, browserContext);
+    const browserReady = !/no rendered browser observations|browser intelligence unavailable|no active rendered browser session/i.test(browserContext);
+    const backendReady = !/no active generated workspace|backend observer unavailable/i.test(browserContext);
+    const next = mode === 'research'
+      ? 'I will gather browser evidence and turn it into project context.'
+      : mode === 'plan'
+        ? 'I will turn the request and available evidence into an implementation plan.'
+        : mode === 'build'
+          ? 'I will route this to OpenCode, then bring up the preview and browser QA.'
+          : 'I will use the selected workflow and keep the browser evidence attached.';
+    const response = [
+      `Nexus received: ${this.inferChatTitle(message)}`,
+      '',
+      `Mode: ${mode} | UI: ${uiLook}`,
+      `Browser evidence: ${browserReady ? 'ready' : 'not loaded yet'} | Backend workspace: ${backendReady ? 'ready' : 'not started yet'}`,
+      '',
+      next,
+    ].join('\n');
     const actions: BuilderChatAction[] = [
       { id: 'research-project', label: 'Research Project', description: 'Capture browser evidence, APIs, UI structure, and build tasks.', prompt: 'Run research project and create a project brain from the current target.' },
       { id: 'build-opencode', label: 'Build', description: 'Start an OpenCode implementation from the current prompt and browser evidence.', prompt: 'Build mode start implementing with OpenCode using the project brain and live browser preview.' },
