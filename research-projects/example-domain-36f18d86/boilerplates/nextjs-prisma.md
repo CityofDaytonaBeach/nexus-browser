@@ -1,0 +1,1 @@
+Create a Next.js app with Tailwind, Prisma SQLite, API SDK, MCP server, and 5 UI-informed components for https://example.com/.

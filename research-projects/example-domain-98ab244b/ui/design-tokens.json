@@ -1,0 +1,26 @@
+{
+  "colors": [
+    "rgb(0, 0, 0)",
+    "rgb(51, 68, 136)"
+  ],
+  "fonts": [
+    "system-ui, sans-serif"
+  ],
+  "radii": [
+    "0px"
+  ],
+  "fontSizes": [
+    "16px",
+    "24px"
+  ],
+  "spacingScale": [
+    22,
+    32,
+    80
+  ],
+  "semantic": {
+    "primary": "rgb(0, 0, 0)",
+    "surface": "#ffffff",
+    "text": "rgb(0, 0, 0)"
+  }
+}

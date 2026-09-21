@@ -1,0 +1,1 @@
+Create only the MCP server and SDK wrapper, no UI. Best for agent automation against discovered APIs.

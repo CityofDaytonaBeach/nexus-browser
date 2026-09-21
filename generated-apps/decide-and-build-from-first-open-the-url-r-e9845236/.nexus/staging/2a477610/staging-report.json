@@ -1,0 +1,131 @@
+{
+  "id": "2a477610",
+  "buildId": "e9845236",
+  "createdAt": "2026-09-10T13:37:41.907Z",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-e9845236",
+  "previewUrl": "http://127.0.0.1:5173",
+  "previewStatus": "running",
+  "devices": [
+    {
+      "device": {
+        "id": "desktop",
+        "name": "Desktop Studio",
+        "width": 1440,
+        "height": 1024,
+        "userAgentHint": "desktop"
+      },
+      "url": "http://127.0.0.1:5173",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 1172,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-e9845236\\.nexus\\staging\\2a477610\\desktop-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [],
+      "notes": [
+        "Captured 1440x1024 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/2a477610/devices/desktop/screenshot"
+    },
+    {
+      "device": {
+        "id": "tablet",
+        "name": "Tablet Touch",
+        "width": 834,
+        "height": 1112,
+        "userAgentHint": "tablet"
+      },
+      "url": "http://127.0.0.1:5173",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 947,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-e9845236\\.nexus\\staging\\2a477610\\tablet-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [],
+      "notes": [
+        "Captured 834x1112 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/2a477610/devices/tablet/screenshot"
+    },
+    {
+      "device": {
+        "id": "mobile",
+        "name": "Mobile App",
+        "width": 390,
+        "height": 844,
+        "userAgentHint": "mobile"
+      },
+      "url": "http://127.0.0.1:5173",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 1033,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-e9845236\\.nexus\\staging\\2a477610\\mobile-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [],
+      "notes": [
+        "Captured 390x844 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/2a477610/devices/mobile/screenshot"
+    },
+    {
+      "device": {
+        "id": "game",
+        "name": "Game Viewport",
+        "width": 960,
+        "height": 540,
+        "userAgentHint": "game"
+      },
+      "url": "http://127.0.0.1:5173",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 1028,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-e9845236\\.nexus\\staging\\2a477610\\game-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [],
+      "notes": [
+        "Captured 960x540 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/2a477610/devices/game/screenshot"
+    },
+    {
+      "device": {
+        "id": "app-store-mobile",
+        "name": "App Store Shot",
+        "width": 1290,
+        "height": 2796,
+        "userAgentHint": "mobile-screenshot"
+      },
+      "url": "http://127.0.0.1:5173",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 3778,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-e9845236\\.nexus\\staging\\2a477610\\app-store-mobile-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [],
+      "notes": [
+        "Captured 1290x2796 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/2a477610/devices/app-store-mobile/screenshot"
+    }
+  ],
+  "health": {
+    "status": "ready",
+    "score": 100,
+    "issues": []
+  },
+  "creativeUniqueness": {
+    "score": 88,
+    "findings": [
+      "Distinctive/system signal found: reduced-motion",
+      "Distinctive/system signal found: signature",
+      "Distinctive/system signal found: motion",
+      "Distinctive/system signal found: theme"
+    ],
+    "antiTemplatePrompt": "You are the NexusBrowser Creative Divergence QA agent.\n\nWorkspace: C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-e9845236\nPreview: http://127.0.0.1:5173\nCreative uniqueness score: 88/100\nFindings:\n- Distinctive/system signal found: reduced-motion\n- Distinctive/system signal found: signature\n- Distinctive/system signal found: motion\n- Distinctive/system signal found: theme\n\nImprove the app until it no longer resembles a stock generated template.\n\nRequired changes:\n- Replace generic hero/card/grid composition with product-specific layout logic.\n- Add a signature visual system: typography, spacing, color, texture, and component states.\n- Add custom loading, empty, error, focus, hover, and mobile states.\n- Ensure desktop, tablet, mobile, game, and app-store screenshot sizes feel intentionally designed.\n- Preserve accessibility and reduced-motion support.\n- Run build and rerun Staging Studio after edits.\n"
+  },
+  "logs": {
+    "previewTail": "Starting preview for decide-and-build-from-first-open-the-url-r\nnpm install && npm run dev -- --host 0.0.0.0 --port 5173\n\n",
+    "errors": []
+  },
+  "outputDir": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-e9845236\\.nexus\\staging\\2a477610",
+  "summary": "Staging Studio ready: preview running, 5 devices, health 100/100, creative uniqueness 88/100."
+}

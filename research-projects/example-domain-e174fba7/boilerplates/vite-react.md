@@ -1,0 +1,1 @@
+Create a Vite React app with Tailwind and the generated SDK hooks. Use local JSON fixtures when live API auth is unavailable.

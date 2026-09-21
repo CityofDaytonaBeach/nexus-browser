@@ -390,14 +390,19 @@ export class BuilderPlatform {
       windowsHide: true,
     });
     const log = fs.createWriteStream(logPath, { flags: 'a' });
-    child.stdout.pipe(log);
-    child.stderr.pipe(log);
-    child.on('exit', (code) => {
-      log.write(`\nCode executor exited with code ${code}\n`);
+    const safeLogWrite = (message: string) => {
+      if (!log.destroyed && log.writable) log.write(message);
+    };
+    log.on('error', () => undefined);
+    child.stdout.pipe(log, { end: false });
+    child.stderr.pipe(log, { end: false });
+    child.on('close', (code) => {
+      safeLogWrite(`\nCode executor exited with code ${code}\n`);
+      if (!log.destroyed) log.end();
       onExit?.(code);
     });
     child.on('error', (error) => {
-      log.write(`\nCode executor failed to start: ${error.message}\n`);
+      safeLogWrite(`\nCode executor failed to start: ${error.message}\n`);
       onError?.(error);
     });
     return child;

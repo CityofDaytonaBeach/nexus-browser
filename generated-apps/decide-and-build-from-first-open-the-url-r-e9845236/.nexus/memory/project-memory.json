@@ -1,0 +1,24 @@
+{
+  "buildId": "e9845236",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-e9845236",
+  "updatedAt": "2026-09-10T13:37:41.915Z",
+  "entries": [
+    {
+      "type": "qa",
+      "summary": "Staging Studio ready: preview running, 5 devices, health 100/100, creative uniqueness 88/100.",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-e9845236\\.nexus\\staging\\2a477610"
+      ],
+      "tags": [
+        "staging-studio",
+        "ready",
+        "creative-88"
+      ],
+      "id": "40f8b5e9",
+      "createdAt": "2026-09-10T13:37:41.915Z"
+    }
+  ],
+  "preferences": {},
+  "workingFixes": [],
+  "failedFixes": []
+}

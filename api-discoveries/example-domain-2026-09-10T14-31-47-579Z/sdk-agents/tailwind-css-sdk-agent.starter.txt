@@ -1,0 +1,7 @@
+export const uiPrimitives = {
+  button: 'inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2',
+  card: 'rounded-lg border bg-white p-6 shadow-sm',
+  input: 'w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2',
+  section: 'mx-auto w-full max-w-7xl px-4 py-8 md:px-8',
+  nav: 'flex items-center justify-between gap-4',
+};

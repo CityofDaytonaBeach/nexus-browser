@@ -1,0 +1,23 @@
+<?php
+
+final class DiscoveredApiClient
+{
+    public function __construct(private ?string $token = null) {}
+
+    private function request(string $method, string $endpoint, array $params = []): array|string
+    {
+        $url = $endpoint;
+        if ($method === 'GET' && $params) {
+            $url .= (str_contains($url, '?') ? '&' : '?') . http_build_query($params);
+        }
+        $headers = ['Accept: application/json'];
+        if ($this->token) $headers[] = 'Authorization: Bearer ' . $this->token;
+        $context = stream_context_create(['http' => ['method' => $method, 'header' => implode("
+", $headers)]]);
+        $body = file_get_contents($url, false, $context);
+        $json = json_decode($body ?: '', true);
+        return json_last_error() === JSON_ERROR_NONE ? $json : ($body ?: '');
+    }
+
+
+}

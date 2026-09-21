@@ -1,0 +1,28 @@
+{
+  "buildId": "dd5ba536",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-dd5ba536",
+  "updatedAt": "2026-09-10T13:23:15.497Z",
+  "entries": [
+    {
+      "type": "qa",
+      "summary": "Staging Studio failed: preview running, 5 devices, health 0/100, creative uniqueness 88/100.",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-dd5ba536\\.nexus\\staging\\31468f90",
+        "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED",
+        "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED",
+        "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED",
+        "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED"
+      ],
+      "tags": [
+        "staging-studio",
+        "failed",
+        "creative-88"
+      ],
+      "id": "f10dad9c",
+      "createdAt": "2026-09-10T13:23:15.497Z"
+    }
+  ],
+  "preferences": {},
+  "workingFixes": [],
+  "failedFixes": []
+}

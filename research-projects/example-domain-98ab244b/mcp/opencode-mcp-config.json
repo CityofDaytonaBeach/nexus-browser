@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "discoveredApi": {
+      "command": "node",
+      "args": [
+        "dist/mcp/server.js"
+      ],
+      "env": {
+        "API_AUTH_TOKEN": "${API_AUTH_TOKEN}"
+      }
+    }
+  }
+}

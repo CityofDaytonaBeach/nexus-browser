@@ -1,0 +1,47 @@
+{
+  "architecture": [
+    "Create an SDK layer for https://example.com with one typed function per endpoint.",
+    "Keep browser-discovered endpoint details in a generated manifest and hand-written business logic in separate files.",
+    "Use environment variables for tokens, API keys, base URLs, and tenant/domain identifiers.",
+    "Add cache/retry/rate-limit wrappers around read-heavy GET endpoints.",
+    "Expose MCP tools as thin wrappers over SDK functions so agents call stable tool names instead of raw URLs."
+  ],
+  "dataModels": [],
+  "databaseTables": [],
+  "functions": [],
+  "authStrategy": [
+    "No auth-required endpoints were observed; keep auth configuration available because deeper pages may require cookies, bearer tokens, or API keys."
+  ],
+  "errorHandling": [
+    "Handle 401/403 as authentication or permission failures and never retry indefinitely.",
+    "Handle 429 with exponential backoff and respect Retry-After headers when present.",
+    "Treat 5xx responses as transient unless response body indicates a permanent validation error.",
+    "Log method, path, status, and request ID headers; never log secrets, cookies, bearer tokens, or raw PII."
+  ],
+  "recommendedFiles": [
+    {
+      "path": "src/sdk/client.ts",
+      "purpose": "Shared request client with auth, retries, JSON parsing, and redaction."
+    },
+    {
+      "path": "src/sdk/endpoints.ts",
+      "purpose": "Typed functions generated from endpoints.json."
+    },
+    {
+      "path": "src/sdk/types.ts",
+      "purpose": "Inferred TypeScript data models."
+    },
+    {
+      "path": "src/mcp/server.ts",
+      "purpose": "MCP server exposing one safe tool per SDK function."
+    },
+    {
+      "path": "database/schema.sql",
+      "purpose": "Optional tables for local cache, sync jobs, or cloned app backend."
+    },
+    {
+      "path": "examples/",
+      "purpose": "Runnable examples for public and authenticated calls."
+    }
+  ]
+}

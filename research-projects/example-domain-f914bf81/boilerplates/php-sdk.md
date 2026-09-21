@@ -1,0 +1,1 @@
+Create a Composer package from sdk-agents/php-sdk-agent.md and expose endpoint methods for Laravel or plain PHP.

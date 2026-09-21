@@ -1,0 +1,142 @@
+{
+  "id": "31468f90",
+  "buildId": "dd5ba536",
+  "createdAt": "2026-09-10T13:23:15.484Z",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-dd5ba536",
+  "previewUrl": "http://127.0.0.1:5173",
+  "previewStatus": "running",
+  "devices": [
+    {
+      "device": {
+        "id": "desktop",
+        "name": "Desktop Studio",
+        "width": 1440,
+        "height": 1024,
+        "userAgentHint": "desktop"
+      },
+      "url": "http://127.0.0.1:5173",
+      "status": "failed",
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-dd5ba536\\.nexus\\staging\\31468f90\\desktop-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [
+        "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED"
+      ],
+      "notes": [
+        "Capture failed: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/\", waiting until \"networkidle\"\u001b[22m\n"
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/31468f90/devices/desktop/screenshot"
+    },
+    {
+      "device": {
+        "id": "tablet",
+        "name": "Tablet Touch",
+        "width": 834,
+        "height": 1112,
+        "userAgentHint": "tablet"
+      },
+      "url": "http://127.0.0.1:5173",
+      "status": "failed",
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-dd5ba536\\.nexus\\staging\\31468f90\\tablet-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [
+        "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED"
+      ],
+      "notes": [
+        "Capture failed: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/\", waiting until \"networkidle\"\u001b[22m\n"
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/31468f90/devices/tablet/screenshot"
+    },
+    {
+      "device": {
+        "id": "mobile",
+        "name": "Mobile App",
+        "width": 390,
+        "height": 844,
+        "userAgentHint": "mobile"
+      },
+      "url": "http://127.0.0.1:5173",
+      "status": "failed",
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-dd5ba536\\.nexus\\staging\\31468f90\\mobile-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [
+        "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED"
+      ],
+      "notes": [
+        "Capture failed: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/\", waiting until \"networkidle\"\u001b[22m\n"
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/31468f90/devices/mobile/screenshot"
+    },
+    {
+      "device": {
+        "id": "game",
+        "name": "Game Viewport",
+        "width": 960,
+        "height": 540,
+        "userAgentHint": "game"
+      },
+      "url": "http://127.0.0.1:5173",
+      "status": "failed",
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-dd5ba536\\.nexus\\staging\\31468f90\\game-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [
+        "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED"
+      ],
+      "notes": [
+        "Capture failed: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/\", waiting until \"networkidle\"\u001b[22m\n"
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/31468f90/devices/game/screenshot"
+    },
+    {
+      "device": {
+        "id": "app-store-mobile",
+        "name": "App Store Shot",
+        "width": 1290,
+        "height": 2796,
+        "userAgentHint": "mobile-screenshot"
+      },
+      "url": "http://127.0.0.1:5173",
+      "status": "failed",
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-dd5ba536\\.nexus\\staging\\31468f90\\app-store-mobile-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [
+        "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED"
+      ],
+      "notes": [
+        "Capture failed: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/\", waiting until \"networkidle\"\u001b[22m\n"
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/31468f90/devices/app-store-mobile/screenshot"
+    }
+  ],
+  "health": {
+    "status": "failed",
+    "score": 0,
+    "issues": [
+      "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED",
+      "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED",
+      "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED",
+      "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED",
+      "GET http://127.0.0.1:5173/ failed: net::ERR_CONNECTION_REFUSED",
+      "Capture failed: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/\", waiting until \"networkidle\"\u001b[22m\n",
+      "Capture failed: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/\", waiting until \"networkidle\"\u001b[22m\n",
+      "Capture failed: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/\", waiting until \"networkidle\"\u001b[22m\n",
+      "Capture failed: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/\", waiting until \"networkidle\"\u001b[22m\n",
+      "Capture failed: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/\", waiting until \"networkidle\"\u001b[22m\n"
+    ]
+  },
+  "creativeUniqueness": {
+    "score": 88,
+    "findings": [
+      "Distinctive/system signal found: reduced-motion",
+      "Distinctive/system signal found: signature",
+      "Distinctive/system signal found: motion",
+      "Distinctive/system signal found: theme"
+    ],
+    "antiTemplatePrompt": "You are the NexusBrowser Creative Divergence QA agent.\n\nWorkspace: C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-dd5ba536\nPreview: http://127.0.0.1:5173\nCreative uniqueness score: 88/100\nFindings:\n- Distinctive/system signal found: reduced-motion\n- Distinctive/system signal found: signature\n- Distinctive/system signal found: motion\n- Distinctive/system signal found: theme\n\nImprove the app until it no longer resembles a stock generated template.\n\nRequired changes:\n- Replace generic hero/card/grid composition with product-specific layout logic.\n- Add a signature visual system: typography, spacing, color, texture, and component states.\n- Add custom loading, empty, error, focus, hover, and mobile states.\n- Ensure desktop, tablet, mobile, game, and app-store screenshot sizes feel intentionally designed.\n- Preserve accessibility and reduced-motion support.\n- Run build and rerun Staging Studio after edits.\n"
+  },
+  "logs": {
+    "previewTail": "Starting preview for decide-and-build-from-first-open-the-url-r\nnpm install && npm run dev -- --host 0.0.0.0 --port 5173\n\n",
+    "errors": []
+  },
+  "outputDir": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-dd5ba536\\.nexus\\staging\\31468f90",
+  "summary": "Staging Studio failed: preview running, 5 devices, health 0/100, creative uniqueness 88/100."
+}

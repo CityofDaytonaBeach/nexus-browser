@@ -1,0 +1,1 @@
+Create an Express or Fastify backend with SQLite cache tables, sync jobs for GET endpoints, and REST proxy routes.

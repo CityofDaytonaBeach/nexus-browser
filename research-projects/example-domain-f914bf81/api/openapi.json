@@ -1,0 +1,9 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Example Domain API",
+    "version": "1.0.0",
+    "description": "Automatically discovered from https://example.com/"
+  },
+  "paths": {}
+}

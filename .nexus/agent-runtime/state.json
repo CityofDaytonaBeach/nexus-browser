@@ -1,6 +1,276 @@
 {
   "memories": [
     {
+      "id": "7e73583d-3bc5-4e41-ba82-aab92a11803a",
+      "scope": "session",
+      "content": "User asked: Plan mode: create architecture and setup plan for this app\nMode: plan\nActive build: 02cc01d0",
+      "tags": [
+        "builder-chat",
+        "plan",
+        "active-build",
+        "browser-session"
+      ],
+      "source": "builder-chat:91a0b696-6a67-44d5-8f0c-0814c064c1be",
+      "createdAt": 1789051309628,
+      "updatedAt": 1789051309628
+    },
+    {
+      "id": "6f9355eb-49b9-4697-8d68-b8f473f3f8d4",
+      "scope": "session",
+      "content": "User asked: Update the project: make the hero copy say Built by Nexus and add a concise CTA\nMode: build\nActive build: 02cc01d0",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build",
+        "browser-session"
+      ],
+      "source": "builder-chat:91a0b696-6a67-44d5-8f0c-0814c064c1be",
+      "createdAt": 1789051309540,
+      "updatedAt": 1789051309540
+    },
+    {
+      "id": "c10472a4-c000-4872-9c52-48be792459a7",
+      "scope": "session",
+      "content": "User asked: Decide and build from https://example.com with a clean accessible landing page and run QA\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build",
+        "browser-session"
+      ],
+      "source": "builder-chat:91a0b696-6a67-44d5-8f0c-0814c064c1be",
+      "createdAt": 1789051309448,
+      "updatedAt": 1789051309448
+    },
+    {
+      "id": "3cf0b766-8b89-42cc-b14d-a0b903ee3fc4",
+      "scope": "session",
+      "content": "User asked: add more pages\nMode: build\nActive build: 58b30c3f",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build",
+        "browser-session"
+      ],
+      "source": "builder-chat:5456d34d-0ba3-443d-982b-7527746f8480",
+      "createdAt": 1789050851821,
+      "updatedAt": 1789050851821
+    },
+    {
+      "id": "1adca3b3-8b20-4762-862f-bd90498e5110",
+      "scope": "session",
+      "content": "User asked: Research mode summarize browser evidence\nMode: research\nActive build: 6cb401d8",
+      "tags": [
+        "builder-chat",
+        "research",
+        "active-build",
+        "browser-session"
+      ],
+      "source": "builder-chat:286817dd-a2d4-4288-9600-32d6e0264037",
+      "createdAt": 1789050832476,
+      "updatedAt": 1789050832476
+    },
+    {
+      "id": "1cce9be2-fa1b-46a5-8cd0-e5cafa69b5fd",
+      "scope": "session",
+      "content": "User asked: Plan mode architecture plan for this app\nMode: plan\nActive build: 6cb401d8",
+      "tags": [
+        "builder-chat",
+        "plan",
+        "active-build",
+        "browser-session"
+      ],
+      "source": "builder-chat:286817dd-a2d4-4288-9600-32d6e0264037",
+      "createdAt": 1789050829339,
+      "updatedAt": 1789050829339
+    },
+    {
+      "id": "be43131e-4c04-4b2c-93b7-2f71e2dda3cf",
+      "scope": "session",
+      "content": "User asked: Change the hero copy to say Built by Nexus and keep the app simple\nMode: build\nActive build: 6cb401d8",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build",
+        "browser-session"
+      ],
+      "source": "builder-chat:286817dd-a2d4-4288-9600-32d6e0264037",
+      "createdAt": 1789050819149,
+      "updatedAt": 1789050819149
+    },
+    {
+      "id": "0f3c4b0d-f52f-41b5-80a6-c032dd1d756b",
+      "scope": "session",
+      "content": "User asked: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live preview, staging, and Visual QA.\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build",
+        "browser-session"
+      ],
+      "source": "builder-chat:286817dd-a2d4-4288-9600-32d6e0264037",
+      "createdAt": 1789050818667,
+      "updatedAt": 1789050818667
+    },
+    {
+      "id": "1f001ad8-85a1-48bd-bf12-7753bd48bfa7",
+      "scope": "session",
+      "content": "User asked: Research mode summarize browser evidence\nMode: research\nActive build: aa983ea2",
+      "tags": [
+        "builder-chat",
+        "research",
+        "active-build",
+        "browser-session"
+      ],
+      "source": "builder-chat:49b4a279-6d7e-47ea-95ac-abfcc8fc12f5",
+      "createdAt": 1789050707061,
+      "updatedAt": 1789050707061
+    },
+    {
+      "id": "13c2cc0e-bdbd-44c7-9935-67913ea8bc7f",
+      "scope": "session",
+      "content": "User asked: Plan mode architecture plan for this app\nMode: plan\nActive build: aa983ea2",
+      "tags": [
+        "builder-chat",
+        "plan",
+        "active-build",
+        "browser-session"
+      ],
+      "source": "builder-chat:49b4a279-6d7e-47ea-95ac-abfcc8fc12f5",
+      "createdAt": 1789050703914,
+      "updatedAt": 1789050703914
+    },
+    {
+      "id": "65391b17-4a2e-459e-9321-85f8bb599cd1",
+      "scope": "session",
+      "content": "User asked: Change the hero copy to say Built by Nexus and keep the app simple\nMode: build\nActive build: aa983ea2",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build",
+        "browser-session"
+      ],
+      "source": "builder-chat:49b4a279-6d7e-47ea-95ac-abfcc8fc12f5",
+      "createdAt": 1789050693724,
+      "updatedAt": 1789050693724
+    },
+    {
+      "id": "91511df0-f417-4812-a823-3180bf54eb08",
+      "scope": "session",
+      "content": "User asked: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live preview, staging, and Visual QA.\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build",
+        "browser-session"
+      ],
+      "source": "builder-chat:49b4a279-6d7e-47ea-95ac-abfcc8fc12f5",
+      "createdAt": 1789050693252,
+      "updatedAt": 1789050693252
+    },
+    {
+      "id": "09898017-fa28-4c84-b3f5-256470b337b6",
+      "scope": "session",
+      "content": "User asked: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live preview, staging, and Visual QA.\nMode: build\nActive build: d8b5e948",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build",
+        "browser-session"
+      ],
+      "source": "builder-chat:5456d34d-0ba3-443d-982b-7527746f8480",
+      "createdAt": 1789049331108,
+      "updatedAt": 1789049331108
+    },
+    {
+      "id": "daac8b6b-8704-4624-9496-89fc7e8f1457",
+      "scope": "session",
+      "content": "User asked: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live preview, staging, and Visual QA.\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build",
+        "browser-session"
+      ],
+      "source": "builder-chat:d6d532c9-2fc6-4c42-8b4d-bb81d19f426d",
+      "createdAt": 1789048635366,
+      "updatedAt": 1789048635366
+    },
+    {
+      "id": "167ddb25-effd-4016-bf84-cb5ce49e92fe",
+      "scope": "session",
+      "content": "User asked: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live preview, staging, and Visual QA.\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build",
+        "browser-session"
+      ],
+      "source": "builder-chat:d6d532c9-2fc6-4c42-8b4d-bb81d19f426d",
+      "createdAt": 1789048627359,
+      "updatedAt": 1789048627359
+    },
+    {
+      "id": "55b69d95-a767-43e0-8de9-bbec8499d017",
+      "scope": "session",
+      "content": "User asked: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live preview, staging, and Visual QA.\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build",
+        "browser-session"
+      ],
+      "source": "builder-chat:fc3e1ed1-23e1-4688-9408-7c288320f9e6",
+      "createdAt": 1789047439255,
+      "updatedAt": 1789047439255
+    },
+    {
+      "id": "d418f32a-e77b-4fbf-9c02-18c6559448e0",
+      "scope": "session",
+      "content": "User asked: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live preview, staging, and Visual QA.\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build",
+        "browser-session"
+      ],
+      "source": "builder-chat:0d1e6615-5f9f-424e-a76e-9beb638c2f37",
+      "createdAt": 1789046900055,
+      "updatedAt": 1789046900055
+    },
+    {
+      "id": "6f2ad208-b90a-4d94-a933-6ad8deea7a18",
+      "scope": "session",
+      "content": "User asked: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live preview, staging, and Visual QA.\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build",
+        "browser-session"
+      ],
+      "source": "builder-chat:0d1e6615-5f9f-424e-a76e-9beb638c2f37",
+      "createdAt": 1789046765652,
+      "updatedAt": 1789046765652
+    },
+    {
+      "id": "673d362b-3b4e-401b-a22d-1796531f1a95",
+      "scope": "session",
+      "content": "User asked: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live preview, staging, and Visual QA.\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build",
+        "browser-session"
+      ],
+      "source": "builder-chat:cec78f4c-6049-4b2f-b7a9-6b2aa8bb613d",
+      "createdAt": 1789046560003,
+      "updatedAt": 1789046560003
+    },
+    {
+      "id": "5ce28f52-2a6c-4a6a-93cb-d1715e8123b8",
+      "scope": "session",
+      "content": "User asked: city of daytona beach colors\nMode: ui-builder\nActive build: d8b5e948",
+      "tags": [
+        "builder-chat",
+        "ui-builder",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1789045518537,
+      "updatedAt": 1789045518537
+    },
+    {
       "id": "28bd3cf5-0943-4237-8dbb-bafa0716724d",
       "scope": "session",
       "content": "User asked: build bike wekk\nMode: ui-builder\nActive build: d8b5e948",
@@ -30,10 +300,20 @@
       "successCount": 0,
       "failureCount": 0,
       "lessons": [
+        "Refreshed from chat intent: Decide and build from https://example.com with a clean accessible landing page and run QA",
+        "Refreshed from chat intent: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live previe",
+        "Refreshed from chat intent: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live previe",
+        "Refreshed from chat intent: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live previe",
+        "Refreshed from chat intent: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live previe",
+        "Refreshed from chat intent: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live previe",
+        "Refreshed from chat intent: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live previe",
+        "Refreshed from chat intent: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live previe",
+        "Refreshed from chat intent: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live previe",
+        "Refreshed from chat intent: Decide and build from https://example.com. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live previe",
         "Refreshed from chat intent: build bike wekk"
       ],
       "createdAt": 1789045061311,
-      "updatedAt": 1789045061311
+      "updatedAt": 1789051309450
     }
   ],
   "delegations": [],

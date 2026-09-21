@@ -1,0 +1,33 @@
+{
+  "name": "stripe",
+  "category": "payments",
+  "features": [
+    "checkout",
+    "subscriptions",
+    "customer-portal",
+    "webhooks",
+    "pricing-table",
+    "invoices"
+  ],
+  "env": [
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "STRIPE_PRICE_ID",
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"
+  ],
+  "files": [
+    "stripe/env.example",
+    "stripe/tasks.md",
+    "stripe/schema.prisma",
+    "stripe/checkout-route.ts",
+    "stripe/webhook-route.ts",
+    "stripe/billing-page.tsx"
+  ],
+  "tasks": [
+    "Add Stripe client",
+    "Create checkout session route",
+    "Create webhook handler",
+    "Add subscription tables",
+    "Add billing UI and customer portal"
+  ]
+}

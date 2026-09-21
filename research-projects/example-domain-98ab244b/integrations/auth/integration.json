@@ -1,0 +1,33 @@
+{
+  "name": "auth",
+  "category": "identity",
+  "features": [
+    "authjs",
+    "clerk",
+    "supabase-auth",
+    "jwt",
+    "roles",
+    "sessions"
+  ],
+  "env": [
+    "AUTH_SECRET",
+    "AUTH_GITHUB_ID",
+    "AUTH_GITHUB_SECRET",
+    "CLERK_SECRET_KEY",
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"
+  ],
+  "files": [
+    "auth/env.example",
+    "auth/tasks.md",
+    "auth/auth-config.ts",
+    "auth/schema.prisma",
+    "auth/middleware.ts"
+  ],
+  "tasks": [
+    "Select Auth.js, Clerk, or Supabase Auth",
+    "Add user/session models",
+    "Protect app routes",
+    "Add roles and permissions",
+    "Add login/logout UI"
+  ]
+}

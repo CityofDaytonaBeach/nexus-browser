@@ -1,0 +1,21 @@
+import { useEffect, useState } from 'react';
+
+export function useDiscoveredEndpoint(url = "") {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(Boolean(url));
+
+  useEffect(() => {
+    if (!url) return;
+    let cancelled = false;
+    setLoading(true);
+    fetch(url, { headers: { accept: 'application/json' } })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error(String(response.status))))
+      .then((nextData) => { if (!cancelled) setData(nextData); })
+      .catch((nextError) => { if (!cancelled) setError(nextError); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [url]);
+
+  return { data, error, loading };
+}

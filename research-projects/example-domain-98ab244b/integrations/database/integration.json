@@ -1,0 +1,34 @@
+{
+  "name": "database",
+  "category": "data",
+  "features": [
+    "sqlite-local",
+    "postgres",
+    "supabase",
+    "neon",
+    "turso",
+    "prisma",
+    "drizzle",
+    "migrations"
+  ],
+  "env": [
+    "DATABASE_URL",
+    "DIRECT_URL",
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY"
+  ],
+  "files": [
+    "database/env.example",
+    "database/tasks.md",
+    "database/schema.prisma",
+    "database/drizzle-schema.ts",
+    "database/migration.sql"
+  ],
+  "tasks": [
+    "Start with SQLite local mode",
+    "Add Prisma or Drizzle",
+    "Generate migrations",
+    "Seed from discovered API samples",
+    "Add sync jobs for API-backed data"
+  ]
+}

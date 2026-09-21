@@ -1,0 +1,31 @@
+{
+  "name": "email",
+  "category": "messaging",
+  "features": [
+    "resend",
+    "sendgrid",
+    "postmark",
+    "mailgun",
+    "transactional-email",
+    "templates"
+  ],
+  "env": [
+    "RESEND_API_KEY",
+    "SENDGRID_API_KEY",
+    "POSTMARK_TOKEN",
+    "MAILGUN_API_KEY",
+    "EMAIL_FROM"
+  ],
+  "files": [
+    "email/env.example",
+    "email/tasks.md",
+    "email/client.ts",
+    "email/templates.tsx"
+  ],
+  "tasks": [
+    "Create email provider abstraction",
+    "Add transactional templates",
+    "Send auth/billing notifications",
+    "Add local preview mode"
+  ]
+}

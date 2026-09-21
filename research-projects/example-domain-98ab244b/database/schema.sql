@@ -1,0 +1,1 @@
+-- No database tables inferred yet. Crawl deeper pages or APIs with JSON response samples.

@@ -1,0 +1,29 @@
+{
+  "name": "analytics",
+  "category": "observability",
+  "features": [
+    "posthog",
+    "plausible",
+    "google-analytics",
+    "events",
+    "funnels"
+  ],
+  "env": [
+    "NEXT_PUBLIC_POSTHOG_KEY",
+    "NEXT_PUBLIC_POSTHOG_HOST",
+    "NEXT_PUBLIC_PLAUSIBLE_DOMAIN",
+    "NEXT_PUBLIC_GA_ID"
+  ],
+  "files": [
+    "analytics/env.example",
+    "analytics/tasks.md",
+    "analytics/client.ts",
+    "analytics/provider.tsx"
+  ],
+  "tasks": [
+    "Add privacy-aware analytics",
+    "Track product events",
+    "Add funnel events for generated app flows",
+    "Document opt-out behavior"
+  ]
+}

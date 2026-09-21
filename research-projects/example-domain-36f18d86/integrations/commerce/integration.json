@@ -1,0 +1,29 @@
+{
+  "name": "commerce",
+  "category": "commerce",
+  "features": [
+    "shopify",
+    "lemonsqueezy",
+    "paddle",
+    "products",
+    "licenses"
+  ],
+  "env": [
+    "SHOPIFY_ADMIN_TOKEN",
+    "SHOPIFY_STORE_DOMAIN",
+    "LEMONSQUEEZY_API_KEY",
+    "PADDLE_API_KEY"
+  ],
+  "files": [
+    "commerce/env.example",
+    "commerce/tasks.md",
+    "commerce/client.ts",
+    "commerce/products-route.ts"
+  ],
+  "tasks": [
+    "Create commerce provider abstraction",
+    "Add products/prices/licenses",
+    "Add webhook processing",
+    "Support Stripe as default billing path"
+  ]
+}

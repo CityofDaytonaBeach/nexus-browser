@@ -1,0 +1,28 @@
+{
+  "name": "monitoring",
+  "category": "observability",
+  "features": [
+    "sentry",
+    "logs",
+    "health-checks",
+    "uptime",
+    "audit-log"
+  ],
+  "env": [
+    "SENTRY_DSN",
+    "LOG_LEVEL",
+    "UPTIME_WEBHOOK_URL"
+  ],
+  "files": [
+    "monitoring/env.example",
+    "monitoring/tasks.md",
+    "monitoring/sentry.ts",
+    "monitoring/health-route.ts"
+  ],
+  "tasks": [
+    "Add Sentry",
+    "Add health route",
+    "Add structured logs",
+    "Add audit log for agent/API actions"
+  ]
+}

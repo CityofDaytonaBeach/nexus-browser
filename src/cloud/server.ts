@@ -1789,7 +1789,9 @@ export class CloudServer {
   private shouldStartBuild(message: string, mode: string): boolean {
     const text = message.toLowerCase();
     if (!message.trim()) return false;
-    return mode === 'build' || /\b(build|create|make|generate|code)\b/.test(text) && /\b(app|application|landing page|website|dashboard|saas|ui|page)\b/.test(text);
+    return mode === 'build'
+      || /\b(build|create|make|generate|code)\b/.test(text) && /\b(app|application|landing page|website|dashboard|saas|ui|page)\b/.test(text)
+      || /\b(build|clone|recreate|redesign)\b/.test(text) && /https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i.test(message);
   }
 
   private shouldUpdateBuild(message: string, mode: string): boolean {

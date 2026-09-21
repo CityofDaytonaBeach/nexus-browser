@@ -1,0 +1,125 @@
+{
+  "capturedAt": "2026-09-10T14:33:53.163Z",
+  "sessionId": "286817dd-a2d4-4288-9600-32d6e0264037",
+  "pageId": "7b432a28-6c4f-41f8-9f8c-9eecc5ea2396",
+  "url": "https://example.com/",
+  "title": "Example Domain",
+  "designTokens": {
+    "colors": [
+      "rgb(0, 0, 0)",
+      "rgb(51, 68, 136)"
+    ],
+    "fonts": [
+      "system-ui, sans-serif"
+    ],
+    "radii": [
+      "0px"
+    ],
+    "fontSizes": [
+      "16px",
+      "24px"
+    ],
+    "spacingScale": [
+      22,
+      32,
+      80
+    ],
+    "semantic": {
+      "primary": "rgb(0, 0, 0)",
+      "surface": "#ffffff",
+      "text": "rgb(0, 0, 0)"
+    }
+  },
+  "layoutMap": [
+    {
+      "name": "ExampleDomainthisDomainIsCardOrSection",
+      "selector": "div",
+      "tag": "div",
+      "rect": {
+        "x": 384,
+        "y": 162,
+        "width": 1152,
+        "height": 107.078125
+      },
+      "purpose": "card-or-section"
+    },
+    {
+      "name": "ExampleDomainContent",
+      "selector": "h1",
+      "tag": "h1",
+      "rect": {
+        "x": 384,
+        "y": 162,
+        "width": 1152,
+        "height": 32
+      },
+      "purpose": "content"
+    }
+  ],
+  "components": [
+    {
+      "name": "ExampleDomainthisDomainIsCardOrSection",
+      "kind": "card-or-section",
+      "selector": "div",
+      "text": "Example DomainThis domain is for use in documentation examples without needing permission. Avoid use in operations.Learn more",
+      "tailwind": "box-border w-full py-6 text-sm",
+      "confidence": 0.6,
+      "dataDependencies": []
+    },
+    {
+      "name": "ExampleDomainContent",
+      "kind": "content",
+      "selector": "h1",
+      "text": "Example Domain",
+      "tailwind": "box-border w-full py-2 font-semibold text-2xl",
+      "confidence": 0.6,
+      "dataDependencies": []
+    },
+    {
+      "name": "ThisDomainIsForContent",
+      "kind": "content",
+      "selector": "p",
+      "text": "This domain is for use in documentation examples without needing permission. Avoid use in operations.",
+      "tailwind": "box-border w-full py-2 text-sm",
+      "confidence": 0.6,
+      "dataDependencies": []
+    },
+    {
+      "name": "LearnMoreContent",
+      "kind": "content",
+      "selector": "p",
+      "text": "Learn more",
+      "tailwind": "box-border w-full py-2 text-sm",
+      "confidence": 0.6,
+      "dataDependencies": []
+    },
+    {
+      "name": "LearnMoreLink",
+      "kind": "link",
+      "selector": "a",
+      "text": "Learn more",
+      "tailwind": "box-border max-w-fit py-2 text-sm",
+      "confidence": 0.85,
+      "dataDependencies": []
+    }
+  ],
+  "interactions": [
+    {
+      "selector": "a",
+      "type": "a",
+      "text": "Learn more",
+      "expectedState": "hover, focus, active"
+    }
+  ],
+  "uiApiMap": [],
+  "tailwindConfig": "import type { Config } from 'tailwindcss';\n\nexport default {\n  content: ['./src/**/*.{ts,tsx,js,jsx}', './components/**/*.{ts,tsx}'],\n  theme: {\n    extend: {\n      colors: {\n        captured1: \"rgb(0, 0, 0)\",\n        captured2: \"rgb(51, 68, 136)\"\n      },\n      fontFamily: {\n        captured: [\"system-ui\",\"sans-serif\"],\n      },\n    },\n  },\n  plugins: [],\n} satisfies Config;\n",
+  "pageComponent": "import { ExampleDomainthisDomainIsCardOrSection } from './components/ExampleDomainthisDomainIsCardOrSection';\nimport { ExampleDomainContent } from './components/ExampleDomainContent';\nimport { ThisDomainIsForContent } from './components/ThisDomainIsForContent';\nimport { LearnMoreContent } from './components/LearnMoreContent';\nimport { LearnMoreLink } from './components/LearnMoreLink';\n\nexport default function Page() {\n  return (\n    <main className=\"min-h-screen bg-white font-captured text-slate-950\">\n      <div className=\"mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 md:p-8\">\n        <ExampleDomainthisDomainIsCardOrSection />\n        <ExampleDomainContent />\n        <ThisDomainIsForContent />\n        <LearnMoreContent />\n        <LearnMoreLink />\n      </div>\n    </main>\n  );\n}\n",
+  "componentFiles": {
+    "ExampleDomainthisDomainIsCardOrSection.tsx": "export function ExampleDomainthisDomainIsCardOrSection() {\n  return <div className=\"box-border w-full py-6 text-sm\">Example DomainThis domain is for use in documentation examples without needing permission. Avoid use in operations.Learn more</div>;\n}\n",
+    "ExampleDomainContent.tsx": "export function ExampleDomainContent() {\n  return <div className=\"box-border w-full py-2 font-semibold text-2xl\">Example Domain</div>;\n}\n",
+    "ThisDomainIsForContent.tsx": "export function ThisDomainIsForContent() {\n  return <div className=\"box-border w-full py-2 text-sm\">This domain is for use in documentation examples without needing permission. Avoid use in operations.</div>;\n}\n",
+    "LearnMoreContent.tsx": "export function LearnMoreContent() {\n  return <div className=\"box-border w-full py-2 text-sm\">Learn more</div>;\n}\n",
+    "LearnMoreLink.tsx": "export function LearnMoreLink() {\n  return <a href=\"#\" className=\"box-border max-w-fit py-2 text-sm\">Learn more</a>;\n}\n"
+  },
+  "prompt": "You are OpenCode. Rebuild this captured website UI with high-quality Tailwind CSS components.\n\nSource: https://example.com/\nTitle: Example Domain\n\nUse these files:\n- design-tokens.json for colors, fonts, radii, sizes, and inferred semantics.\n- tailwind.config.ts as the generated Tailwind starting config.\n- components.json for classified UI elements and confidence scores.\n- layout-map.json for page structure and visual hierarchy.\n- interactions.json for hover/focus/active/form states.\n- ui-api-map.json to connect UI sections to discovered backend endpoints.\n- Page.tsx and components/*.tsx as generated starter components.\n\nBuild rules:\n- Consolidate duplicated generated components into reusable design-system primitives.\n- Preserve visual hierarchy, spacing, typography, colors, and responsive behavior.\n- Use Tailwind classes first; only use custom CSS when Tailwind cannot express the captured UI cleanly.\n- Treat low-confidence components as hints, not final architecture.\n- Wire API-backed components to endpoint clients or MCP tools when ui-api-map.json provides a match.\n"
+}

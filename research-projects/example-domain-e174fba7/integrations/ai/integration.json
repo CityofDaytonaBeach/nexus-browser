@@ -1,0 +1,33 @@
+{
+  "name": "ai",
+  "category": "ai",
+  "features": [
+    "openai",
+    "anthropic",
+    "gemini",
+    "ollama",
+    "rag",
+    "embeddings",
+    "agent-tools"
+  ],
+  "env": [
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GEMINI_API_KEY",
+    "OLLAMA_BASE_URL",
+    "VECTOR_DATABASE_URL"
+  ],
+  "files": [
+    "ai/env.example",
+    "ai/tasks.md",
+    "ai/client.ts",
+    "ai/rag.ts",
+    "ai/tools.ts"
+  ],
+  "tasks": [
+    "Create model provider abstraction",
+    "Add embeddings/RAG support",
+    "Expose app actions as AI tools",
+    "Support local Ollama fallback"
+  ]
+}

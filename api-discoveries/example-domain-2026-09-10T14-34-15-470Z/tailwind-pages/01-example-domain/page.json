@@ -1,0 +1,124 @@
+{
+  "url": "https://example.com/",
+  "title": "Example Domain",
+  "layout": [
+    {
+      "selector": "div",
+      "tag": "div",
+      "text": "Example DomainThis domain is for use in documentation examples without needing permission. Avoid use in operations.Learn more",
+      "role": null,
+      "rect": {
+        "x": 384,
+        "y": 162,
+        "width": 1152,
+        "height": 107.078125
+      },
+      "styles": {
+        "display": "block",
+        "position": "static",
+        "color": "rgb(0, 0, 0)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, sans-serif",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "borderRadius": "0px"
+      }
+    },
+    {
+      "selector": "h1",
+      "tag": "h1",
+      "text": "Example Domain",
+      "role": null,
+      "rect": {
+        "x": 384,
+        "y": 162,
+        "width": 1152,
+        "height": 32
+      },
+      "styles": {
+        "display": "block",
+        "position": "static",
+        "color": "rgb(0, 0, 0)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, sans-serif",
+        "fontSize": "24px",
+        "fontWeight": "700",
+        "borderRadius": "0px"
+      }
+    },
+    {
+      "selector": "p",
+      "tag": "p",
+      "text": "This domain is for use in documentation examples without needing permission. Avoid use in operations.",
+      "role": null,
+      "rect": {
+        "x": 384,
+        "y": 210.078125,
+        "width": 1152,
+        "height": 21.5
+      },
+      "styles": {
+        "display": "block",
+        "position": "static",
+        "color": "rgb(0, 0, 0)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, sans-serif",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "borderRadius": "0px"
+      }
+    },
+    {
+      "selector": "p",
+      "tag": "p",
+      "text": "Learn more",
+      "role": null,
+      "rect": {
+        "x": 384,
+        "y": 247.578125,
+        "width": 1152,
+        "height": 21.5
+      },
+      "styles": {
+        "display": "block",
+        "position": "static",
+        "color": "rgb(0, 0, 0)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, sans-serif",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "borderRadius": "0px"
+      }
+    },
+    {
+      "selector": "a",
+      "tag": "a",
+      "text": "Learn more",
+      "role": null,
+      "rect": {
+        "x": 384,
+        "y": 247.578125,
+        "width": 80.125,
+        "height": 21.5
+      },
+      "styles": {
+        "display": "inline",
+        "position": "static",
+        "color": "rgb(51, 68, 136)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, sans-serif",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "borderRadius": "0px"
+      }
+    }
+  ],
+  "images": [],
+  "colors": [
+    "rgb(0, 0, 0)",
+    "rgb(51, 68, 136)"
+  ],
+  "fonts": [
+    "system-ui, sans-serif"
+  ]
+}

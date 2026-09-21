@@ -1,0 +1,82 @@
+[
+  {
+    "id": "01",
+    "title": "Project Setup",
+    "goal": "Create the selected app boilerplate with TypeScript, Tailwind, linting, and environment configuration.",
+    "outputs": [
+      "package.json",
+      "src/",
+      ".env.example"
+    ]
+  },
+  {
+    "id": "02",
+    "title": "Database Layer",
+    "goal": "Create local SQLite schema, ORM models, and seed data from discovered API response samples.",
+    "outputs": [
+      "database/schema.sql",
+      "database/schema.prisma",
+      "database/seed.json"
+    ]
+  },
+  {
+    "id": "03",
+    "title": "API SDK",
+    "goal": "Implement typed client functions for 0 discovered endpoints with auth, retries, and redaction.",
+    "outputs": [
+      "src/sdk/client.ts",
+      "src/sdk/endpoints.ts",
+      "src/sdk/types.ts"
+    ]
+  },
+  {
+    "id": "04",
+    "title": "MCP Server",
+    "goal": "Expose discovered APIs as safe MCP tools backed by SDK functions.",
+    "outputs": [
+      "src/mcp/server.ts",
+      "src/mcp/tools.ts",
+      "mcp/README.md"
+    ]
+  },
+  {
+    "id": "05",
+    "title": "Tailwind Design System",
+    "goal": "Turn 5 classified UI components into reusable Tailwind primitives and page components.",
+    "outputs": [
+      "tailwind.config.ts",
+      "src/components/",
+      "src/app/page.tsx"
+    ]
+  },
+  {
+    "id": "06",
+    "title": "Wire UI To Data",
+    "goal": "Connect UI components to SDK hooks, API clients, MCP tools, or local database fallbacks.",
+    "outputs": [
+      "src/hooks/",
+      "src/services/",
+      "src/components/*"
+    ]
+  },
+  {
+    "id": "07",
+    "title": "Common Integrations",
+    "goal": "Add selected production integrations: GitHub, Stripe, auth, database providers, email, storage, AI, analytics, deployment, commerce, and monitoring.",
+    "outputs": [
+      "integrations/",
+      ".env.example",
+      "src/integrations/"
+    ]
+  },
+  {
+    "id": "08",
+    "title": "Tests And QA",
+    "goal": "Generate Playwright smoke tests, API tests, visual comparison tasks, and agent repair loops.",
+    "outputs": [
+      "tests/",
+      "playwright.config.ts",
+      "qa-report.md"
+    ]
+  }
+]

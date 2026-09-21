@@ -56,6 +56,19 @@
     body.chat-first .chat-briefing, body.chat-first .chat-actions { display: none; }
     body.chat-first .panel-title { padding: 14px 16px; color: var(--muted); border-bottom-color: rgba(17,24,39,.1); }
     body.chat-first .panel-title button { display: none; }
+    body.landing-first { color-scheme: light; --bg: #f6f6f4; --canvas: #ffffff; --panel: rgba(255,255,255,.88); --panel-2: rgba(255,255,255,.94); --line: rgba(17,24,39,.12); --text: #171717; --muted: #73736d; --blue: #111827; --blue-soft: rgba(17,24,39,.07); --shadow: 0 28px 90px rgba(17,24,39,.12); }
+    body.landing-first .topbar, body.landing-first #toolsPanel, body.landing-first .statusbar, body.landing-first .mode-tabs, body.landing-first .build-stream, body.landing-first #chatPanel { display: none; }
+    body.landing-first .shell { grid-template-rows: 1fr; }
+    body.landing-first .center { grid-template-rows: 1fr; }
+    body.landing-first .workspace { grid-template-columns: 1fr; }
+    body.project-live { color-scheme: light; --bg: #f6f6f4; --canvas: #ffffff; --panel: rgba(255,255,255,.9); --panel-2: rgba(255,255,255,.96); --line: rgba(17,24,39,.12); --text: #171717; --muted: #73736d; --blue: #111827; --blue-soft: rgba(17,24,39,.07); --shadow: 0 24px 70px rgba(17,24,39,.12); }
+    body.project-live .topbar, body.project-live #toolsPanel, body.project-live .statusbar, body.project-live .mode-tabs, body.project-live .build-stream { display: none; }
+    body.project-live .shell { grid-template-rows: 1fr; }
+    body.project-live .center { grid-template-rows: 1fr; }
+    body.project-live .workspace { grid-template-columns: 1fr; }
+    body.project-live #chatPanel { right: 18px; bottom: 18px; top: auto; left: auto; width: min(430px, calc(100vw - 28px)); height: min(640px, calc(100vh - 36px)); border-radius: 24px; transform: none; opacity: 1; pointer-events: auto; box-shadow: var(--shadow); }
+    body.project-live .chat-briefing, body.project-live .chat-actions { display: none; }
+    body.project-live .panel-title button { display: none; }
     .brand { width: 132px; font-size: 12px; font-weight: 760; letter-spacing: .08em; color: var(--text); }
     .browser-tabs { display: flex; align-items: center; gap: 6px; max-width: 34vw; overflow: auto; }
     .browser-tab { display: inline-flex; align-items: center; gap: 6px; max-width: 180px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
@@ -91,8 +104,8 @@
     .tab { border: 1px solid transparent; color: var(--muted); border-radius: 999px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
     .tab.active { color: var(--text); border-color: var(--line); background: var(--panel-2); }
     .preview { position: relative; min-height: 0; overflow: hidden; background: radial-gradient(circle at 20% 15%, rgba(109,94,252,.16), transparent 28%), radial-gradient(circle at 82% 28%, rgba(34,211,238,.18), transparent 30%), linear-gradient(180deg,#fbfbfa,#f6f6f4 58%,#ededeb); }
-    body.chat-first .preview::before { content: '010101  NEXUS  BUILD  ROUTE  AGENT  STAGE  VERIFY  SHIP\A function build(){ return evidence.map(code).test(); }\A 101101  BROWSER  DOM  NETWORK  API  QA  MOBILE  DEPLOY\A const agents = [gatherer, browser, backend, opencode, staging];\A 011010  SNAPSHOT  REACT  VITALS  MCP  SUPABASE  STRIPE\A while(goal){ research(); implement(); preview(); heal(); }\A 110011  TYPESCRIPT  TAILWIND  NODE  GITHUB  VERCEL\A export default async function awesome(){ await nexus.run(); }'; position: absolute; inset: -40% -10% 0; z-index: 0; white-space: pre; color: rgba(17,24,39,.08); font: 700 18px/1.8 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .18em; transform: rotate(-8deg); animation: matrixRain 18s linear infinite; pointer-events: none; }
-    body.chat-first .preview::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, transparent 0 48%, rgba(109,94,252,.08) 49%, transparent 51% 100%), radial-gradient(circle at 50% 52%, rgba(34,211,238,.12), transparent 24%), repeating-linear-gradient(180deg, rgba(17,24,39,.025) 0 1px, transparent 1px 5px); animation: codePulse 5s ease-in-out infinite; }
+    body.chat-first .preview::before, body.landing-first .preview::before, body.project-live .preview::before { content: '010101  NEXUS  BUILD  ROUTE  AGENT  STAGE  VERIFY  SHIP\A function build(){ return evidence.map(code).test(); }\A 101101  BROWSER  DOM  NETWORK  API  QA  MOBILE  DEPLOY\A const agents = [gatherer, browser, backend, opencode, staging];\A 011010  SNAPSHOT  REACT  VITALS  MCP  SUPABASE  STRIPE\A while(goal){ research(); implement(); preview(); heal(); }\A 110011  TYPESCRIPT  TAILWIND  NODE  GITHUB  VERCEL\A export default async function awesome(){ await nexus.run(); }'; position: absolute; inset: -40% -10% 0; z-index: 0; white-space: pre; color: rgba(17,24,39,.08); font: 700 18px/1.8 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .18em; transform: rotate(-8deg); animation: matrixRain 18s linear infinite; pointer-events: none; }
+    body.chat-first .preview::after, body.landing-first .preview::after, body.project-live .preview::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, transparent 0 48%, rgba(109,94,252,.08) 49%, transparent 51% 100%), radial-gradient(circle at 50% 52%, rgba(34,211,238,.12), transparent 24%), repeating-linear-gradient(180deg, rgba(17,24,39,.025) 0 1px, transparent 1px 5px); animation: codePulse 5s ease-in-out infinite; }
     .preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .app-frame { width: 100%; height: 100%; border: 0; background: white; display: block; }
     .search-page { position: relative; z-index: 2; height: 100%; overflow: auto; padding: 72px min(7vw,72px) 40px; color: var(--text); }
@@ -114,6 +127,14 @@
     .preview-card-inner { width: min(720px, 92vw); border: 1px solid var(--line); border-radius: 24px; background: var(--panel); box-shadow: var(--shadow); padding: 24px; }
     .preview-card-inner h1 { font-size: clamp(28px, 5vw, 56px); letter-spacing: -.07em; margin-bottom: 10px; }
     .preview-card-inner p { color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
+    .live-build-card { height: 100%; display: grid; place-items: center; padding: min(9vw,96px); position: relative; z-index: 2; }
+    .live-build-inner { width: min(880px, calc(100vw - 48px)); border: 1px solid rgba(17,24,39,.12); border-radius: 34px; background: rgba(255,255,255,.82); box-shadow: var(--shadow); backdrop-filter: blur(24px); padding: clamp(22px,4vw,44px); }
+    .live-build-inner h1 { font-size: clamp(34px,7vw,82px); letter-spacing: -.08em; line-height: .92; margin-bottom: 14px; }
+    .live-build-inner p { color: var(--muted); font-size: clamp(14px,2vw,18px); line-height: 1.55; max-width: 680px; }
+    .launch-status { margin-top: 18px; border: 1px solid rgba(17,24,39,.1); border-radius: 18px; background: rgba(255,255,255,.72); padding: 12px 14px; color: var(--text); font-size: 13px; line-height: 1.45; white-space: pre-wrap; }
+    .build-pipeline { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 24px; }
+    .build-pipeline span { border: 1px solid rgba(17,24,39,.1); border-radius: 999px; background: rgba(255,255,255,.9); padding: 9px 10px; color: var(--muted); font-size: 12px; text-align: center; }
+    .build-pipeline span:first-child { color: var(--text); border-color: rgba(17,24,39,.28); }
     .overlay-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
     .build-block { position: absolute; border: 2px solid rgba(56,189,248,.95); background: rgba(56,189,248,.16); border-radius: 8px; box-shadow: 0 0 0 1px rgba(15,23,42,.28), 0 14px 40px rgba(56,189,248,.25); opacity: 0; transform: scale(.96); transition: opacity .22s ease, transform .22s ease; }
     .build-block.live { opacity: 1; transform: scale(1); }
@@ -126,9 +147,10 @@
     .landing-minimal { width: min(760px, 92vw); padding: 10px; border-radius: 20px; }
     .landing-builder p { color: var(--muted); margin-bottom: 14px; font-size: 14px; }
     .landing-chat { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px; border: 1px solid rgba(17,24,39,.1); border-radius: 16px; background: rgba(255,255,255,.92); }
-    .landing-chat textarea { min-height: 68px; resize: none; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 14px; line-height: 1.45; }
-    .landing-minimal .landing-chat textarea { min-height: 54px; font-size: 16px; padding: 8px; }
+    .landing-chat textarea, .landing-chat input { min-height: 68px; resize: none; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 14px; line-height: 1.45; }
+    .landing-minimal .landing-chat textarea, .landing-minimal .landing-chat input { min-height: 54px; font-size: 16px; padding: 8px; }
     .landing-chat button { align-self: end; }
+    .landing-status { min-height: 20px; margin: 10px 8px 0; color: var(--muted); font-size: 12px; }
     .quick-prompts { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
     .quick-prompts button { border: 1px solid var(--line); border-radius: 999px; background: var(--panel-2); color: var(--text); padding: 5px 8px; cursor: pointer; font-size: 11px; }
     .quick-prompts button:hover { border-color: var(--blue); color: var(--blue); }
@@ -175,7 +197,7 @@
     @media (max-width: 720px) { .browser-tabs { max-width: 28vw; } .panel { width: calc(100vw - 24px); } .build-stream { display: none; } .center { grid-template-rows: 40px 1fr; } body.chat-first #chatPanel.open, body.chat-first #chatPanel { width: calc(100vw - 18px); height: calc(100vh - 18px); border-radius: 22px; } body.chat-first .preview::before { font-size: 13px; } }
   </style>
 </head>
-<body class="chat-first">
+<body class="landing-first">
   <div class="shell">
     <header class="topbar">
       <div class="brand">NEXUS</div>
@@ -309,10 +331,11 @@
           </div>
           <div class="empty">
             <div class="landing-builder landing-minimal">
-              <div class="landing-chat">
-                <textarea id="landingChatInput" placeholder="What should Nexus build?" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLandingChat();}"></textarea>
-                <button class="btn primary" onclick="sendLandingChat()">Build</button>
-              </div>
+              <form class="landing-chat" id="landingForm" action="/" method="get">
+                <input id="landingChatInput" name="start" placeholder="Enter a URL to research and build from" autocomplete="url">
+                <button class="btn primary" id="landingSubmit" type="submit">Open</button>
+              </form>
+              <div class="landing-status" id="landingStatus">Press Enter or Open to start.</div>
             </div>
           </div>
         </div>
@@ -379,6 +402,7 @@
     let lastBackendObservation = '';
     let lastBackendObservationCount = 0;
     let activeTabId = 'home';
+    let landingStartInProgress = false;
     let csrfToken = '';
     const nexusStatusLog = [];
     const browserTabs = [{ id: 'home', title: 'Home', kind: 'home', url: '' }];
@@ -409,8 +433,77 @@
 
     function showBrowserFrame(label, url, title) {
       document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">${label}</span><span class="pill">${title}</span></div><div class="preview-actions"><button class="btn" onclick="window.open('${url}', '_blank', 'noopener,noreferrer')">Open</button></div><iframe class="app-frame" src="${url}" title="${title}"></iframe>`;
-      document.getElementById('pageStatus').textContent = `${label} - ${url}`;
+      setText('pageStatus', `${label} - ${url}`);
       document.getElementById('urlInput').value = url;
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function setLaunchStatus(value) {
+      setText('launchStatus', value);
+      appendStream('qaStream', value);
+    }
+
+    function setLandingStatus(value) {
+      setText('landingStatus', value);
+    }
+
+    function enterProjectLiveMode(url, prompt) {
+      document.body.classList.remove('landing-first', 'chat-first');
+      document.body.classList.add('project-live');
+      document.getElementById('chatPanel').classList.add('open');
+      document.getElementById('browserView').innerHTML = `
+        <div class="live-build-card">
+          <div class="live-build-inner">
+            <h1>Building from the live web.</h1>
+            <p>Nexus is opening ${escapeHtml(url)}, gathering browser evidence, asking only needed setup questions, then routing the project through OpenCode, preview, staging, and visual QA.</p>
+            <div class="build-pipeline"><span>Open URL</span><span>Research</span><span>OpenCode</span><span>Visual QA</span></div>
+            <div class="launch-status" id="launchStatus">Starting live project...</div>
+          </div>
+        </div>`;
+      document.getElementById('chatPanel').style.display = 'flex';
+      addMessage('system', `Project live window opened for ${url}. Chat is now controlling research, build, staging, and QA.`);
+      document.getElementById('chatInput').value = prompt;
+    }
+
+    async function continueBuildFromLoadedPage(message) {
+      try {
+        await refreshBrowserIntelligence(true);
+        await refreshBackendObserver(true);
+        addMessage('user', message);
+        const result = await api('/api/builder/chat', {
+          sessionId: currentSessionId,
+          pageId: currentPageId,
+          activeBuildId,
+          message,
+          browserContext: `${lastBrowserIntelligence}\n\n${lastBackendObservation}`.trim(),
+          mode: 'build',
+          uiLook: document.getElementById('uiLook').value,
+          ...buildBrainOptions(),
+        });
+        addMessage('assistant', result.response);
+        if (result.build) showBuildStarted(result.build);
+        if (result.update) showBuildUpdateStarted(result.update);
+        if (!result.build && !result.update) {
+          setLaunchStatus('No build was returned from chat. Forcing OpenCode build start from the loaded URL...');
+          const build = await api('/api/builder/start-build', {
+            sessionId: currentSessionId,
+            prompt: message,
+            browserContext: `${lastBrowserIntelligence}\n\n${lastBackendObservation}`.trim(),
+            mode: 'build',
+            uiLook: document.getElementById('uiLook').value,
+            ...buildBrainOptions(),
+          });
+          showBuildStarted(build);
+        }
+      } catch (error) {
+        addMessage('system', `Build handoff failed: ${error.message}`);
+      } finally {
+        document.getElementById('chatInput').value = '';
+      }
     }
 
     function initTheme() {
@@ -496,7 +589,7 @@
       if (msg.type === 'session:created') {
         currentSessionId = msg.session.id;
         currentPageId = msg.session.activePageId || msg.session.pages[0]?.id;
-        document.getElementById('sessionPill').textContent = currentSessionId.slice(0, 8);
+        setText('sessionPill', currentSessionId.slice(0, 8));
         addMessage('system', `Session ready: ${currentSessionId}`);
         if (pendingNavigateUrl) {
           const url = pendingNavigateUrl;
@@ -507,13 +600,13 @@
       if (msg.type === 'session:attached') {
         currentSessionId = msg.session.id;
         currentPageId = msg.session.activePageId || msg.session.pages[0]?.id;
-        document.getElementById('sessionPill').textContent = currentSessionId.slice(0, 8);
+        setText('sessionPill', currentSessionId.slice(0, 8));
         addMessage('system', `Attached to existing session: ${currentSessionId}`);
         refreshScreenshot();
       }
       if (msg.type === 'sessions') attachOrCreateSession(msg.sessions || []);
       if (msg.type === 'action:result' && msg.result?.page) updatePage(msg.result.page);
-      if (msg.type === 'page:screenshot') showScreenshot(msg.data);
+      if (msg.type === 'page:screenshot' && !document.body.classList.contains('landing-first')) showScreenshot(msg.data);
       if (msg.type === 'page:navigated') document.getElementById('urlInput').value = msg.url;
       if (msg.type === 'page:loaded') {
         refreshScreenshot();
@@ -527,8 +620,8 @@
         if (pendingAutoBuild) {
           const message = pendingAutoBuild;
           pendingAutoBuild = null;
-          addMessage('system', 'Target page loaded. Starting requested build workflow...');
-          setTimeout(() => executeChatIntent(message), 1800);
+          addMessage('system', 'Target page loaded. Collecting evidence, then starting OpenCode build and staging...');
+          setTimeout(() => continueBuildFromLoadedPage(message), 900);
         }
       }
       if (msg.type === 'error') addMessage('system', msg.error);
@@ -541,6 +634,7 @@
     function newSession() { sendWs('session:create'); }
 
     function attachOrCreateSession(sessions) {
+      if (document.body.classList.contains('landing-first')) return;
       const existing = sessions.find(session => session.pages?.some(page => page.url && !page.url.startsWith('http://localhost:3000') && page.url !== 'about:blank'));
       if (existing) {
         sendWs('session:attach', { sessionId: existing.id });
@@ -581,7 +675,7 @@
 
     function showSearchResults(query, results) {
       document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Search</span><span class="pill">${results.length} results</span></div><div class="search-page"><h1>${query}</h1>${results.map((result) => `<article class="search-result" onclick="openSearchResult('${encodeURIComponent(result.url)}','${encodeURIComponent(result.title)}')"><b>${result.title}</b><small>${result.url}</small><p>${result.snippet || ''}</p></article>`).join('') || '<p>No results found.</p>'}</div>`;
-      document.getElementById('pageStatus').textContent = `Search - ${query}`;
+      setText('pageStatus', `Search - ${query}`);
       document.getElementById('researchStream').textContent = results.map((result) => `${result.title}\n${result.url}\n${result.snippet}`).join('\n\n');
     }
 
@@ -608,7 +702,7 @@
         const session = await api('/api/sessions', {});
         currentSessionId = session.id;
         currentPageId = session.activePageId || session.pages?.[0]?.id;
-        document.getElementById('sessionPill').textContent = currentSessionId.slice(0, 8);
+        setText('sessionPill', currentSessionId.slice(0, 8));
         addMessage('system', 'Browser agent opened a session for the current workflow.');
       }
       if (!currentPageId) throw new Error('Browser session did not create an active page.');
@@ -767,7 +861,7 @@
               </div>
             </div>
           </div>`;
-        document.getElementById('pageStatus').textContent = status.configured ? 'GitHub connector ready' : 'Login with GitHub or set GITHUB_TOKEN';
+        setText('pageStatus', status.configured ? 'GitHub connector ready' : 'Login with GitHub or set GITHUB_TOKEN');
         addMessage('assistant', status.configured ? `GitHub connector ready${status.account ? ` as ${status.account}` : ''}. Save a repo/project connection to manage work from Nexus.` : 'GitHub management UI is ready. Use Login GitHub or configure GITHUB_TOKEN.');
       } catch (error) {
         addMessage('system', `GitHub manager failed: ${error.message}`);
@@ -1254,7 +1348,7 @@
           </aside>
           <div class="device-wall">${frames}</div>
         </div>`;
-      document.getElementById('pageStatus').textContent = `Nexus Staging Studio - ${report.previewUrl}`;
+      setText('pageStatus', `Nexus Staging Studio - ${report.previewUrl}`);
       loadStagingScreenshots(report);
     }
 
@@ -1369,7 +1463,7 @@
         if (result.source === 'ai' || result.source === 'agent-browser') addActionMessage(result.actions || [], result.source);
         if (result.build) showBuildStarted(result.build);
         if (result.update) showBuildUpdateStarted(result.update);
-        if (pendingAutoBuild !== message) executeChatIntent(message);
+        if (!result.build && !result.update && pendingAutoBuild !== message) executeChatIntent(message);
       } catch (error) {
         addMessage('system', `Builder chat failed: ${error.message}`);
       }
@@ -1424,24 +1518,69 @@
       sendChat();
     }
 
-    function sendLandingChat() {
+    async function sendLandingChat() {
+      if (landingStartInProgress) return;
       const input = document.getElementById('landingChatInput');
-      const message = input?.value.trim();
-      if (!message) return;
+      const raw = input?.value.trim();
+      await startFromLandingValue(raw, input);
+    }
+
+    async function startFromLandingValue(raw, input) {
+      if (!raw) return;
+      landingStartInProgress = true;
+      const submit = document.getElementById('landingSubmit');
+      if (submit) {
+        submit.disabled = true;
+        submit.textContent = 'Starting...';
+      }
+      setLandingStatus('Starting live project...');
+      const looksLikeUrl = /^https?:\/\//i.test(raw) || /^[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?$/i.test(raw);
+      if (!looksLikeUrl) {
+        if (input) input.value = '';
+        addMessage('system', 'Enter a URL like example.com or https://example.com to start a live project.');
+        setLandingStatus('Enter a valid URL like example.com or https://example.com.');
+        if (submit) {
+          submit.disabled = false;
+          submit.textContent = 'Open';
+        }
+        landingStartInProgress = false;
+        return;
+      }
+      const url = raw.startsWith('http') ? raw : `https://${raw}`;
+      const message = `Decide and build from ${url}. First open the URL, run browser research, infer the stack/project setup with smart defaults, then build with OpenCode and run live preview, staging, and Visual QA.`;
       toggleChat(true);
       document.getElementById('builderMode').value = 'build';
       applyModeFromMessage(message);
-      const urlMatch = message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i);
-      if (urlMatch) {
-        document.getElementById('urlInput').value = urlMatch[0].startsWith('http') ? urlMatch[0] : `https://${urlMatch[0]}`;
-        pendingAutoBuild = shouldAutoBuildFromMessage(message) ? message : null;
-        navigate();
-      } else if (shouldWebSearch(message)) {
-        runBrowserSearch(cleanSearchQuery(message));
+      document.getElementById('urlInput').value = url;
+      enterProjectLiveMode(url, message);
+      if (input) input.value = '';
+      startProjectFromUrl(url, message)
+        .catch((error) => addMessage('system', `Project start failed: ${error.message}`))
+        .finally(() => { landingStartInProgress = false; });
+    }
+
+    async function startProjectFromUrl(url, message) {
+      if (!csrfToken) await loadSecurityToken();
+      if (!currentSessionId || !currentPageId) {
+        setLaunchStatus('Creating browser session...');
+        addMessage('system', 'Creating browser session...');
+        const session = await api('/api/sessions', {});
+        currentSessionId = session.id;
+        currentPageId = session.activePageId || session.pages?.[0]?.id;
+        setText('sessionPill', currentSessionId.slice(0, 8));
       }
-      document.getElementById('chatInput').value = /\b(build|create|make|generate|code)\b/i.test(message) ? message : `Build ${message}`;
-      sendChat();
-      input.value = '';
+      if (!currentPageId) throw new Error('Browser session did not create an active page.');
+      setLaunchStatus(`Opening ${url} in the live browser...`);
+      addMessage('system', `Opening ${url} in the live browser...`);
+      const result = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/action`, {
+        type: 'navigate',
+        url,
+        options: { waitUntil: 'domcontentloaded', timeout: 60000 },
+      });
+      if (result?.page) updatePage(result.page);
+      setLaunchStatus('URL loaded. Starting chat-to-OpenCode build handoff...');
+      addMessage('system', 'URL loaded. Starting chat-to-OpenCode build handoff...');
+      await continueBuildFromLoadedPage(message);
     }
 
     function applyModeFromMessage(message) {
@@ -1504,13 +1643,25 @@
     }
 
     function showBuildStarted(build) {
+      document.body.classList.remove('landing-first', 'chat-first');
+      document.body.classList.add('project-live');
+      document.getElementById('chatPanel').classList.add('open');
       activeBuildId = build.id;
       localStorage.setItem('nexus-active-build-id', build.id);
       document.getElementById('outputPath').textContent = build.root;
       document.getElementById('taskStream').textContent = `Build workspace created\n\n${build.root}\n\nBrain: ${build.brain?.mode || 'hybrid'} / ${build.brain?.provider || 'openai'} ${build.brain?.model || ''}\nOpenCode status: ${build.status}\n\nPreview command:\n${build.previewCommand}\n\nLog:\n${build.logPath}`;
       document.getElementById('qaStream').textContent = `OpenCode command:\n${build.opencodeCommand}\n\nStarting live app preview...`;
+      setLaunchStatus(`OpenCode workspace started.\n${build.root}\n\nOpening live preview and staging...`);
       addMessage('assistant', `Started build workspace: ${build.root}\nStatus: ${build.status}`);
-      startActiveBuildPreview();
+      startPreviewThenStage();
+    }
+
+    async function startPreviewThenStage() {
+      await startActiveBuildPreview();
+      setTimeout(() => runStagingStudio().catch((error) => {
+        setLaunchStatus(`Staging is waiting for the preview server. Retrying...\n${error.message}`);
+        setTimeout(() => runStagingStudio().catch((retryError) => setLaunchStatus(`Staging could not start yet. Use chat: run staging studio.\n${retryError.message}`)), 10000);
+      }), 8000);
     }
 
     function showBuildUpdateStarted(update) {
@@ -1532,8 +1683,10 @@
         const build = await api(`/api/builder/builds/${activeBuildId}/preview`, {});
         showAppPreview(build);
         pollPreviewLog(build.id);
+        setLaunchStatus(`Live preview starting: ${build.previewUrl}`);
         addMessage('assistant', `Live preview starting: ${build.previewUrl}`);
       } catch (error) {
+        setLaunchStatus(`Preview start failed: ${error.message}`);
         addMessage('system', `Preview start failed: ${error.message}`);
       }
     }
@@ -1557,12 +1710,11 @@
 
     function showAppPreview(build) {
       upsertBrowserTab({ id: `preview-${build.id}`, title: build.name || 'Preview', kind: 'preview', url: build.previewUrl || '' });
-      if (build.previewUrl) window.open(build.previewUrl, `nexus-preview-${build.id}`);
       document.getElementById('browserView').innerHTML = `
         <div class="hud"><span class="pill">Live App</span><span class="pill">${build.previewStatus}</span><span class="pill">${build.previewUrl || 'starting'}</span></div>
         <div class="preview-actions"><button class="btn primary" onclick="openActiveBuildExternal()">Open App</button><button class="btn" onclick="startActiveBuildPreview()">Restart</button><button class="btn amber" onclick="stopActiveBuildPreview()">Stop</button></div>
-        <div class="preview-card"><div class="preview-card-inner"><h1>Preview opened as a real browser tab</h1><p>Generated apps are no longer iframed. They run in their own tab so routing, auth redirects, storage, popups, WebGL, devtools, and browser automation behave like a real app.</p><button class="btn primary" onclick="openActiveBuildExternal()">Open App Again</button></div></div>`;
-      document.getElementById('pageStatus').textContent = `Generated app preview - ${build.previewUrl || 'starting'}`;
+        ${build.previewUrl ? `<iframe class="app-frame" src="${build.previewUrl}" title="Generated app preview"></iframe>` : `<div class="preview-card"><div class="preview-card-inner"><h1>Preview starting</h1><p>Nexus is starting the generated app server. Staging will open here when screenshots are ready.</p></div></div>`}`;
+      setText('pageStatus', `Generated app preview - ${build.previewUrl || 'starting'}`);
     }
 
     function pollPreviewLog(buildId) {
@@ -1612,7 +1764,7 @@
     }
 
     function updatePage(page) {
-      document.getElementById('pageStatus').textContent = `${page.title || 'Page'} - ${page.url}`;
+      setText('pageStatus', `${page.title || 'Page'} - ${page.url}`);
       document.getElementById('urlInput').value = page.url;
       refreshScreenshot();
       refreshBrowserIntelligence(true);
@@ -1626,7 +1778,7 @@
         lastGathererObservationCount = result.timeline?.length || lastGathererObservationCount;
         const gathererStatus = document.getElementById('gathererStatus');
         if (gathererStatus) gathererStatus.textContent = `${lastGathererObservationCount} observations`;
-        document.getElementById('pageStatus').textContent = `Gatherer Agent: ${lastGathererObservationCount} observations - ${document.getElementById('urlInput').value || 'active page'}`;
+        setText('pageStatus', `Gatherer Agent: ${lastGathererObservationCount} observations - ${document.getElementById('urlInput').value || 'active page'}`);
         if (!silent) appendStream('researchStream', `Gatherer Agent refreshed (${lastGathererObservationCount} observations, ${lastBrowserIntelligence.length} chars).`);
       } catch (error) {
         if (!silent) addMessage('system', `Browser intelligence failed: ${error.message}`);
@@ -1721,7 +1873,7 @@
       viewMode = mode;
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       el.classList.add('active');
-      document.getElementById('viewPill').textContent = mode;
+      setText('viewPill', mode);
       appendStream('qaStream', `Switched to ${mode} mode.`);
     }
 
@@ -1783,9 +1935,11 @@
     }
 
     function setStatus(ok, text) {
-      document.getElementById('statusText').textContent = text;
-      document.getElementById('apiDot').className = ok ? 'dot' : 'dot bad';
-      document.getElementById('wsBadge').innerHTML = `<span class="dot ${ok ? '' : 'bad'}"></span>${ok ? 'live' : 'offline'}`;
+      setText('statusText', text);
+      const apiDot = document.getElementById('apiDot');
+      if (apiDot) apiDot.className = ok ? 'dot' : 'dot bad';
+      const wsBadge = document.getElementById('wsBadge');
+      if (wsBadge) wsBadge.innerHTML = `<span class="dot ${ok ? '' : 'bad'}"></span>${ok ? 'live' : 'offline'}`;
     }
 
     async function detectWebGpu() {
@@ -1801,8 +1955,24 @@
       showBrowserFrame('IDE', url, 'Files and terminal');
     }
 
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && document.body.classList.contains('landing-first') && document.activeElement?.id === 'landingChatInput') {
+        event.preventDefault();
+        sendLandingChat();
+      }
+    });
     document.getElementById('urlInput').addEventListener('keydown', (event) => { if (event.key === 'Enter') navigate(); });
-    document.getElementById('uiLook').addEventListener('change', (event) => { document.getElementById('lookPill').textContent = event.target.value; });
+    document.getElementById('landingForm')?.addEventListener('submit', (event) => { event.preventDefault(); sendLandingChat(); });
+    document.getElementById('uiLook').addEventListener('change', (event) => { setText('lookPill', event.target.value); });
+
+    function startFromQueryParam() {
+      const raw = new URLSearchParams(location.search).get('start');
+      if (!raw || !document.body.classList.contains('landing-first')) return;
+      const input = document.getElementById('landingChatInput');
+      if (input) input.value = raw;
+      history.replaceState(null, '', location.pathname + location.hash);
+      setTimeout(() => startFromLandingValue(raw, input), 300);
+    }
 
     initTheme();
     initWindowMode();
@@ -1811,6 +1981,7 @@
     loadSecurityToken().finally(() => {
       connect();
       startBrowserIntelligenceLoop();
+      startFromQueryParam();
     });
   </script>
 </body>

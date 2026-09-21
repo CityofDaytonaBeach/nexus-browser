@@ -1,0 +1,34 @@
+{
+  "apiCoverage": {
+    "score": 0,
+    "notes": [
+      "0 endpoints discovered",
+      "1 pages crawled"
+    ]
+  },
+  "uiCoverage": {
+    "score": 15,
+    "notes": [
+      "5 components classified",
+      "2 layout regions mapped"
+    ]
+  },
+  "dataModelConfidence": {
+    "score": 0,
+    "notes": [
+      "0 models inferred from response samples"
+    ]
+  },
+  "mcpReadiness": {
+    "score": 0,
+    "notes": [
+      "0 MCP tool definitions generated"
+    ]
+  },
+  "buildReadiness": {
+    "score": 40,
+    "notes": [
+      "OpenCode tasks, SDK agents, database, MCP, and UI artifacts generated"
+    ]
+  }
+}

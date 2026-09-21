@@ -1,0 +1,1 @@
+Use schema.sql/schema.prisma as a first pass. Normalize repeated nested JSON into child tables only when the app needs querying or editing those values. Add indexes for external IDs, dates, slugs, and foreign keys.

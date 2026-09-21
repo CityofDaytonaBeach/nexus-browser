@@ -1,0 +1,37 @@
+{
+  "buildId": "aa983ea2",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-aa983ea2",
+  "updatedAt": "2026-09-10T14:31:59.250Z",
+  "entries": [
+    {
+      "type": "decision",
+      "summary": "Chat update requested: Change the hero copy to say Built by Nexus and keep the app simple",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-aa983ea2\\.nexus\\chat-updates\\1fcb2f7a"
+      ],
+      "tags": [
+        "chat-update",
+        "faithful-clone"
+      ],
+      "id": "92991448",
+      "createdAt": "2026-09-10T14:31:33.814Z"
+    },
+    {
+      "type": "qa",
+      "summary": "Staging Studio ready: preview running, 5 devices, health 100/100, creative uniqueness 88/100.",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\decide-and-build-from-first-open-the-url-r-aa983ea2\\.nexus\\staging\\fde35b72"
+      ],
+      "tags": [
+        "staging-studio",
+        "ready",
+        "creative-88"
+      ],
+      "id": "f5d7103d",
+      "createdAt": "2026-09-10T14:31:59.250Z"
+    }
+  ],
+  "preferences": {},
+  "workingFixes": [],
+  "failedFixes": []
+}
