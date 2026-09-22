@@ -8,6 +8,7 @@ solutions = [
     },
     "custom_deps": {
       "devtools-frontend/third_party/chrome/chrome-win": None,
+      "devtools-frontend/buildtools/win-format": None,
     },
   },
 ]
