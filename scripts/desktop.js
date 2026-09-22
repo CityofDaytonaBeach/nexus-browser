@@ -27,7 +27,7 @@ function waitForServer(timeoutMs = 30000) {
 }
 
 async function main() {
-  const backend = spawn(process.execPath, [path.join(root, 'dist', 'index.js'), '--api-only'], {
+  const backend = spawn(process.execPath, [path.join(root, 'dist', 'index.js'), '--api-only', `--port=${port}`], {
     cwd: root,
     env: { ...process.env, NEXUS_PORT: port },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -46,9 +46,12 @@ async function main() {
   const electronBin = process.platform === 'win32'
     ? path.join(root, 'node_modules', 'electron', 'dist', 'electron.exe')
     : path.join(root, 'node_modules', '.bin', 'electron');
-  const electron = spawn(electronBin, [path.join(root, 'dist', 'ui', 'electron.js')], {
+  const compatibilityMode = process.argv.includes('--compat');
+  const electronArgs = compatibilityMode ? ['--no-sandbox', '--disable-gpu', '--disable-software-rasterizer'] : [];
+  electronArgs.push(path.join(root, 'dist', 'ui', 'electron.js'));
+  const electron = spawn(electronBin, electronArgs, {
     cwd: root,
-    env: { ...process.env, NEXUS_PORT: port, NEXUS_EXTERNAL_SERVER: 'true' },
+    env: { ...process.env, NEXUS_PORT: port, NEXUS_EXTERNAL_SERVER: 'true', NEXUS_DISABLE_GPU: compatibilityMode ? 'true' : process.env.NEXUS_DISABLE_GPU },
     stdio: 'inherit',
     shell: false,
   });

@@ -1,0 +1,25 @@
+brotli==1.0.9 ; python_full_version >= '3.12' or platform_machine != 'riscv64' or sys_platform != 'linux'
+certifi==2021.5.30
+charset-normalizer==2.0.4
+colorama==0.4.6
+coverage==7.13.0
+hjson==3.1.0
+httplib2==0.13.1
+idna==2.8
+iniconfig==2.1.0
+lxml==4.9.3
+packaging==25.0
+parameterized==0.8.1
+pluggy==1.6.0
+pygments==2.19.2
+pytest==9.0.2
+pytest-cov==6.2.1
+pytest-mock==3.10.0
+python-dateutil==2.7.3
+pyyaml==5.4.1+chromium.1
+requests==2.31.0
+six==1.10.0
+sqlparse==0.4.4
+tomli==2.1.0 ; python_full_version <= '3.11'
+tzdata==2023.4
+urllib3==1.26.6

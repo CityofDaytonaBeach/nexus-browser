@@ -66,6 +66,7 @@ export class NexusAgentRuntime {
 
   constructor() {
     this.load();
+    this.ensureCoreSkills();
     this.startJobs();
   }
 
@@ -248,6 +249,83 @@ export class NexusAgentRuntime {
   private scoreSkill(skill: NexusSkill, terms: string[]): number {
     const haystack = `${skill.name} ${skill.description} ${skill.trigger} ${skill.steps.join(' ')} ${skill.lessons.join(' ')}`.toLowerCase();
     return terms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0);
+  }
+
+  private ensureCoreSkills(): void {
+    const builtIns: Array<Pick<NexusSkill, 'name' | 'description' | 'trigger' | 'steps'>> = [
+      {
+        name: 'Intent To Product Sprint',
+        description: 'Turn a short or vague product request into a focused, working first version with explicit assumptions.',
+        trigger: 'Use for build, create, app, website, dashboard, portal, landing page, prototype, or product requests.',
+        steps: [
+          'Infer the product type, audience, primary outcome, and smallest complete workflow from the prompt and chat history.',
+          'Use reversible smart defaults for unspecified style, data, auth, and content instead of blocking the first build.',
+          'Build the primary user journey first, including loading, empty, error, mobile, and accessibility states.',
+          'Return a running preview quickly, then refine from browser evidence and user feedback.',
+        ],
+      },
+      {
+        name: 'Stack Expert Routing',
+        description: 'Select only the language, framework, data, integration, security, and testing experts needed for the current stack.',
+        trigger: 'Use for PHP, Laravel, React, Vite, Next.js, Vue, Python, APIs, databases, auth, payments, mobile, and build failures.',
+        steps: [
+          'Detect the requested stack from the prompt, active project files, dependencies, logs, and browser signals.',
+          'Keep the existing stack for updates unless the user explicitly requests a migration.',
+          'Route setup and failures to matching official-source experts and their stack-specific verification commands.',
+          'Keep the team small enough to avoid duplicated work and conflicting changes.',
+        ],
+      },
+      {
+        name: 'Browser Evidence Verification',
+        description: 'Use the rendered browser as the source of truth for UI, runtime, network, responsive, and accessibility accuracy.',
+        trigger: 'Use for clone, redesign, visual, responsive, mobile, browser, DevTools, screenshot, QA, or interaction requests.',
+        steps: [
+          'Inspect rendered DOM, styles, screenshots, console, network, storage, and interactive states when available.',
+          'Translate evidence into concrete component, API, state, and styling changes.',
+          'Verify desktop, tablet, mobile, keyboard, reduced-motion, loading, empty, and failure states that matter to the product.',
+          'Report observed results without claiming checks that were not run.',
+        ],
+      },
+      {
+        name: 'Project Memory Recall',
+        description: 'Reuse prior requirements, architecture decisions, user preferences, successful fixes, and known failures before editing.',
+        trigger: 'Use for continue, update, change, improve, fix, remember, previous, existing app, or follow-up requests.',
+        steps: [
+          'Retrieve the most relevant runtime memories, recent chat requirements, and active project memory.',
+          'Separate durable decisions from stale status messages and failed approaches.',
+          'Preserve working behavior and stated preferences while applying the new request.',
+          'Record new durable decisions and verified repairs after execution.',
+        ],
+      },
+      {
+        name: 'Focused Repair And QA Loop',
+        description: 'Diagnose failures by layer, apply the smallest complete fix, and rerun the checks that prove the repair.',
+        trigger: 'Use for fix, repair, debug, broken, error, failing, Build Doctor, auto heal, test, QA, or deploy readiness.',
+        steps: [
+          'Classify the failure as requirements, dependency, compiler, framework, runtime, API, data, browser, or deployment.',
+          'Select the matching expert and preserve a snapshot or clear rollback path before risky edits.',
+          'Apply the smallest root-cause fix and run focused checks before broad verification.',
+          'Persist the failure signature, fix, and verification result for future chats.',
+        ],
+      },
+    ];
+    const existingNames = new Set(this.state.skills.map((skill) => skill.name.toLowerCase()));
+    const now = Date.now();
+    let changed = false;
+    for (const builtIn of builtIns) {
+      if (existingNames.has(builtIn.name.toLowerCase())) continue;
+      this.state.skills.push({
+        id: uuid(),
+        ...builtIn,
+        successCount: 0,
+        failureCount: 0,
+        lessons: [],
+        createdAt: now,
+        updatedAt: now,
+      });
+      changed = true;
+    }
+    if (changed) this.save();
   }
 
   private startJobs(): void {

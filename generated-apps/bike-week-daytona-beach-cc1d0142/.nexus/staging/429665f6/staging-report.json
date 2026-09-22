@@ -1,0 +1,94 @@
+{
+  "id": "429665f6",
+  "buildId": "cc1d0142",
+  "createdAt": "2026-09-21T20:50:38.964Z",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-daytona-beach-cc1d0142",
+  "previewUrl": "http://127.0.0.1:5174",
+  "previewStatus": "running",
+  "devices": [
+    {
+      "device": {
+        "id": "desktop",
+        "name": "Desktop Studio",
+        "width": 1440,
+        "height": 1024,
+        "userAgentHint": "desktop"
+      },
+      "url": "http://127.0.0.1:5174",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 1576,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-daytona-beach-cc1d0142\\.nexus\\staging\\429665f6\\desktop-screenshot.png",
+      "consoleErrors": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "networkErrors": [],
+      "notes": [
+        "Captured 1440x1024 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/429665f6/devices/desktop/screenshot"
+    },
+    {
+      "device": {
+        "id": "tablet",
+        "name": "Tablet Touch",
+        "width": 834,
+        "height": 1112,
+        "userAgentHint": "tablet"
+      },
+      "url": "http://127.0.0.1:5174",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 1199,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-daytona-beach-cc1d0142\\.nexus\\staging\\429665f6\\tablet-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [],
+      "notes": [
+        "Captured 834x1112 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/429665f6/devices/tablet/screenshot"
+    },
+    {
+      "device": {
+        "id": "mobile",
+        "name": "Mobile App",
+        "width": 390,
+        "height": 844,
+        "userAgentHint": "mobile"
+      },
+      "url": "http://127.0.0.1:5174",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 1010,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-daytona-beach-cc1d0142\\.nexus\\staging\\429665f6\\mobile-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [],
+      "notes": [
+        "Captured 390x844 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/429665f6/devices/mobile/screenshot"
+    }
+  ],
+  "health": {
+    "status": "ready",
+    "score": 92,
+    "issues": [
+      "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ]
+  },
+  "creativeUniqueness": {
+    "score": 83,
+    "findings": [
+      "Distinctive/system signal found: focus-visible",
+      "Distinctive/system signal found: aria-",
+      "Distinctive/system signal found: brand"
+    ],
+    "antiTemplatePrompt": "You are the NexusBrowser Creative Divergence QA agent.\n\nWorkspace: C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-daytona-beach-cc1d0142\nPreview: http://127.0.0.1:5174\nCreative uniqueness score: 83/100\nFindings:\n- Distinctive/system signal found: focus-visible\n- Distinctive/system signal found: aria-\n- Distinctive/system signal found: brand\n\nImprove the app until it no longer resembles a stock generated template.\n\nRequired changes:\n- Replace generic hero/card/grid composition with product-specific layout logic.\n- Add a signature visual system: typography, spacing, color, texture, and component states.\n- Add custom loading, empty, error, focus, hover, and mobile states.\n- Ensure desktop, tablet, mobile, game, and app-store screenshot sizes feel intentionally designed.\n- Preserve accessibility and reduced-motion support.\n- Run build and rerun Staging Studio after edits.\n"
+  },
+  "logs": {
+    "previewTail": "Starting preview for bike-week-daytona-beach\nnpm install && npm run dev -- --host 0.0.0.0 --port 5174\n\n\nup to date, audited 22 packages in 2s\n\n8 packages are looking for funding\n  run `npm fund` for details\n\nfound 0 vulnerabilities\n\n> dev\n> vite --host 0.0.0.0 --host 0.0.0.0 --port 5174\n\nPort 5174 is in use, trying another one...\nPort 5175 is in use, trying another one...\n\n  VITE v8.3.0  ready in 408 ms\n\n  ➜  Local:   http://localhost:5176/\n  ➜  Network: http://192.168.1.88:5176/  Wi-Fi\n",
+    "errors": []
+  },
+  "outputDir": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-daytona-beach-cc1d0142\\.nexus\\staging\\429665f6",
+  "summary": "Staging Studio ready: preview running, 3 devices, health 92/100, creative uniqueness 83/100."
+}

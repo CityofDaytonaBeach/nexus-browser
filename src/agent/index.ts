@@ -1,5 +1,6 @@
 import { LLMClient, LLMMessage, LLMTool } from '../ai/llm';
 import { BrowserEngine } from '../browser/engine';
+import { BrowserController } from '../core/types';
 import { createLogger } from '../core/logger';
 import { EventEmitter } from 'events';
 import { v4 as uuid } from 'uuid';
@@ -183,15 +184,15 @@ const AGENT_TOOLS: LLMTool[] = [
 
 export class AIAgent extends EventEmitter {
   private llm: LLMClient;
-  private engine: BrowserEngine;
+  private engine: BrowserController;
   private tasks: Map<string, AgentTask> = new Map();
   private memories: Map<string, AgentMemory> = new Map();
   private maxSteps = 30;
 
-  constructor() {
+  constructor(engine: BrowserController = BrowserEngine.getInstance()) {
     super();
     this.llm = new LLMClient();
-    this.engine = BrowserEngine.getInstance();
+    this.engine = engine;
   }
 
   async startTask(

@@ -1,0 +1,67 @@
+{
+  "buildId": "7917c729",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\make-site-of-frogs-7917c729",
+  "updatedAt": "2026-09-22T14:44:59.299Z",
+  "entries": [
+    {
+      "type": "expert-routing",
+      "summary": "Routed to typescript, node, react, npm, vite, playwright, owasp, accessibility, boilerplates, r, c, soc2",
+      "evidence": [
+        "Selected during React + Vite preflight",
+        "Dependency signal: typescript",
+        "Selected during React + Vite preflight",
+        "File signal: package.json",
+        "Selected during React + Vite preflight",
+        "Dependency signal: react",
+        "Selected during React + Vite preflight",
+        "File signal: package.json",
+        "Selected during React + Vite preflight",
+        "Dependency signal: vite",
+        "Selected during React + Vite preflight",
+        "Selected during React + Vite preflight",
+        "File signal: src/**/*",
+        "Selected during React + Vite preflight",
+        "File signal: src/**/*.{tsx,jsx,html}",
+        "File signal: package.json",
+        "File signal: src/**",
+        "Dependency signal: r",
+        "File signal: **/*.c",
+        "File signal: **/*.h",
+        "File signal: README.md",
+        "File signal: src/**/*"
+      ],
+      "tags": [
+        "typescript",
+        "node",
+        "react",
+        "npm",
+        "vite",
+        "playwright",
+        "owasp",
+        "accessibility",
+        "boilerplates",
+        "r",
+        "c",
+        "soc2"
+      ],
+      "id": "a88a1a24",
+      "createdAt": "2026-09-21T21:05:30.499Z"
+    },
+    {
+      "type": "decision",
+      "summary": "Chat update requested: dogs",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\make-site-of-frogs-7917c729\\.nexus\\chat-updates\\908d3dbe"
+      ],
+      "tags": [
+        "chat-update",
+        "faithful-clone"
+      ],
+      "id": "561e8635",
+      "createdAt": "2026-09-22T14:44:59.299Z"
+    }
+  ],
+  "preferences": {},
+  "workingFixes": [],
+  "failedFixes": []
+}

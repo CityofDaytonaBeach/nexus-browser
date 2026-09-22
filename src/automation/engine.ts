@@ -1,5 +1,6 @@
 import { BrowserEngine } from '../browser/engine';
 import { AIAgent, AgentTask } from '../agent/index';
+import { BrowserController } from '../core/types';
 import { EventEmitter } from 'events';
 import { v4 as uuid } from 'uuid';
 import { createLogger } from '../core/logger';
@@ -55,14 +56,20 @@ export interface WorkflowExecution {
 export class AutomationEngine extends EventEmitter {
   private scripts: Map<string, AutomationScript> = new Map();
   private executions: Map<string, WorkflowExecution> = new Map();
-  private engine: BrowserEngine;
+  private engine: BrowserController;
   private agent: AIAgent;
   private timers: Map<string, NodeJS.Timeout> = new Map();
+  private defaultSessionId?: () => string | undefined;
 
-  constructor() {
+  constructor(
+    engine: BrowserController = BrowserEngine.getInstance(),
+    agent?: AIAgent,
+    defaultSessionId?: () => string | undefined,
+  ) {
     super();
-    this.engine = BrowserEngine.getInstance();
-    this.agent = new AIAgent();
+    this.engine = engine;
+    this.agent = agent || new AIAgent(engine);
+    this.defaultSessionId = defaultSessionId;
   }
 
   async initialize(): Promise<void> {
@@ -177,13 +184,15 @@ export class AutomationEngine extends EventEmitter {
     this.emit('execution:started', { executionId: exec.id, scriptId });
 
     try {
-      let sid = sessionId;
+      let sid = sessionId || this.defaultSessionId?.();
       if (!sid) {
-        const session = await this.engine.createSession();
+        const session = await BrowserEngine.getInstance().createSession();
         sid = session.id;
       }
 
-      const pageId = this.engine.getSession(sid)?.activePageId || '';
+      const pageId = sid === 'electron-native'
+        ? 'active-tab'
+        : BrowserEngine.getInstance().getSession(sid)?.activePageId || '';
 
       for (const step of script.steps) {
         const result = await this.executeStep(sid, pageId, step);

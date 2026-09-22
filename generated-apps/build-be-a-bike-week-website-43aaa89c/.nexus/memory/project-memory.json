@@ -1,0 +1,164 @@
+{
+  "buildId": "43aaa89c",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c",
+  "updatedAt": "2026-09-22T17:18:06.218Z",
+  "entries": [
+    {
+      "type": "expert-routing",
+      "summary": "Routed to vite, typescript, node, react, npm, playwright, owasp, accessibility, boilerplates, c, r, soc2",
+      "evidence": [
+        "Selected during React + Vite preflight",
+        "Dependency signal: vite",
+        "Selected during React + Vite preflight",
+        "Dependency signal: typescript",
+        "Selected during React + Vite preflight",
+        "File signal: package.json",
+        "Selected during React + Vite preflight",
+        "Dependency signal: react",
+        "Selected during React + Vite preflight",
+        "File signal: package.json",
+        "Selected during React + Vite preflight",
+        "Selected during React + Vite preflight",
+        "File signal: src/**/*",
+        "Selected during React + Vite preflight",
+        "File signal: src/**/*.{tsx,jsx,html}",
+        "File signal: package.json",
+        "File signal: src/**",
+        "File signal: **/*.c",
+        "File signal: **/*.h",
+        "Dependency signal: r",
+        "File signal: README.md",
+        "File signal: src/**/*"
+      ],
+      "tags": [
+        "vite",
+        "typescript",
+        "node",
+        "react",
+        "npm",
+        "playwright",
+        "owasp",
+        "accessibility",
+        "boilerplates",
+        "c",
+        "r",
+        "soc2"
+      ],
+      "id": "61800731",
+      "createdAt": "2026-09-22T15:26:23.492Z"
+    },
+    {
+      "type": "decision",
+      "summary": "Chat update requested: Fix the failed build, continue implementation from the preserved workspace, run the build checks, then start the preview and browser QA.",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\chat-updates\\962faac0"
+      ],
+      "tags": [
+        "chat-update",
+        "faithful-clone"
+      ],
+      "id": "0bd87681",
+      "createdAt": "2026-09-22T15:45:24.706Z"
+    },
+    {
+      "type": "qa",
+      "summary": "Staging Studio ready: preview running, 6 devices, health 92/100, creative uniqueness 78/100.",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\staging\\cffabe2a",
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "tags": [
+        "staging-studio",
+        "ready",
+        "creative-78"
+      ],
+      "id": "d9e81437",
+      "createdAt": "2026-09-22T16:13:12.151Z"
+    },
+    {
+      "type": "decision",
+      "summary": "Chat update requested: Fix the failed build, continue implementation from the preserved workspace, run the build checks, then start the preview and browser QA.",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\chat-updates\\cbea6f2f"
+      ],
+      "tags": [
+        "chat-update",
+        "faithful-clone"
+      ],
+      "id": "1eaa9dad",
+      "createdAt": "2026-09-22T16:58:42.923Z"
+    },
+    {
+      "type": "qa",
+      "summary": "Staging Studio ready: preview running, 6 devices, health 100/100, creative uniqueness 78/100.",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\staging\\c618690a"
+      ],
+      "tags": [
+        "staging-studio",
+        "ready",
+        "creative-78"
+      ],
+      "id": "c77ed144",
+      "createdAt": "2026-09-22T17:05:53.322Z"
+    },
+    {
+      "type": "qa",
+      "summary": "Staging Studio ready: preview running, 6 devices, health 100/100, creative uniqueness 78/100.",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\staging\\7d088310"
+      ],
+      "tags": [
+        "staging-studio",
+        "ready",
+        "creative-78"
+      ],
+      "id": "ba492d99",
+      "createdAt": "2026-09-22T17:06:44.248Z"
+    },
+    {
+      "type": "qa",
+      "summary": "Staging Studio ready: preview running, 6 devices, health 100/100, creative uniqueness 78/100.",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\staging\\56955fa5"
+      ],
+      "tags": [
+        "staging-studio",
+        "ready",
+        "creative-78"
+      ],
+      "id": "8c966f37",
+      "createdAt": "2026-09-22T17:08:52.488Z"
+    },
+    {
+      "type": "decision",
+      "summary": "Chat update requested: make a candy shop",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\chat-updates\\a4e141bc"
+      ],
+      "tags": [
+        "chat-update",
+        "faithful-clone"
+      ],
+      "id": "b7b06f45",
+      "createdAt": "2026-09-22T17:11:40.897Z"
+    },
+    {
+      "type": "qa",
+      "summary": "Staging Studio ready: preview running, 6 devices, health 100/100, creative uniqueness 78/100.",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\staging\\8c529866"
+      ],
+      "tags": [
+        "staging-studio",
+        "ready",
+        "creative-78"
+      ],
+      "id": "d1888941",
+      "createdAt": "2026-09-22T17:18:06.218Z"
+    }
+  ],
+  "preferences": {},
+  "workingFixes": [],
+  "failedFixes": []
+}

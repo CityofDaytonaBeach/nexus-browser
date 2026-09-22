@@ -1,0 +1,101 @@
+<?php
+
+final class DiscoveredApiClient
+{
+    public function __construct(private ?string $token = null) {}
+
+    private function request(string $method, string $endpoint, array $params = []): array|string
+    {
+        $url = $endpoint;
+        if ($method === 'GET' && $params) {
+            $url .= (str_contains($url, '?') ? '&' : '?') . http_build_query($params);
+        }
+        $headers = ['Accept: application/json'];
+        if ($this->token) $headers[] = 'Authorization: Bearer ' . $this->token;
+        $context = stream_context_create(['http' => ['method' => $method, 'header' => implode("
+", $headers)]]);
+        $body = file_get_contents($url, false, $context);
+        $json = json_decode($body ?: '', true);
+        return json_last_error() === JSON_ERROR_NONE ? $json : ($body ?: '');
+    }
+
+    public function get_antiforgery(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://daytonabeach.gov/antiforgery', $params);
+    }
+
+    public function get_toggle(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://daytonabeach.gov/Toggle', $params);
+    }
+
+    public function get_agents_3e4af47e_b3e9_4b83_8bc1_ab65735efc32_configuration(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://residentagent-api-production.azurewebsites.net/api/v1/public/agents/3e4af47e-b3e9-4b83-8bc1-ab65735efc32/configuration', $params);
+    }
+
+    public function get_pages_menu_main_hidden_main_sub_menus(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://daytonabeach.gov/Pages/MenuMain/HiddenMainSubMenus?pageID=%7BpageID%7D&moduleID=%7BmoduleID%7D&themeID=%7BthemeID%7D&menuContainerID=%7BmenuContainerID%7D&_=%7B_%7D', $params);
+    }
+
+    public function get_v1_splash_modal_get(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://daytonabeach.gov/api/v1/SplashModal/Get?targetId=%7BtargetId%7D&targetType=%7BtargetType%7D&requestMode=%7BrequestMode%7D&_=%7B_%7D', $params);
+    }
+
+    public function get_muli_v34_7auwp_0qiz_af_tlglq_woff2(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://fonts.gstatic.com/s/muli/v34/7Auwp_0qiz-afTLGLQ.woff2', $params);
+    }
+
+    public function get_muli_v34_7aujp_0qiz_af_tfc_iyoi_gtm2p0w_g05fz4eq_vww_woff2(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://fonts.gstatic.com/s/muli/v34/7Aujp_0qiz-afTfcIyoiGtm2P0wG05Fz4eqVww.woff2', $params);
+    }
+
+    public function get_poppins_v24_pxi_byp8kv8jhg_fvr_lcz7z1xl_fq_woff2(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2', $params);
+    }
+
+    public function get_poppins_v24_pxi_eyp8kv8jhg_fvr_jjfecg_woff2(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2', $params);
+    }
+
+    public function get_poppins_v24_pxi_byp8kv8jhg_fvr_lej6z1xl_fq_woff2(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2', $params);
+    }
+
+    public function get_yellowtail_v25_ozp_gg_pno_dt_inpf_ril_lohlv_hw_q_woff2(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://fonts.gstatic.com/s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHwQ.woff2', $params);
+    }
+
+    public function get_opensans_v44_memv_ya_gs126mi_zp_ba_uv_wb_x2v_vn_xbb_obj2ovts_muw_woff2(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2', $params);
+    }
+
+    public function get_poppins_v24_pxi_byp8kv8jhg_fvr_lgt9z1xl_fq_woff2(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2', $params);
+    }
+
+    public function get_domains_daytonabeach_gov_domain_json(array $params = []): array|string
+    {
+        return $this->request('GET', 'https://docaccess.com/domains/daytonabeach.gov/domain.json', $params);
+    }
+
+    public function post_g_collect(array $params = []): array|string
+    {
+        return $this->request('POST', 'https://www.google-analytics.com/g/collect?v=%7Bv%7D&tid=%7Btid%7D&gtm=%7Bgtm%7D&_p=%7B_p%7D&gcd=%7Bgcd%7D&npa=%7Bnpa%7D&dma=%7Bdma%7D&cid=%7Bcid%7D&frm=%7Bfrm%7D&ngs=%7Bngs%7D&pscdl=%7Bpscdl%7D&rcb=%7Brcb%7D&sr=%7Bsr%7D&uaa=%7Buaa%7D&uab=%7Buab%7D&uafvl=%7Buafvl%7D&uam=%7Buam%7D&uamb=%7Buamb%7D&uap=%7Buap%7D&uapv=%7Buapv%7D&uaw=%7Buaw%7D&ul=%7Bul%7D&_s=%7B_s%7D&tag_exp=%7Btag_exp%7D&sid=%7Bsid%7D&sct=%7Bsct%7D&seg=%7Bseg%7D&dl=%7Bdl%7D&dt=%7Bdt%7D&en=%7Ben%7D&_fv=%7B_fv%7D&_nsi=%7B_nsi%7D&_ss=%7B_ss%7D&_ee=%7B_ee%7D&tfd=%7Btfd%7D', $params);
+    }
+
+    public function post_g_collect(array $params = []): array|string
+    {
+        return $this->request('POST', 'https://www.google-analytics.com/g/collect?v=%7Bv%7D&tid=%7Btid%7D&gtm=%7Bgtm%7D&_p=%7B_p%7D&gcd=%7Bgcd%7D&npa=%7Bnpa%7D&dma=%7Bdma%7D&cid=%7Bcid%7D&frm=%7Bfrm%7D&ngs=%7Bngs%7D&pscdl=%7Bpscdl%7D&rcb=%7Brcb%7D&sr=%7Bsr%7D&uaa=%7Buaa%7D&uab=%7Buab%7D&uafvl=%7Buafvl%7D&uam=%7Buam%7D&uamb=%7Buamb%7D&uap=%7Buap%7D&uapv=%7Buapv%7D&uaw=%7Buaw%7D&ul=%7Bul%7D&_s=%7B_s%7D&tag_exp=%7Btag_exp%7D&sid=%7Bsid%7D&sct=%7Bsct%7D&seg=%7Bseg%7D&dl=%7Bdl%7D&dt=%7Bdt%7D&en=%7Ben%7D&_fv=%7B_fv%7D&_ss=%7B_ss%7D&tfd=%7Btfd%7D', $params);
+    }
+}

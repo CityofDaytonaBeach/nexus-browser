@@ -6,3 +6,7 @@ profiles/
 automations/*.json
 !automations/example-*.json
 *.log
+
+# Nexus/npm generated cache
+**/.nexus/npm-cache/
+generated-apps/*/.nexus/npm-cache/

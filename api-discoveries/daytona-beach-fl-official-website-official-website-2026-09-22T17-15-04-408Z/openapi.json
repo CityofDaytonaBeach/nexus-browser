@@ -1,0 +1,571 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Daytona Beach, FL - Official Website | Official Website API",
+    "version": "1.0.0",
+    "description": "Automatically discovered from https://daytonabeach.gov/"
+  },
+  "paths": {
+    "/antiforgery": {
+      "get": {
+        "summary": "GET /antiforgery",
+        "description": "GET /antiforgery. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "application/json; charset=utf-8"
+          }
+        }
+      }
+    },
+    "/Toggle": {
+      "get": {
+        "summary": "GET /Toggle",
+        "description": "GET /Toggle. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "application/json; charset=utf-8"
+          }
+        }
+      }
+    },
+    "/api/v1/public/agents/3e4af47e-b3e9-4b83-8bc1-ab65735efc32/configuration": {
+      "get": {
+        "summary": "GET /api/v1/public/agents/3e4af47e-b3e9-4b83-8bc1-ab65735efc32/configuration",
+        "description": "GET /api/v1/public/agents/3e4af47e-b3e9-4b83-8bc1-ab65735efc32/configuration. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Observed response"
+          }
+        }
+      }
+    },
+    "/Pages/MenuMain/HiddenMainSubMenus": {
+      "get": {
+        "summary": "GET /Pages/MenuMain/HiddenMainSubMenus",
+        "description": "GET /Pages/MenuMain/HiddenMainSubMenus. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [
+          {
+            "name": "pageID",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{pageID}"
+            }
+          },
+          {
+            "name": "moduleID",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{moduleID}"
+            }
+          },
+          {
+            "name": "themeID",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{themeID}"
+            }
+          },
+          {
+            "name": "menuContainerID",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{menuContainerID}"
+            }
+          },
+          {
+            "name": "_",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{_}"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "text/html; charset=utf-8"
+          }
+        }
+      }
+    },
+    "/api/v1/SplashModal/Get": {
+      "get": {
+        "summary": "GET /api/v1/SplashModal/Get",
+        "description": "GET /api/v1/SplashModal/Get. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [
+          {
+            "name": "targetId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{targetId}"
+            }
+          },
+          {
+            "name": "targetType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{targetType}"
+            }
+          },
+          {
+            "name": "requestMode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{requestMode}"
+            }
+          },
+          {
+            "name": "_",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{_}"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "application/json; charset=utf-8"
+          }
+        }
+      }
+    },
+    "/s/muli/v34/7Auwp_0qiz-afTLGLQ.woff2": {
+      "get": {
+        "summary": "GET /s/muli/v34/7Auwp_0qiz-afTLGLQ.woff2",
+        "description": "GET /s/muli/v34/7Auwp_0qiz-afTLGLQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "font/woff2"
+          }
+        }
+      }
+    },
+    "/s/muli/v34/7Aujp_0qiz-afTfcIyoiGtm2P0wG05Fz4eqVww.woff2": {
+      "get": {
+        "summary": "GET /s/muli/v34/7Aujp_0qiz-afTfcIyoiGtm2P0wG05Fz4eqVww.woff2",
+        "description": "GET /s/muli/v34/7Aujp_0qiz-afTfcIyoiGtm2P0wG05Fz4eqVww.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "font/woff2"
+          }
+        }
+      }
+    },
+    "/s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2": {
+      "get": {
+        "summary": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2",
+        "description": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "font/woff2"
+          }
+        }
+      }
+    },
+    "/s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2": {
+      "get": {
+        "summary": "GET /s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2",
+        "description": "GET /s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "font/woff2"
+          }
+        }
+      }
+    },
+    "/s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2": {
+      "get": {
+        "summary": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2",
+        "description": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "font/woff2"
+          }
+        }
+      }
+    },
+    "/s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHwQ.woff2": {
+      "get": {
+        "summary": "GET /s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHwQ.woff2",
+        "description": "GET /s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHwQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "font/woff2"
+          }
+        }
+      }
+    },
+    "/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2": {
+      "get": {
+        "summary": "GET /s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2",
+        "description": "GET /s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "font/woff2"
+          }
+        }
+      }
+    },
+    "/s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2": {
+      "get": {
+        "summary": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2",
+        "description": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "font/woff2"
+          }
+        }
+      }
+    },
+    "/domains/daytonabeach.gov/domain.json": {
+      "get": {
+        "summary": "GET /domains/daytonabeach.gov/domain.json",
+        "description": "GET /domains/daytonabeach.gov/domain.json. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "application/json"
+          }
+        }
+      }
+    },
+    "/g/collect": {
+      "post": {
+        "summary": "POST /g/collect",
+        "description": "POST /g/collect. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+        "parameters": [
+          {
+            "name": "v",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{v}"
+            }
+          },
+          {
+            "name": "tid",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{tid}"
+            }
+          },
+          {
+            "name": "gtm",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{gtm}"
+            }
+          },
+          {
+            "name": "_p",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{_p}"
+            }
+          },
+          {
+            "name": "gcd",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{gcd}"
+            }
+          },
+          {
+            "name": "npa",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{npa}"
+            }
+          },
+          {
+            "name": "dma",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{dma}"
+            }
+          },
+          {
+            "name": "cid",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{cid}"
+            }
+          },
+          {
+            "name": "frm",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{frm}"
+            }
+          },
+          {
+            "name": "ngs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{ngs}"
+            }
+          },
+          {
+            "name": "pscdl",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{pscdl}"
+            }
+          },
+          {
+            "name": "rcb",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{rcb}"
+            }
+          },
+          {
+            "name": "sr",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{sr}"
+            }
+          },
+          {
+            "name": "uaa",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{uaa}"
+            }
+          },
+          {
+            "name": "uab",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{uab}"
+            }
+          },
+          {
+            "name": "uafvl",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{uafvl}"
+            }
+          },
+          {
+            "name": "uam",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{uam}"
+            }
+          },
+          {
+            "name": "uamb",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{uamb}"
+            }
+          },
+          {
+            "name": "uap",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{uap}"
+            }
+          },
+          {
+            "name": "uapv",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{uapv}"
+            }
+          },
+          {
+            "name": "uaw",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{uaw}"
+            }
+          },
+          {
+            "name": "ul",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{ul}"
+            }
+          },
+          {
+            "name": "_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{_s}"
+            }
+          },
+          {
+            "name": "tag_exp",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{tag_exp}"
+            }
+          },
+          {
+            "name": "sid",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{sid}"
+            }
+          },
+          {
+            "name": "sct",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{sct}"
+            }
+          },
+          {
+            "name": "seg",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{seg}"
+            }
+          },
+          {
+            "name": "dl",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{dl}"
+            }
+          },
+          {
+            "name": "dt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{dt}"
+            }
+          },
+          {
+            "name": "en",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{en}"
+            }
+          },
+          {
+            "name": "_fv",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{_fv}"
+            }
+          },
+          {
+            "name": "_ss",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{_ss}"
+            }
+          },
+          {
+            "name": "tfd",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "{tfd}"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "text/plain"
+          }
+        }
+      }
+    }
+  }
+}

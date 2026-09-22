@@ -3,7 +3,8 @@ import { CloudServer } from '../server';
 describe('CloudServer deploy helpers', () => {
   test('routes terse product prompts into an executable build', () => {
     const server = new CloudServer() as any;
-    expect(server.detectBuilderMode('bike landing page', 'ui-builder')).toBe('build');
+    expect(server.detectBuilderMode('bike landing page', 'ui-builder')).toBe('ui-builder');
+    expect(server.shouldStartBuild('bike landing page', 'ui-builder')).toBe(true);
     expect(server.shouldStartBuild('bike landing page', 'build')).toBe(true);
     expect(server.shouldRequireBrowserGrounding('bike landing page', 'build', 'No active page is available')).toBe(false);
     server.stop?.();
@@ -13,6 +14,73 @@ describe('CloudServer deploy helpers', () => {
     const server = new CloudServer() as any;
     expect(server.shouldStartBuild('bike landing page', 'chat')).toBe(false);
     expect(server.shouldUpdateBuild('fix the bike landing page', 'chat')).toBe(false);
+    server.stop?.();
+  });
+
+  test('honors the selected mode until the prompt explicitly changes it', () => {
+    const server = new CloudServer() as any;
+    const prompt = 'bike landing page';
+
+    expect(server.detectBuilderMode(prompt, 'chat')).toBe('chat');
+    expect(server.detectBuilderMode(prompt, 'plan')).toBe('plan');
+    expect(server.detectBuilderMode(prompt, 'research')).toBe('research');
+    expect(server.detectBuilderMode('Switch to Agent mode and build it', 'plan')).toBe('build');
+    expect(server.shouldStartBuild(prompt, 'plan')).toBe(false);
+    expect(server.shouldStartBuild(prompt, 'research')).toBe(false);
+    expect(server.shouldUpdateBuild('fix the tablet layout', 'plan')).toBe(false);
+    expect(server.detectChatWorkIntent(prompt, 'chat', '')).toBe('ask');
+    expect(server.detectChatWorkIntent(prompt, 'plan', '')).toBe('plan');
+    expect(server.detectChatWorkIntent(prompt, 'research', '')).toBe('research');
+    server.stop?.();
+  });
+
+  test('answers build questions without launching another Agent mode update', () => {
+    const server = new CloudServer() as any;
+    const question = 'Does it own all screen sizes now why you continue to chat and build';
+
+    expect(server.isConversationalBuildQuestion(question)).toBe(true);
+    expect(server.shouldStartBuild(question, 'build')).toBe(false);
+    expect(server.shouldUpdateBuild(question, 'build')).toBe(false);
+    expect(server.shouldUpdateBuild('Can you fix the tablet layout?', 'build')).toBe(true);
+    expect(server.shouldStartBuild('Can you build a responsive PHP portal?', 'build')).toBe(true);
+    const reply = server.createFallbackBuilderChat(question, 'build', 'faithful-clone', '');
+    expect(reply.response).toContain('will not start another code update');
+    expect(reply.response).toContain('desktop, laptop, tablet, and mobile');
+    server.stop?.();
+  });
+
+  test('creates a focused agent, skill, expert, and knowledge route for each product prompt', () => {
+    const server = new CloudServer() as any;
+    const plan = server.createChatOrchestrationPlan(
+      'Build a Laravel customer portal with MySQL, Stripe checkout, and responsive account screens',
+      'build',
+      '',
+      'No active rendered browser session yet.',
+    );
+
+    expect(plan.intent).toBe('build');
+    expect(plan.stack.framework).toBe('Laravel');
+    expect(plan.agents.map((agent: any) => agent.id)).toEqual(expect.arrayContaining([
+      'framework-expert-router',
+      'opencode-build-agent',
+      'integration-agent',
+      'qa-agent',
+      'memory-agent',
+    ]));
+    expect(plan.experts.map((expert: any) => expert.id)).toEqual(expect.arrayContaining(['php', 'laravel', 'composer', 'mysql', 'stripe']));
+    expect(plan.skills.map((skill: any) => skill.name)).toEqual(expect.arrayContaining(['Intent To Product Sprint', 'Stack Expert Routing']));
+    expect(plan.steps.join(' ')).toContain('product slice');
+    server.stop?.();
+  });
+
+  test('uses reversible smart defaults for fast prototypes but asks about high-risk production gaps', () => {
+    const server = new CloudServer() as any;
+    const prototype = server.createProjectReadiness('default', 'Build an ecommerce store with auth and a database', [], '');
+    const production = server.createProjectReadiness('default', 'Build a production ecommerce store for real customers', [], '');
+
+    expect(server.shouldAskProjectReadiness('Build an ecommerce store with auth and a database', 'build', prototype)).toBe(false);
+    expect(server.shouldAskProjectReadiness('Build a production ecommerce store for real customers', 'build', production)).toBe(true);
+    expect(server.buildProjectReadinessContext(prototype)).toContain('reversible local/mock defaults');
     server.stop?.();
   });
 
@@ -67,6 +135,17 @@ describe('CloudServer deploy helpers', () => {
     const server = new CloudServer() as any;
     const routes = server.getVisionRoutes();
     expect(routes.some((route: any) => route.browserUse.includes('browser screenshots'))).toBe(true);
+    server.stop?.();
+  });
+
+  test('maps native browser chat commands to active-tab actions', () => {
+    const server = new CloudServer() as any;
+
+    expect(server.nativeBrowserActionFromCommand('open example.com')).toEqual({ type: 'navigate', url: 'example.com' });
+    expect(server.nativeBrowserActionFromCommand('click "Sign in"')).toEqual({ type: 'click', selector: 'text=Sign in' });
+    expect(server.nativeBrowserActionFromCommand('fill "Email" "name@example.com"')).toEqual({ type: 'type', selector: 'text=Email', value: 'name@example.com' });
+    expect(server.nativeBrowserActionFromCommand('go back')).toEqual({ type: 'back' });
+    expect(server.nativeBrowserActionFromCommand('take a screenshot')).toEqual({ type: 'screenshot' });
     server.stop?.();
   });
 });

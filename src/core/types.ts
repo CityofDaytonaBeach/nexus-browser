@@ -29,6 +29,13 @@ export interface ActionResult {
   duration: number;
 }
 
+export interface BrowserController {
+  executeAction(sessionId: string, pageId: string, action: BrowserAction): Promise<ActionResult>;
+  getPageContent(sessionId: string, pageId: string): Promise<string>;
+  getPageScreenshot(sessionId: string, pageId: string): Promise<Buffer | null>;
+  getInteractiveElements(sessionId: string, pageId: string): Promise<any[]>;
+}
+
 export interface PageInfo {
   id: string;
   url: string;

@@ -1,0 +1,458 @@
+[
+  {
+    "name": "get_daytonabeach_gov_antiforgery",
+    "description": "GET /antiforgery",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "get_daytonabeach_gov_Toggle",
+    "description": "GET /Toggle",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "get_residentagent_api_production_azurewebsites_net_api_v1_public_agents_3e4af47e",
+    "description": "GET /api/v1/public/agents/3e4af47e-b3e9-4b83-8bc1-ab65735efc32/configuration",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "get_daytonabeach_gov_Pages_MenuMain_HiddenMainSubMenus",
+    "description": "GET /Pages/MenuMain/HiddenMainSubMenus",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "pageID": {
+          "type": "string",
+          "description": "Query parameter observed as {pageID}"
+        },
+        "moduleID": {
+          "type": "string",
+          "description": "Query parameter observed as {moduleID}"
+        },
+        "themeID": {
+          "type": "string",
+          "description": "Query parameter observed as {themeID}"
+        },
+        "menuContainerID": {
+          "type": "string",
+          "description": "Query parameter observed as {menuContainerID}"
+        },
+        "_": {
+          "type": "string",
+          "description": "Query parameter observed as {_}"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_daytonabeach_gov_api_v1_SplashModal_Get",
+    "description": "GET /api/v1/SplashModal/Get",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "targetId": {
+          "type": "string",
+          "description": "Query parameter observed as {targetId}"
+        },
+        "targetType": {
+          "type": "string",
+          "description": "Query parameter observed as {targetType}"
+        },
+        "requestMode": {
+          "type": "string",
+          "description": "Query parameter observed as {requestMode}"
+        },
+        "_": {
+          "type": "string",
+          "description": "Query parameter observed as {_}"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_fonts_gstatic_com_s_muli_v34_7Auwp_0qiz_afTLGLQ_woff2",
+    "description": "GET /s/muli/v34/7Auwp_0qiz-afTLGLQ.woff2",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "get_fonts_gstatic_com_s_muli_v34_7Aujp_0qiz_afTfcIyoiGtm2P0wG05Fz4eqVww_woff2",
+    "description": "GET /s/muli/v34/7Aujp_0qiz-afTfcIyoiGtm2P0wG05Fz4eqVww.woff2",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "get_fonts_gstatic_com_s_poppins_v24_pxiByp8kv8JHgFVrLCz7Z1xlFQ_woff2",
+    "description": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "get_fonts_gstatic_com_s_poppins_v24_pxiEyp8kv8JHgFVrJJfecg_woff2",
+    "description": "GET /s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "get_fonts_gstatic_com_s_poppins_v24_pxiByp8kv8JHgFVrLEj6Z1xlFQ_woff2",
+    "description": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "get_fonts_gstatic_com_s_yellowtail_v25_OZpGg_pnoDtINPfRIlLohlvHwQ_woff2",
+    "description": "GET /s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHwQ.woff2",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "get_fonts_gstatic_com_s_opensans_v44_memvYaGs126MiZpBA_UvWbX2vVnXBbObj2OVTS_muw_",
+    "description": "GET /s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "get_fonts_gstatic_com_s_poppins_v24_pxiByp8kv8JHgFVrLGT9Z1xlFQ_woff2",
+    "description": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "get_docaccess_com_domains_daytonabeach_gov_domain_json",
+    "description": "GET /domains/daytonabeach.gov/domain.json",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "post_www_google_analytics_com_g_collect",
+    "description": "POST /g/collect",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "string",
+          "description": "Query parameter observed as {v}"
+        },
+        "tid": {
+          "type": "string",
+          "description": "Query parameter observed as {tid}"
+        },
+        "gtm": {
+          "type": "string",
+          "description": "Query parameter observed as {gtm}"
+        },
+        "_p": {
+          "type": "string",
+          "description": "Query parameter observed as {_p}"
+        },
+        "gcd": {
+          "type": "string",
+          "description": "Query parameter observed as {gcd}"
+        },
+        "npa": {
+          "type": "string",
+          "description": "Query parameter observed as {npa}"
+        },
+        "dma": {
+          "type": "string",
+          "description": "Query parameter observed as {dma}"
+        },
+        "cid": {
+          "type": "string",
+          "description": "Query parameter observed as {cid}"
+        },
+        "frm": {
+          "type": "string",
+          "description": "Query parameter observed as {frm}"
+        },
+        "ngs": {
+          "type": "string",
+          "description": "Query parameter observed as {ngs}"
+        },
+        "pscdl": {
+          "type": "string",
+          "description": "Query parameter observed as {pscdl}"
+        },
+        "rcb": {
+          "type": "string",
+          "description": "Query parameter observed as {rcb}"
+        },
+        "sr": {
+          "type": "string",
+          "description": "Query parameter observed as {sr}"
+        },
+        "uaa": {
+          "type": "string",
+          "description": "Query parameter observed as {uaa}"
+        },
+        "uab": {
+          "type": "string",
+          "description": "Query parameter observed as {uab}"
+        },
+        "uafvl": {
+          "type": "string",
+          "description": "Query parameter observed as {uafvl}"
+        },
+        "uam": {
+          "type": "string",
+          "description": "Query parameter observed as {uam}"
+        },
+        "uamb": {
+          "type": "string",
+          "description": "Query parameter observed as {uamb}"
+        },
+        "uap": {
+          "type": "string",
+          "description": "Query parameter observed as {uap}"
+        },
+        "uapv": {
+          "type": "string",
+          "description": "Query parameter observed as {uapv}"
+        },
+        "uaw": {
+          "type": "string",
+          "description": "Query parameter observed as {uaw}"
+        },
+        "ul": {
+          "type": "string",
+          "description": "Query parameter observed as {ul}"
+        },
+        "_s": {
+          "type": "string",
+          "description": "Query parameter observed as {_s}"
+        },
+        "tag_exp": {
+          "type": "string",
+          "description": "Query parameter observed as {tag_exp}"
+        },
+        "sid": {
+          "type": "string",
+          "description": "Query parameter observed as {sid}"
+        },
+        "sct": {
+          "type": "string",
+          "description": "Query parameter observed as {sct}"
+        },
+        "seg": {
+          "type": "string",
+          "description": "Query parameter observed as {seg}"
+        },
+        "dl": {
+          "type": "string",
+          "description": "Query parameter observed as {dl}"
+        },
+        "dt": {
+          "type": "string",
+          "description": "Query parameter observed as {dt}"
+        },
+        "en": {
+          "type": "string",
+          "description": "Query parameter observed as {en}"
+        },
+        "_fv": {
+          "type": "string",
+          "description": "Query parameter observed as {_fv}"
+        },
+        "_nsi": {
+          "type": "string",
+          "description": "Query parameter observed as {_nsi}"
+        },
+        "_ss": {
+          "type": "string",
+          "description": "Query parameter observed as {_ss}"
+        },
+        "_ee": {
+          "type": "string",
+          "description": "Query parameter observed as {_ee}"
+        },
+        "tfd": {
+          "type": "string",
+          "description": "Query parameter observed as {tfd}"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "post_www_google_analytics_com_g_collect",
+    "description": "POST /g/collect",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "string",
+          "description": "Query parameter observed as {v}"
+        },
+        "tid": {
+          "type": "string",
+          "description": "Query parameter observed as {tid}"
+        },
+        "gtm": {
+          "type": "string",
+          "description": "Query parameter observed as {gtm}"
+        },
+        "_p": {
+          "type": "string",
+          "description": "Query parameter observed as {_p}"
+        },
+        "gcd": {
+          "type": "string",
+          "description": "Query parameter observed as {gcd}"
+        },
+        "npa": {
+          "type": "string",
+          "description": "Query parameter observed as {npa}"
+        },
+        "dma": {
+          "type": "string",
+          "description": "Query parameter observed as {dma}"
+        },
+        "cid": {
+          "type": "string",
+          "description": "Query parameter observed as {cid}"
+        },
+        "frm": {
+          "type": "string",
+          "description": "Query parameter observed as {frm}"
+        },
+        "ngs": {
+          "type": "string",
+          "description": "Query parameter observed as {ngs}"
+        },
+        "pscdl": {
+          "type": "string",
+          "description": "Query parameter observed as {pscdl}"
+        },
+        "rcb": {
+          "type": "string",
+          "description": "Query parameter observed as {rcb}"
+        },
+        "sr": {
+          "type": "string",
+          "description": "Query parameter observed as {sr}"
+        },
+        "uaa": {
+          "type": "string",
+          "description": "Query parameter observed as {uaa}"
+        },
+        "uab": {
+          "type": "string",
+          "description": "Query parameter observed as {uab}"
+        },
+        "uafvl": {
+          "type": "string",
+          "description": "Query parameter observed as {uafvl}"
+        },
+        "uam": {
+          "type": "string",
+          "description": "Query parameter observed as {uam}"
+        },
+        "uamb": {
+          "type": "string",
+          "description": "Query parameter observed as {uamb}"
+        },
+        "uap": {
+          "type": "string",
+          "description": "Query parameter observed as {uap}"
+        },
+        "uapv": {
+          "type": "string",
+          "description": "Query parameter observed as {uapv}"
+        },
+        "uaw": {
+          "type": "string",
+          "description": "Query parameter observed as {uaw}"
+        },
+        "ul": {
+          "type": "string",
+          "description": "Query parameter observed as {ul}"
+        },
+        "_s": {
+          "type": "string",
+          "description": "Query parameter observed as {_s}"
+        },
+        "tag_exp": {
+          "type": "string",
+          "description": "Query parameter observed as {tag_exp}"
+        },
+        "sid": {
+          "type": "string",
+          "description": "Query parameter observed as {sid}"
+        },
+        "sct": {
+          "type": "string",
+          "description": "Query parameter observed as {sct}"
+        },
+        "seg": {
+          "type": "string",
+          "description": "Query parameter observed as {seg}"
+        },
+        "dl": {
+          "type": "string",
+          "description": "Query parameter observed as {dl}"
+        },
+        "dt": {
+          "type": "string",
+          "description": "Query parameter observed as {dt}"
+        },
+        "en": {
+          "type": "string",
+          "description": "Query parameter observed as {en}"
+        },
+        "_fv": {
+          "type": "string",
+          "description": "Query parameter observed as {_fv}"
+        },
+        "_ss": {
+          "type": "string",
+          "description": "Query parameter observed as {_ss}"
+        },
+        "tfd": {
+          "type": "string",
+          "description": "Query parameter observed as {tfd}"
+        }
+      },
+      "required": []
+    }
+  }
+]

@@ -1,0 +1,352 @@
+{
+  "id": "a7aaaca5",
+  "buildId": "7917c729",
+  "createdAt": "2026-09-21T21:05:30.485Z",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\make-site-of-frogs-7917c729",
+  "selectedExperts": [
+    {
+      "expertId": "typescript",
+      "name": "TypeScript Expert Agent",
+      "category": "language",
+      "officialGithub": "microsoft/TypeScript",
+      "score": 70,
+      "reasons": [
+        "Selected during React + Vite preflight",
+        "Dependency signal: typescript"
+      ],
+      "checks": [
+        "tsconfig validity",
+        "strict-mode errors",
+        "module resolution",
+        "JSX config",
+        "missing @types packages"
+      ],
+      "repairSkills": [
+        "fix compiler options",
+        "add missing types",
+        "repair imports/exports",
+        "align framework type settings"
+      ]
+    },
+    {
+      "expertId": "node",
+      "name": "Node.js Runtime Expert Agent",
+      "category": "runtime",
+      "officialGithub": "nodejs/node",
+      "score": 70,
+      "reasons": [
+        "Selected during React + Vite preflight",
+        "File signal: package.json"
+      ],
+      "checks": [
+        "engine mismatch",
+        "ESM/CJS mismatch",
+        "script failures",
+        "env handling"
+      ],
+      "repairSkills": [
+        "fix scripts",
+        "align module type",
+        "repair server startup",
+        "add env validation"
+      ]
+    },
+    {
+      "expertId": "react",
+      "name": "React Expert Agent",
+      "category": "frontend",
+      "officialGithub": "facebook/react",
+      "score": 70,
+      "reasons": [
+        "Selected during React + Vite preflight",
+        "Dependency signal: react",
+        "Dependency signal: react-dom"
+      ],
+      "checks": [
+        "invalid hooks",
+        "root render",
+        "hydration risks",
+        "accessibility"
+      ],
+      "repairSkills": [
+        "fix render errors",
+        "repair component boundaries",
+        "wire loading/error states"
+      ]
+    },
+    {
+      "expertId": "npm",
+      "name": "npm Expert Agent",
+      "category": "package-manager",
+      "officialGithub": "npm/cli",
+      "score": 70,
+      "reasons": [
+        "Selected during React + Vite preflight",
+        "File signal: package.json"
+      ],
+      "checks": [
+        "lockfile state",
+        "scripts",
+        "dependency ranges",
+        "install failures"
+      ],
+      "repairSkills": [
+        "fix package scripts",
+        "repair lock/deps",
+        "stabilize npm install"
+      ]
+    },
+    {
+      "expertId": "vite",
+      "name": "Vite Expert Agent",
+      "category": "build-tool",
+      "officialGithub": "vitejs/vite",
+      "score": 70,
+      "reasons": [
+        "Selected during React + Vite preflight",
+        "Dependency signal: vite",
+        "Dependency signal: @vitejs/plugin-react",
+        "File signal: index.html"
+      ],
+      "checks": [
+        "dev script",
+        "build script",
+        "entry module",
+        "plugin config",
+        "env naming"
+      ],
+      "repairSkills": [
+        "fix Vite config",
+        "repair index.html entry",
+        "resolve transform errors"
+      ]
+    },
+    {
+      "expertId": "playwright",
+      "name": "Playwright Expert Agent",
+      "category": "test-tool",
+      "officialGithub": "microsoft/playwright",
+      "score": 70,
+      "reasons": [
+        "Selected during React + Vite preflight"
+      ],
+      "checks": [
+        "browser install",
+        "selectors",
+        "timeouts",
+        "visual tests"
+      ],
+      "repairSkills": [
+        "fix Playwright config",
+        "repair tests",
+        "add stable locators"
+      ]
+    },
+    {
+      "expertId": "owasp",
+      "name": "OWASP AppSec Expert Agent",
+      "category": "security",
+      "officialGithub": "OWASP/Top10",
+      "score": 70,
+      "reasons": [
+        "Selected during React + Vite preflight",
+        "File signal: src/**/*"
+      ],
+      "checks": [
+        "injection",
+        "auth failures",
+        "secrets exposure",
+        "XSS",
+        "SSRF"
+      ],
+      "repairSkills": [
+        "add validation",
+        "repair auth boundaries",
+        "harden headers",
+        "redact secrets"
+      ]
+    },
+    {
+      "expertId": "accessibility",
+      "name": "Accessibility/WCAG Expert Agent",
+      "category": "ux",
+      "officialGithub": "w3c/wcag",
+      "score": 70,
+      "reasons": [
+        "Selected during React + Vite preflight",
+        "File signal: src/**/*.{tsx,jsx,html}"
+      ],
+      "checks": [
+        "semantic HTML",
+        "keyboard flow",
+        "contrast",
+        "ARIA correctness",
+        "screen-reader labels"
+      ],
+      "repairSkills": [
+        "fix semantic markup",
+        "repair ARIA usage",
+        "add keyboard states",
+        "add accessibility tests"
+      ]
+    },
+    {
+      "expertId": "boilerplates",
+      "name": "Boilerplate Selection Expert Agent",
+      "category": "boilerplate",
+      "officialGithub": "vercel/next.js",
+      "score": 36,
+      "reasons": [
+        "File signal: package.json",
+        "File signal: src/**",
+        "File signal: app/**"
+      ],
+      "checks": [
+        "template fit",
+        "routing model",
+        "database/auth/payment needs",
+        "deployment target"
+      ],
+      "repairSkills": [
+        "select starter architecture",
+        "repair generated file layout",
+        "add missing baseline scripts",
+        "document chosen stack"
+      ]
+    },
+    {
+      "expertId": "r",
+      "name": "R Expert Agent",
+      "category": "language",
+      "officialGithub": "wch/r-source",
+      "score": 25,
+      "reasons": [
+        "Dependency signal: r"
+      ],
+      "checks": [
+        "package metadata",
+        "library paths",
+        "Shiny runtime"
+      ],
+      "repairSkills": [
+        "fix DESCRIPTION",
+        "repair dependencies",
+        "stabilize scripts"
+      ]
+    },
+    {
+      "expertId": "c",
+      "name": "C Expert Agent",
+      "category": "language",
+      "officialGithub": "gcc-mirror/gcc",
+      "score": 24,
+      "reasons": [
+        "File signal: **/*.c",
+        "File signal: **/*.h"
+      ],
+      "checks": [
+        "compiler flags",
+        "header paths",
+        "linker errors",
+        "memory safety"
+      ],
+      "repairSkills": [
+        "fix build flags",
+        "repair includes",
+        "stabilize linker setup"
+      ]
+    },
+    {
+      "expertId": "soc2",
+      "name": "SOC 2 Readiness Expert Agent",
+      "category": "compliance",
+      "officialGithub": "strongdm/comply",
+      "score": 24,
+      "reasons": [
+        "File signal: README.md",
+        "File signal: src/**/*"
+      ],
+      "checks": [
+        "audit logs",
+        "access controls",
+        "change management",
+        "incident response",
+        "vendor/security docs"
+      ],
+      "repairSkills": [
+        "add audit log guidance",
+        "document access controls",
+        "add security checklist",
+        "create compliance evidence map"
+      ]
+    }
+  ],
+  "signals": {
+    "dependencies": [
+      "@vitejs/plugin-react",
+      "vite",
+      "typescript",
+      "react",
+      "react-dom"
+    ],
+    "scripts": {
+      "dev": "vite --host 0.0.0.0",
+      "build": "vite build",
+      "preview": "vite preview"
+    },
+    "files": [
+      "index.html",
+      "OPENCODE_BUILD_PROMPT.md",
+      "package.json",
+      "README.md",
+      "src/app-data.js",
+      "src/main.jsx",
+      "src/styles.css"
+    ],
+    "logTerms": [],
+    "promptTerms": [
+      "make",
+      "site",
+      "frogs"
+    ],
+    "stackPlan": {
+      "primaryLanguage": "TypeScript",
+      "framework": "React + Vite",
+      "runtime": "Node.js",
+      "packageManager": "npm",
+      "expertIds": [
+        "typescript",
+        "react",
+        "vite",
+        "node",
+        "npm",
+        "accessibility",
+        "playwright",
+        "owasp"
+      ],
+      "projectAgentIds": [
+        "framework-expert-router",
+        "opencode-build-agent",
+        "build-doctor-agent",
+        "qa-agent",
+        "memory-agent",
+        "react-agent"
+      ],
+      "setupCommands": [
+        "npm install"
+      ],
+      "devCommand": "npm run dev -- --host 0.0.0.0 --port {port}",
+      "buildCommands": [
+        "npm run build"
+      ],
+      "testCommands": [
+        "npm test -- --runInBand"
+      ],
+      "evidence": [
+        "No explicit backend stack was requested; React + Vite is the browser-app default."
+      ]
+    }
+  },
+  "prompt": "You are the NexusBrowser Full-Stack Expert Router.\n\nWorkspace: C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\make-site-of-frogs-7917c729\nBuild goal: make site of frogs\n\nSelected official-source experts:\n- TypeScript Expert Agent (typescript) score 70/100, official source https://github.com/microsoft/TypeScript\n  Reasons: Selected during React + Vite preflight; Dependency signal: typescript\n- Node.js Runtime Expert Agent (node) score 70/100, official source https://github.com/nodejs/node\n  Reasons: Selected during React + Vite preflight; File signal: package.json\n- React Expert Agent (react) score 70/100, official source https://github.com/facebook/react\n  Reasons: Selected during React + Vite preflight; Dependency signal: react; Dependency signal: react-dom\n- npm Expert Agent (npm) score 70/100, official source https://github.com/npm/cli\n  Reasons: Selected during React + Vite preflight; File signal: package.json\n- Vite Expert Agent (vite) score 70/100, official source https://github.com/vitejs/vite\n  Reasons: Selected during React + Vite preflight; Dependency signal: vite; Dependency signal: @vitejs/plugin-react; File signal: index.html\n- Playwright Expert Agent (playwright) score 70/100, official source https://github.com/microsoft/playwright\n  Reasons: Selected during React + Vite preflight\n- OWASP AppSec Expert Agent (owasp) score 70/100, official source https://github.com/OWASP/Top10\n  Reasons: Selected during React + Vite preflight; File signal: src/**/*\n- Accessibility/WCAG Expert Agent (accessibility) score 70/100, official source https://github.com/w3c/wcag\n  Reasons: Selected during React + Vite preflight; File signal: src/**/*.{tsx,jsx,html}\n- Boilerplate Selection Expert Agent (boilerplates) score 36/100, official source https://github.com/vercel/next.js\n  Reasons: File signal: package.json; File signal: src/**; File signal: app/**\n- R Expert Agent (r) score 25/100, official source https://github.com/wch/r-source\n  Reasons: Dependency signal: r\n- C Expert Agent (c) score 24/100, official source https://github.com/gcc-mirror/gcc\n  Reasons: File signal: **/*.c; File signal: **/*.h\n- SOC 2 Readiness Expert Agent (soc2) score 24/100, official source https://github.com/strongdm/comply\n  Reasons: File signal: README.md; File signal: src/**/*\n\nSignals:\n{\n  \"dependencies\": [\n    \"@vitejs/plugin-react\",\n    \"vite\",\n    \"typescript\",\n    \"react\",\n    \"react-dom\"\n  ],\n  \"scripts\": {\n    \"dev\": \"vite --host 0.0.0.0\",\n    \"build\": \"vite build\",\n    \"preview\": \"vite preview\"\n  },\n  \"files\": [\n    \"index.html\",\n    \"OPENCODE_BUILD_PROMPT.md\",\n    \"package.json\",\n    \"README.md\",\n    \"src/app-data.js\",\n    \"src/main.jsx\",\n    \"src/styles.css\"\n  ],\n  \"logTerms\": [],\n  \"promptTerms\": [\n    \"make\",\n    \"site\",\n    \"frogs\"\n  ],\n  \"stackPlan\": {\n    \"primaryLanguage\": \"TypeScript\",\n    \"framework\": \"React + Vite\",\n    \"runtime\": \"Node.js\",\n    \"packageManager\": \"npm\",\n    \"expertIds\": [\n      \"typescript\",\n      \"react\",\n      \"vite\",\n      \"node\",\n      \"npm\",\n      \"accessibility\",\n      \"playwright\",\n      \"owasp\"\n    ],\n    \"projectAgentIds\": [\n      \"framework-expert-router\",\n      \"opencode-build-agent\",\n      \"build-doctor-agent\",\n      \"qa-agent\",\n      \"memory-agent\",\n      \"react-agent\"\n    ],\n    \"setupCommands\": [\n      \"npm install\"\n    ],\n    \"devCommand\": \"npm run dev -- --host 0.0.0.0 --port {port}\",\n    \"buildCommands\": [\n      \"npm run build\"\n    ],\n    \"testCommands\": [\n      \"npm test -- --runInBand\"\n    ],\n    \"evidence\": [\n      \"No explicit backend stack was requested; React + Vite is the browser-app default.\"\n    ]\n  }\n}\n\nRepair strategy:\n- Fetch official-source updates for the selected experts before making framework-specific assumptions.\n- Diagnose root cause across language, package manager, build tool, framework, database, API, auth, deployment, UI/UX, and security layers.\n- Use the smallest correct fix, then run build/tests/preview.\n- Persist lessons to .nexus/memory/project-memory.md.\n- Avoid generic template output; preserve the project's creative direction if present.\n",
+  "outputDir": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\make-site-of-frogs-7917c729\\.nexus\\expert-routing\\a7aaaca5"
+}

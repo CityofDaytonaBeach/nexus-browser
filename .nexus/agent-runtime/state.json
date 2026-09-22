@@ -1,6 +1,172 @@
 {
   "memories": [
     {
+      "id": "e7c060ef-ee66-4a97-889a-d60e234eeefe",
+      "scope": "session",
+      "content": "User asked: make a candy shop\nMode: build\nActive build: 43aaa89c",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790097100830,
+      "updatedAt": 1790097100830
+    },
+    {
+      "id": "0ee0238e-901e-4294-9cbd-46e389f8b26c",
+      "scope": "session",
+      "content": "User asked: Fix the failed build, continue implementation from the preserved workspace, run the build checks, then start the preview and browser QA.\nMode: build\nActive build: 43aaa89c",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790096322832,
+      "updatedAt": 1790096322832
+    },
+    {
+      "id": "4e06b5a8-8151-469e-8fe1-e961c190292b",
+      "scope": "session",
+      "content": "User asked: Fix the failed build, continue implementation from the preserved workspace, run the build checks, then start the preview and browser QA.\nMode: build\nActive build: 43aaa89c",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790091924632,
+      "updatedAt": 1790091924632
+    },
+    {
+      "id": "9d05b8e1-ca46-4e2d-8a12-6e1991b89e1b",
+      "scope": "session",
+      "content": "User asked: build be a bike week website\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790090783432,
+      "updatedAt": 1790090783432
+    },
+    {
+      "id": "cb6da553-2108-4e68-9320-13a0a38bda4e",
+      "scope": "session",
+      "content": "User asked: Plan a React task dashboard with filters and responsive views. Do not build it.\nMode: plan\nActive build: 7ccf2114",
+      "tags": [
+        "builder-chat",
+        "plan",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790089347445,
+      "updatedAt": 1790089347445
+    },
+    {
+      "id": "a85f471c-ff15-4a88-8384-a62e2e729a16",
+      "scope": "session",
+      "content": "User asked: dogs\nMode: build\nActive build: 7917c729",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790088299224,
+      "updatedAt": 1790088299224
+    },
+    {
+      "id": "644a7803-3dee-4aa1-a69f-f4a13af8450b",
+      "scope": "session",
+      "content": "User asked: What is three plus three?\nMode: build\nActive build: 7ccf2114",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790081394781,
+      "updatedAt": 1790081394781
+    },
+    {
+      "id": "f7568d23-f3aa-43a8-aae5-516398ad0055",
+      "scope": "session",
+      "content": "User asked: frong landing page\nMode: build\nActive build: 7ccf2114",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790081371558,
+      "updatedAt": 1790081371558
+    },
+    {
+      "id": "a0d0eae2-d62d-498c-8805-f59966b06fa9",
+      "scope": "session",
+      "content": "User asked: What is two plus two?\nMode: build\nActive build: 7ccf2114",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790081221152,
+      "updatedAt": 1790081221152
+    },
+    {
+      "id": "9105749f-0b98-455e-a2ce-48ceb3c4503e",
+      "scope": "session",
+      "content": "User asked: Does it own all screen sizes now why you continue to chat and build\nMode: build\nActive build: 7ccf2114",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build"
+      ],
+      "source": "builder-chat:intent-question-verification",
+      "createdAt": 1790080127757,
+      "updatedAt": 1790080127757
+    },
+    {
+      "id": "93b68f66-5174-4e99-8db4-00edaa710e46",
+      "scope": "session",
+      "content": "User asked: make site of frogs\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790024730428,
+      "updatedAt": 1790024730428
+    },
+    {
+      "id": "929cdcea-3ebb-412f-a09a-2c909824c740",
+      "scope": "session",
+      "content": "User asked: use bluw\nMode: build\nActive build: cc1d0142",
+      "tags": [
+        "builder-chat",
+        "build",
+        "active-build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790024020714,
+      "updatedAt": 1790024020714
+    },
+    {
+      "id": "0f5650c5-2d8a-4d58-9772-cd8ead4bc61c",
+      "scope": "session",
+      "content": "User asked: bike week Daytona beach\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1790023485811,
+      "updatedAt": 1790023485811
+    },
+    {
       "id": "b4e5e2c9-4739-4c4a-abe5-e0bd9128f6dc",
       "scope": "session",
       "content": "User asked: Ask mode: what can you do?\nMode: chat\nActive build: 7ccf2114",
@@ -423,6 +589,11 @@
       "successCount": 0,
       "failureCount": 0,
       "lessons": [
+        "Refreshed from chat intent: Fix the failed build, continue implementation from the preserved workspace, run the build checks, then start the preview and browser QA.",
+        "Refreshed from chat intent: Fix the failed build, continue implementation from the preserved workspace, run the build checks, then start the preview and browser QA.",
+        "Refreshed from chat intent: build be a bike week website",
+        "Refreshed from chat intent: Plan a React task dashboard with filters and responsive views. Do not build it.",
+        "Refreshed from chat intent: Does it own all screen sizes now why you continue to chat and build",
         "Refreshed from chat intent: build landing page for daytona bike week",
         "Refreshed from chat intent: Does it own all screen sizes now why you contiune to chat and build",
         "Refreshed from chat intent: build a bike week landing page",
@@ -439,7 +610,92 @@
         "Refreshed from chat intent: build bike wekk"
       ],
       "createdAt": 1789045061311,
-      "updatedAt": 1790022647808
+      "updatedAt": 1790096322837
+    },
+    {
+      "id": "49e3eacc-e59d-44b6-bae8-02f5b7c64252",
+      "name": "Intent To Product Sprint",
+      "description": "Turn a short or vague product request into a focused, working first version with explicit assumptions.",
+      "trigger": "Use for build, create, app, website, dashboard, portal, landing page, prototype, or product requests.",
+      "steps": [
+        "Infer the product type, audience, primary outcome, and smallest complete workflow from the prompt and chat history.",
+        "Use reversible smart defaults for unspecified style, data, auth, and content instead of blocking the first build.",
+        "Build the primary user journey first, including loading, empty, error, mobile, and accessibility states.",
+        "Return a running preview quickly, then refine from browser evidence and user feedback."
+      ],
+      "successCount": 0,
+      "failureCount": 0,
+      "lessons": [],
+      "createdAt": 1790083523968,
+      "updatedAt": 1790083523968
+    },
+    {
+      "id": "78edcabe-9d1e-4096-af78-418c720604ad",
+      "name": "Stack Expert Routing",
+      "description": "Select only the language, framework, data, integration, security, and testing experts needed for the current stack.",
+      "trigger": "Use for PHP, Laravel, React, Vite, Next.js, Vue, Python, APIs, databases, auth, payments, mobile, and build failures.",
+      "steps": [
+        "Detect the requested stack from the prompt, active project files, dependencies, logs, and browser signals.",
+        "Keep the existing stack for updates unless the user explicitly requests a migration.",
+        "Route setup and failures to matching official-source experts and their stack-specific verification commands.",
+        "Keep the team small enough to avoid duplicated work and conflicting changes."
+      ],
+      "successCount": 0,
+      "failureCount": 0,
+      "lessons": [],
+      "createdAt": 1790083523968,
+      "updatedAt": 1790083523968
+    },
+    {
+      "id": "6d79a744-3589-4b29-8657-30c05b8b49ae",
+      "name": "Browser Evidence Verification",
+      "description": "Use the rendered browser as the source of truth for UI, runtime, network, responsive, and accessibility accuracy.",
+      "trigger": "Use for clone, redesign, visual, responsive, mobile, browser, DevTools, screenshot, QA, or interaction requests.",
+      "steps": [
+        "Inspect rendered DOM, styles, screenshots, console, network, storage, and interactive states when available.",
+        "Translate evidence into concrete component, API, state, and styling changes.",
+        "Verify desktop, tablet, mobile, keyboard, reduced-motion, loading, empty, and failure states that matter to the product.",
+        "Report observed results without claiming checks that were not run."
+      ],
+      "successCount": 0,
+      "failureCount": 0,
+      "lessons": [],
+      "createdAt": 1790083523968,
+      "updatedAt": 1790083523968
+    },
+    {
+      "id": "c1caa980-17a7-4595-abd8-95c0ec58a855",
+      "name": "Project Memory Recall",
+      "description": "Reuse prior requirements, architecture decisions, user preferences, successful fixes, and known failures before editing.",
+      "trigger": "Use for continue, update, change, improve, fix, remember, previous, existing app, or follow-up requests.",
+      "steps": [
+        "Retrieve the most relevant runtime memories, recent chat requirements, and active project memory.",
+        "Separate durable decisions from stale status messages and failed approaches.",
+        "Preserve working behavior and stated preferences while applying the new request.",
+        "Record new durable decisions and verified repairs after execution."
+      ],
+      "successCount": 0,
+      "failureCount": 0,
+      "lessons": [],
+      "createdAt": 1790083523968,
+      "updatedAt": 1790083523968
+    },
+    {
+      "id": "4b38da24-8575-4793-852b-5d936a6e3af8",
+      "name": "Focused Repair And QA Loop",
+      "description": "Diagnose failures by layer, apply the smallest complete fix, and rerun the checks that prove the repair.",
+      "trigger": "Use for fix, repair, debug, broken, error, failing, Build Doctor, auto heal, test, QA, or deploy readiness.",
+      "steps": [
+        "Classify the failure as requirements, dependency, compiler, framework, runtime, API, data, browser, or deployment.",
+        "Select the matching expert and preserve a snapshot or clear rollback path before risky edits.",
+        "Apply the smallest root-cause fix and run focused checks before broad verification.",
+        "Persist the failure signature, fix, and verification result for future chats."
+      ],
+      "successCount": 0,
+      "failureCount": 0,
+      "lessons": [],
+      "createdAt": 1790083523968,
+      "updatedAt": 1790083523968
     }
   ],
   "delegations": [],

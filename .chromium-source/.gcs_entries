@@ -1,0 +1,74 @@
+{
+  "devtools-frontend": {
+    "devtools-frontend/third_party/node/linux": [
+      "744e6926ffdd4a4fb2080ae2b9ce4575490261e7"
+    ],
+    "devtools-frontend/third_party/node/mac": [
+      "9202c05a8e7c67cb2bb2fec1e50fb6188d26f281"
+    ],
+    "devtools-frontend/third_party/node/mac_arm64": [
+      "6661e9b9bd7df6b45daf506c82d06d303597cb27"
+    ],
+    "devtools-frontend/scripts/ai_assistance/suite/outputs": [
+      "2c91e963a2a3cd91e1c693437244faf1a134b0517894c34886e203beb7794400"
+    ],
+    "devtools-frontend/third_party/chrome/chrome-win": [
+      "156.0.8067.0/win64/chrome-win64.zip"
+    ],
+    "devtools-frontend/third_party/chrome/chrome-mac-x64": [
+      "156.0.8067.0/mac-x64/chrome-mac-x64.zip"
+    ],
+    "devtools-frontend/third_party/chrome/chrome-mac-arm64": [
+      "156.0.8067.0/mac-arm64/chrome-mac-arm64.zip"
+    ],
+    "devtools-frontend/third_party/chrome/chrome-linux": [
+      "156.0.8067.0/linux64/chrome-linux64.zip"
+    ],
+    "devtools-frontend/third_party/node/win": [
+      "2f710ced2db2beb7c3debf6097196c35ee5adb74"
+    ]
+  },
+  "devtools-frontend/buildtools": {
+    "devtools-frontend/buildtools/win-format": [
+      "fb0bcaf406ad6f0bd6b4a6347d2abe78a94fb13e"
+    ],
+    "devtools-frontend/buildtools/mac-format": [
+      "35ddc571ab654a4f58d7b35f394b04835d0b98f9"
+    ],
+    "devtools-frontend/buildtools/mac_arm64-format": [
+      "945e45cbcb5443c3e569d5e0783fd012154fc4a7"
+    ],
+    "devtools-frontend/buildtools/linux64-format": [
+      "f5485c39451137ee943021a0fb63738b306c5026"
+    ]
+  },
+  "devtools-frontend/build": {
+    "devtools-frontend/build/linux/debian_bullseye_amd64-sysroot": [
+      "52d61d4446ffebfaa3dda2cd02da4ab4876ff237853f46d273e7f9b666652e1d"
+    ],
+    "devtools-frontend/build/linux/debian_bullseye_arm64-sysroot": [
+      "c7176a4c7aacbf46bda58a029f39f79a68008d3dee6518f154dcf5161a5486d8"
+    ],
+    "devtools-frontend/build/linux/debian_bullseye_armhf-sysroot": [
+      "b45a7f586a107380ca6141b00d74321922b41d6d327dc33e74a2f82fd454304c"
+    ],
+    "devtools-frontend/build/linux/debian_bullseye_i386-sysroot": [
+      "3de724b0d63478e1ae35f07b95d02261581a66e05c19aebe4e443d76179a565e"
+    ],
+    "devtools-frontend/build/linux/debian_bullseye_mips64el-sysroot": [
+      "c847a32ae492aa14688be47fa696026e8dae8d9f4f589ec42fad29862bf311b3"
+    ],
+    "devtools-frontend/build/linux/debian_bullseye_mipsel-sysroot": [
+      "82e930d6fa5d5ab1172cabc63b911ec800b182b4f8c14a273a89596541fe8658"
+    ],
+    "devtools-frontend/build/linux/debian_bullseye_ppc64el-sysroot": [
+      "8b37b8eefac38284c327146c05fa315b392c90a559888790a12b05a28fbcee40"
+    ],
+    "devtools-frontend/build/linux/debian_bullseye_s390x-sysroot": [
+      "46d561a32665a7ef4db334d66ba10b0db7750eea3fed1fee4896c2f5c4f87167"
+    ],
+    "devtools-frontend/build/linux/debian_trixie_riscv64-sysroot": [
+      "2df6a2698a25258871b45a50d8b5079947b1ad1c63920c944690dfc2a71aab51"
+    ]
+  }
+}

@@ -62,6 +62,20 @@ export interface BuildBrainProfile {
   notes: string[];
 }
 
+export interface BuildStackPlan {
+  primaryLanguage: string;
+  framework: string;
+  runtime: string;
+  packageManager: string;
+  expertIds: string[];
+  projectAgentIds: string[];
+  setupCommands: string[];
+  devCommand: string;
+  buildCommands: string[];
+  testCommands: string[];
+  evidence: string[];
+}
+
 export interface BuildWorkspace {
   id: string;
   name: string;
@@ -76,6 +90,7 @@ export interface BuildWorkspace {
   previewLogPath: string;
   previewCommand: string;
   brain: BuildBrainProfile;
+  stackPlan?: BuildStackPlan;
   executorSessionId?: string;
   createdAt: string;
 }
@@ -89,6 +104,29 @@ export interface BuildActivity {
   terminal: boolean;
   pendingUpdates: number;
   log: string;
+  progress: BuildProgress;
+}
+
+export interface BuildProgressStep {
+  id: 'workspace' | 'routing' | 'implementation' | 'verification' | 'preview';
+  label: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  detail: string;
+}
+
+export interface BuildProgress {
+  phase: string;
+  summary: string;
+  percent: number;
+  agents: string[];
+  steps: BuildProgressStep[];
+  recentOutput: string[];
+  failure?: {
+    code: 'executor-connection' | 'executor-auth' | 'executor-missing' | 'executor-failed';
+    title: string;
+    detail: string;
+    recovery: string;
+  };
 }
 
 export interface BuildDoctorIssue {
@@ -260,6 +298,69 @@ export class BuilderPlatform {
   private stagingReports: Map<string, StagingReport> = new Map();
   private buildUpdates: Map<string, BuildUpdateRun> = new Map();
 
+  planBuildStack(prompt: string): BuildStackPlan {
+    const text = prompt.toLowerCase();
+    const commonAgents = ['framework-expert-router', 'opencode-build-agent', 'build-doctor-agent', 'qa-agent', 'memory-agent'];
+    let plan: BuildStackPlan;
+
+    if (/\blaravel\b/.test(text)) {
+      plan = this.stackPlan('PHP', 'Laravel', 'PHP 8.2+', 'Composer', ['php', 'laravel', 'composer'], commonAgents, ['composer install', 'copy .env.example .env', 'php artisan key:generate'], 'php artisan serve --host=0.0.0.0 --port={port}', ['composer validate --no-check-publish', 'php artisan optimize'], ['php artisan test'], ['Prompt explicitly requests Laravel.']);
+    } else if (/\bwordpress\b|\bwp[- ]?cli\b/.test(text)) {
+      plan = this.stackPlan('PHP', 'WordPress', 'PHP 8.1+', 'Composer / WP-CLI', ['php', 'wordpress', 'composer', 'mysql'], commonAgents, ['composer install'], 'php -S 0.0.0.0:{port} -t .', ['composer validate --no-check-publish'], ['composer test'], ['Prompt explicitly requests WordPress or WP-CLI.']);
+    } else if (/\bphp\b|\bcomposer(?:\.json)?\b/.test(text)) {
+      plan = this.stackPlan('PHP', 'PHP', 'PHP 8.1+', 'Composer', ['php', 'composer'], commonAgents, ['composer install'], 'php -S 0.0.0.0:{port} -t public', ['composer validate --no-check-publish'], ['composer test'], ['Prompt explicitly requests PHP or Composer.']);
+    } else if (/\breact[ -]?native\b|\bexpo\b/.test(text)) {
+      plan = this.stackPlan('TypeScript', 'React Native / Expo', 'Node.js', 'npm', ['typescript', 'react-native', 'expo', 'node', 'npm'], [...commonAgents, 'react-agent'], ['npm install'], 'npx expo start --web --port {port}', ['npx expo export --platform web'], ['npm test -- --runInBand'], ['Prompt requests React Native or Expo.']);
+    } else if (/\bnext(?:\.js|js)?\b/.test(text)) {
+      plan = this.stackPlan('TypeScript', 'Next.js', 'Node.js', 'npm', ['typescript', 'react', 'nextjs', 'node', 'npm'], [...commonAgents, 'react-agent'], ['npm install'], 'npm run dev -- --hostname 0.0.0.0 --port {port}', ['npm run build'], ['npm test -- --runInBand'], ['Prompt requests Next.js.']);
+    } else if (/\bvue(?:\.js|js)?\b/.test(text)) {
+      plan = this.stackPlan('TypeScript', 'Vue', 'Node.js', 'npm', ['typescript', 'vue', 'vite', 'node', 'npm'], commonAgents, ['npm install'], 'npm run dev -- --host 0.0.0.0 --port {port}', ['npm run build'], ['npm test -- --runInBand'], ['Prompt requests Vue.']);
+    } else if (/\bsvelte(?:kit)?\b/.test(text)) {
+      plan = this.stackPlan('TypeScript', 'SvelteKit', 'Node.js', 'npm', ['typescript', 'svelte', 'vite', 'node', 'npm'], commonAgents, ['npm install'], 'npm run dev -- --host 0.0.0.0 --port {port}', ['npm run build'], ['npm test -- --runInBand'], ['Prompt requests Svelte or SvelteKit.']);
+    } else if (/\bangular\b/.test(text)) {
+      plan = this.stackPlan('TypeScript', 'Angular', 'Node.js', 'npm', ['typescript', 'angular', 'node', 'npm'], commonAgents, ['npm install'], 'npm start -- --host 0.0.0.0 --port {port}', ['npm run build'], ['npm test -- --watch=false'], ['Prompt requests Angular.']);
+    } else if (/\bdjango\b/.test(text)) {
+      plan = this.stackPlan('Python', 'Django', 'Python 3.11+', 'pip', ['python', 'django'], commonAgents, ['python -m pip install -r requirements.txt', 'python manage.py migrate'], 'python manage.py runserver 0.0.0.0:{port}', ['python manage.py check'], ['python manage.py test'], ['Prompt requests Django.']);
+    } else if (/\bfastapi\b/.test(text)) {
+      plan = this.stackPlan('Python', 'FastAPI', 'Python 3.11+', 'pip', ['python', 'fastapi'], commonAgents, ['python -m pip install -r requirements.txt'], 'python -m uvicorn app.main:app --host 0.0.0.0 --port {port}', ['python -m compileall app'], ['python -m pytest'], ['Prompt requests FastAPI.']);
+    } else if (/\bpython\b|\bflask\b|\bpyproject\.toml\b/.test(text)) {
+      plan = this.stackPlan('Python', /\bflask\b/.test(text) ? 'Flask' : 'Python Web', 'Python 3.11+', 'pip', ['python'], commonAgents, ['python -m pip install -r requirements.txt'], 'python -m http.server {port}', ['python -m compileall .'], ['python -m pytest'], ['Prompt explicitly requests Python.']);
+    } else if (/\bruby on rails\b|\brails\b/.test(text)) {
+      plan = this.stackPlan('Ruby', 'Ruby on Rails', 'Ruby', 'Bundler', ['ruby'], commonAgents, ['bundle install', 'bin/rails db:prepare'], 'bundle exec rails server -b 0.0.0.0 -p {port}', ['bundle exec rails zeitwerk:check'], ['bundle exec rails test'], ['Prompt requests Ruby on Rails.']);
+    } else if (/\bgolang\b|\bgo (?:app|api|server|service)\b/.test(text)) {
+      plan = this.stackPlan('Go', 'Go Web', 'Go', 'Go modules', ['go'], commonAgents, ['go mod download'], 'go run .', ['go build ./...'], ['go test ./...'], ['Prompt requests Go.']);
+    } else if (/\brust\b|\bcargo\b/.test(text)) {
+      plan = this.stackPlan('Rust', 'Rust Web', 'Rust', 'Cargo', ['rust', 'cargo'], commonAgents, ['cargo fetch'], 'cargo run', ['cargo build'], ['cargo test'], ['Prompt requests Rust or Cargo.']);
+    } else if (/\basp\.net\b|\.net\b|c#|\bc-?sharp\b/.test(text)) {
+      plan = this.stackPlan('C#', 'ASP.NET Core', '.NET', 'NuGet', ['csharp-dotnet'], commonAgents, ['dotnet restore'], 'dotnet run --urls http://0.0.0.0:{port}', ['dotnet build'], ['dotnet test'], ['Prompt requests .NET or C#.']);
+    } else if (/\bspring(?: boot)?\b|\bmaven\b|\bjava\b/.test(text)) {
+      plan = this.stackPlan('Java', 'Spring Boot', 'JDK', /\bgradle\b/.test(text) ? 'Gradle' : 'Maven', ['java', /\bgradle\b/.test(text) ? 'gradle' : 'maven'], commonAgents, [/\bgradle\b/.test(text) ? 'gradle dependencies' : 'mvn dependency:resolve'], /\bgradle\b/.test(text) ? 'gradle bootRun --args=--server.port={port}' : 'mvn spring-boot:run -Dspring-boot.run.arguments=--server.port={port}', [/\bgradle\b/.test(text) ? 'gradle build' : 'mvn package'], [/\bgradle\b/.test(text) ? 'gradle test' : 'mvn test'], ['Prompt requests Java or Spring.']);
+    } else {
+      plan = this.stackPlan('TypeScript', 'React + Vite', 'Node.js', 'npm', ['typescript', 'react', 'vite', 'node', 'npm'], [...commonAgents, 'react-agent'], ['npm install'], 'npm run dev -- --host 0.0.0.0 --port {port}', ['npm run build'], ['npm test -- --runInBand'], [/\breact\b/.test(text) ? 'Prompt explicitly requests React.' : 'No explicit backend stack was requested; React + Vite is the browser-app default.']);
+    }
+
+    const capabilities: Array<[RegExp, string[]]> = [
+      [/\bpostgres(?:ql)?\b/, ['postgres']], [/\bmysql\b/, ['mysql']], [/\bsqlite\b/, ['sqlite']], [/\bmongo(?:db)?\b/, ['mongodb']],
+      [/\bredis\b/, ['redis']], [/\bsupabase\b/, ['supabase']], [/\bfirebase\b/, ['firebase']], [/\bprisma\b/, ['prisma']], [/\bdrizzle\b/, ['drizzle']],
+      [/\bstripe\b|\bpayments?\b/, ['stripe']], [/\bauth(?:entication)?\b|\boauth\b|\blogin\b/, ['oauth2', 'jwt']],
+      [/\bgraphql\b/, ['graphql']], [/\bopenapi\b|\bswagger\b|\brest api\b/, ['openapi', 'rest']], [/\bwebsockets?\b/, ['websocket']],
+      [/\bdocker\b|\bcontainer(?:ize|ized)?\b/, ['docker']], [/\baws\b/, ['aws']], [/\bazure\b/, ['azure']], [/\bgcp\b|\bgoogle cloud\b/, ['gcp']],
+      [/\bthree(?:\.js|js)?\b|\b3d\b/, ['threejs']], [/\btailwind\b/, ['tailwind']], [/\bstorybook\b/, ['storybook']],
+    ];
+    for (const [pattern, expertIds] of capabilities) {
+      if (pattern.test(text)) plan.expertIds.push(...expertIds);
+    }
+    if (/\b(api|database|schema|migration|backend)\b/.test(text)) plan.projectAgentIds.push('api-agent', 'database-agent');
+    plan.expertIds.push('accessibility', 'playwright', 'owasp');
+    plan.expertIds = Array.from(new Set(plan.expertIds)).filter((id) => getLanguageExperts().some((expert) => expert.id === id));
+    plan.projectAgentIds = Array.from(new Set(plan.projectAgentIds)).filter((id) => getProjectAgentSwarm().agents.some((agent) => agent.id === id));
+    return plan;
+  }
+
+  private stackPlan(primaryLanguage: string, framework: string, runtime: string, packageManager: string, expertIds: string[], projectAgentIds: string[], setupCommands: string[], devCommand: string, buildCommands: string[], testCommands: string[], evidence: string[]): BuildStackPlan {
+    return { primaryLanguage, framework, runtime, packageManager, expertIds, projectAgentIds, setupCommands, devCommand, buildCommands, testCommands, evidence };
+  }
+
   getProviders(): AiProviderProfile[] {
     return [
       { id: 'openai', name: 'OpenAI', kind: 'cloud', env: ['OPENAI_API_KEY'], capabilities: ['chat', 'vision', 'code', 'tools'], recommendedFor: ['codegen', 'ui reasoning', 'planning'] },
@@ -423,16 +524,38 @@ export class BuilderPlatform {
     const safeLogWrite = (message: string) => {
       if (!log.destroyed && log.writable) log.write(message);
     };
+    const idleTimeoutMs = Math.max(60000, Number(process.env.CODE_EXECUTION_IDLE_TIMEOUT_MS || 300000));
+    let idleTimer: NodeJS.Timeout;
+    const stopIdleTimer = () => {
+      if (idleTimer) clearTimeout(idleTimer);
+    };
+    const resetIdleTimer = () => {
+      stopIdleTimer();
+      idleTimer = setTimeout(() => {
+        safeLogWrite(`\nNexus stopped the executor after ${Math.round(idleTimeoutMs / 1000)} seconds without output. Verified files and logs are preserved.\n`);
+        if (process.platform === 'win32' && child.pid) spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
+        else child.kill('SIGTERM');
+      }, idleTimeoutMs);
+    };
     log.on('error', () => undefined);
-    child.stdout.pipe(log, { end: false });
-    child.stderr.pipe(log, { end: false });
+    child.stdout.on('data', (chunk) => {
+      safeLogWrite(chunk.toString());
+      resetIdleTimer();
+    });
+    child.stderr.on('data', (chunk) => {
+      safeLogWrite(chunk.toString());
+      resetIdleTimer();
+    });
+    resetIdleTimer();
     child.on('close', (code) => {
+      stopIdleTimer();
       safeLogWrite(`\nCode executor exited with code ${code}\n`);
       if (!log.destroyed) log.end();
       onExit?.(code);
       runtime.cleanup();
     });
     child.on('error', (error) => {
+      stopIdleTimer();
       safeLogWrite(`\nCode executor failed to start: ${error.message}\n`);
       onError?.(error);
       runtime.cleanup();
@@ -543,10 +666,12 @@ export class BuilderPlatform {
     const logPath = path.join(root, 'opencode-build.log');
     const previewLogPath = path.join(root, 'preview.log');
     const brain = this.createBuildBrain(options.brainMode || 'hybrid', options.aiProvider || 'openai', options.aiModel);
-    const opencodePrompt = this.buildOpenCodeAppPrompt(prompt, options.uiLook || 'modern-saas', brain, options.browserContext);
+    const stackPlan = this.planBuildStack(prompt);
+    const opencodePrompt = this.buildOpenCodeAppPrompt(prompt, options.uiLook || 'modern-saas', brain, stackPlan, options.browserContext);
 
-    fs.mkdirSync(path.join(root, 'src'), { recursive: true });
-    this.writeStarterApp(root, name, prompt);
+    fs.mkdirSync(root, { recursive: true });
+    this.writeStarterApp(root, name, prompt, stackPlan);
+    this.writeStackAgentManifest(root, stackPlan);
     const promptFile = path.join(root, 'OPENCODE_BUILD_PROMPT.md');
     fs.writeFileSync(promptFile, opencodePrompt);
 
@@ -562,11 +687,14 @@ export class BuilderPlatform {
       opencodeCommand: command,
       logPath,
       previewLogPath,
-      previewCommand: 'npm install && npm run dev',
+      previewCommand: stackPlan.devCommand,
       brain,
+      stackPlan,
       executorSessionId: session.id,
       createdAt: new Date().toISOString(),
     };
+    this.builds.set(id, build);
+    this.routeExperts(id);
 
     try {
       session.status = 'running';
@@ -580,7 +708,8 @@ export class BuilderPlatform {
         this.startNextQueuedUpdate(id);
       };
       const child = this.launchCodeExecution(root, opencodePrompt, options.mode || 'build', logPath, (code) => {
-        finish(code === 0 ? 'completed' : 'failed', code === 0 ? 'completed' : 'failed');
+        const succeeded = code === 0 || this.executorLogShowsVerifiedBuild(logPath);
+        finish(succeeded ? 'completed' : 'failed', succeeded ? 'completed' : 'failed');
       }, () => {
         finish('opencode-unavailable', 'failed');
       }, promptFile);
@@ -592,7 +721,6 @@ export class BuilderPlatform {
       session.status = 'failed';
     }
 
-    this.builds.set(id, build);
     return build;
   }
 
@@ -609,12 +737,15 @@ export class BuilderPlatform {
     const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     const update = updateId
-      ? this.getBuildUpdates().find((item) => item.buildId === buildId && item.id === updateId)
+      ? this.getBuildUpdates().find((item) => item.buildId === buildId && item.id === updateId) || this.hydrateBuildUpdate(build, updateId)
       : undefined;
     if (updateId && !update) throw new Error('Build update not found');
+    if (update?.status === 'completed') build.status = 'completed';
+    else if (update?.status === 'running') build.status = 'opencode-running';
+    else if (update?.status === 'failed') build.status = 'failed';
     const session = update?.session || (build.executorSessionId ? this.sessions.get(build.executorSessionId) : undefined);
     const logPath = update?.logPath || build.logPath;
-    const log = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').slice(-20000) : '';
+    const log = this.cleanExecutorLog(fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').slice(-20000) : '');
     const status = update?.status || build.status;
     const pendingUpdates = updateId ? 0 : this.getBuildUpdates().filter((item) => item.buildId === buildId && ['queued', 'running'].includes(item.status)).length;
     return {
@@ -626,7 +757,147 @@ export class BuilderPlatform {
       terminal: ['completed', 'failed', 'opencode-unavailable'].includes(status) && pendingUpdates === 0,
       pendingUpdates,
       log,
+      progress: this.buildProgress(build, status, log, update ? 'update' : 'build', pendingUpdates),
     };
+  }
+
+  private cleanExecutorLog(value: string): string {
+    const withoutAnsi = value
+      .split(String.fromCharCode(27))
+      .map((part, index) => index ? part.replace(/^\[[0-9;?]*[ -/]*[@-~]/, '') : part)
+      .join('');
+    return withoutAnsi
+      .replace(/\r/g, '')
+      .trim();
+  }
+
+  private buildProgress(build: BuildWorkspace, status: BuildActivity['status'], log: string, kind: BuildActivity['kind'], pendingUpdates: number): BuildProgress {
+    const completed = status === 'completed';
+    const failed = ['failed', 'opencode-unavailable'].includes(status);
+    const running = ['opencode-running', 'running'].includes(status);
+    const queued = status === 'queued';
+    const verificationObserved = /(?:^|\n)\$\s+(?:npm run build|npm test|pnpm |yarn |composer |php artisan test|python -m pytest|cargo (?:build|test)|go (?:build|test))/i.test(log);
+    const filesChanged = /% Patch|← (?:Write|Edit)|created?\s+\d+\s+files?|implemented with/i.test(log);
+    const implementationStatus: BuildProgressStep['status'] = failed ? 'failed' : completed || verificationObserved ? 'completed' : running ? 'running' : 'pending';
+    const verificationStatus: BuildProgressStep['status'] = failed ? 'pending' : completed ? 'completed' : verificationObserved ? 'running' : 'pending';
+    const previewStatus: BuildProgressStep['status'] = build.previewStatus === 'running'
+      ? 'completed'
+      : build.previewStatus === 'starting'
+        ? 'running'
+        : build.previewStatus === 'failed'
+          ? 'failed'
+          : 'pending';
+    const steps: BuildProgressStep[] = [
+      { id: 'workspace', label: 'Workspace', status: 'completed', detail: 'Starter files and project brief created' },
+      { id: 'routing', label: 'Agent routing', status: 'completed', detail: `${build.stackPlan?.framework || 'Stack'} team and specialists selected` },
+      { id: 'implementation', label: kind === 'update' ? 'Apply update' : 'Implementation', status: implementationStatus, detail: queued ? 'Waiting behind the active executor' : failed ? 'Executor stopped before completing the requested work' : completed || verificationObserved ? 'Requested files were implemented' : filesChanged ? 'Build agent is applying the requested product changes' : 'Build agent is inspecting files and implementing the product' },
+      { id: 'verification', label: 'Build checks', status: verificationStatus, detail: completed ? 'Compile and test checks completed' : verificationObserved ? 'Compile and test commands are running' : 'Compile and test checks will run after implementation' },
+      { id: 'preview', label: 'Browser QA', status: previewStatus, detail: previewStatus === 'completed' ? 'Preview is available for browser checks' : previewStatus === 'failed' ? 'Preview could not start' : 'Preview and responsive QA follow a successful build' },
+    ];
+    const recentOutput = log
+      .split(/\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .filter((line) => !/^(Nexus code execution backend|Workspace:|Mode:|Prompt file:)/i.test(line))
+      .slice(-6);
+    const failure = failed ? this.classifyExecutorFailure(log) : undefined;
+    const phase = failed
+      ? failure?.title || 'Build stopped'
+      : previewStatus === 'completed'
+        ? 'Browser preview ready'
+        : previewStatus === 'running'
+          ? 'Starting browser preview'
+          : completed
+            ? 'Implementation complete'
+            : verificationObserved
+              ? 'Running build checks'
+            : queued
+              ? 'Queued'
+              : running
+                ? 'Agents implementing'
+                : 'Preparing build';
+    const summary = failed
+      ? failure?.detail || 'The executor stopped before the build completed.'
+      : completed
+        ? pendingUpdates
+          ? `Implementation completed; ${pendingUpdates} follow-up ${pendingUpdates === 1 ? 'request is' : 'requests are'} still queued.`
+          : 'Implementation and executor checks completed. Preparing preview and browser QA.'
+        : queued
+          ? 'This request is queued behind the active build.'
+          : 'Nexus agents are applying the selected skills and stack expertise to the workspace.';
+    const percent = failed ? 45 : previewStatus === 'completed' ? 100 : previewStatus === 'running' ? 90 : completed ? 82 : verificationObserved ? 70 : filesChanged ? 58 : running ? 45 : queued ? 20 : 12;
+    const agents = Array.from(new Set([
+      ...(build.stackPlan?.projectAgentIds || []),
+      ...(build.stackPlan?.expertIds || []),
+    ])).slice(0, 14);
+    return { phase, summary, percent, agents, steps, recentOutput, failure };
+  }
+
+  private classifyExecutorFailure(log: string): BuildProgress['failure'] {
+    if (/cannot connect to api|unable to connect|econnrefused|enotfound|network.*(?:failed|error)/i.test(log)) {
+      return {
+        code: 'executor-connection',
+        title: 'Executor connection failed',
+        detail: 'The code executor could not reach its configured model API, so implementation stopped before the app was completed.',
+        recovery: 'Check the OpenCode provider connection and network access, then retry. The generated workspace and build brief are preserved.',
+      };
+    }
+    if (/unauthorized|forbidden|invalid api key|authentication|missing.*(?:key|token)|401|403/i.test(log)) {
+      return {
+        code: 'executor-auth',
+        title: 'Executor authentication failed',
+        detail: 'The configured code model rejected the executor credentials.',
+        recovery: 'Reconnect or update the OpenCode provider credentials, then retry this build.',
+      };
+    }
+    if (/not recognized as an internal|command not found|enoent|failed to start/i.test(log)) {
+      return {
+        code: 'executor-missing',
+        title: 'Code executor unavailable',
+        detail: 'Nexus could not start the configured code executor on this machine.',
+        recovery: 'Install or configure the local executor, or select a remote executor, then retry.',
+      };
+    }
+    const lastError = log.split(/\n/).map((line) => line.trim()).filter((line) => /error|failed|exited with code/i.test(line)).slice(-1)[0];
+    return {
+      code: 'executor-failed',
+      title: 'Implementation failed',
+      detail: lastError || 'The code executor exited before completing the build.',
+      recovery: 'Run Build Doctor to classify the failure, then retry from the preserved workspace.',
+    };
+  }
+
+  private executorLogShowsVerifiedBuild(logPath: string): boolean {
+    if (!fs.existsSync(logPath)) return false;
+    const log = this.cleanExecutorLog(fs.readFileSync(logPath, 'utf8').slice(-30000));
+    const buildPassed = /✓ built in|build succeeded|build successful|BUILD SUCCESS|compiled successfully/i.test(log);
+    const checksPassed = /No automated tests configured|tests?\s+(?:passed|successful)|\d+\s+passed/i.test(log);
+    return buildPassed && checksPassed;
+  }
+
+  private hydrateBuildUpdate(build: BuildWorkspace, updateId: string): BuildUpdateRun | undefined {
+    const outputDir = path.join(build.root, '.nexus', 'chat-updates', updateId);
+    const promptFile = path.join(outputDir, 'opencode-update-prompt.md');
+    const logPath = path.join(outputDir, 'opencode-update.log');
+    if (!fs.existsSync(promptFile) && !fs.existsSync(logPath)) return undefined;
+    const prompt = fs.existsSync(promptFile) ? fs.readFileSync(promptFile, 'utf8') : '';
+    const log = this.cleanExecutorLog(fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').slice(-30000) : '');
+    const verified = this.executorLogShowsVerifiedBuild(logPath);
+    const failed = /cannot connect to api|unable to connect|code executor exited with code (?!0\b)\d+|Nexus stopped the executor/i.test(log);
+    const status: BuildUpdateRun['status'] = verified ? 'completed' : failed || log ? 'failed' : 'queued';
+    const userMessage = prompt.match(/User follow-up request:\s*\n([^\n]+)/i)?.[1]?.trim() || 'Continue the preserved build';
+    const createdAt = new Date((fs.existsSync(promptFile) ? fs.statSync(promptFile) : fs.statSync(logPath)).birthtimeMs || Date.now()).toISOString();
+    const session: OpenCodeSessionStub = {
+      id: `restored-${updateId}`,
+      workspace: build.root,
+      mode: 'build',
+      status: status === 'completed' ? 'completed' : status === 'queued' ? 'created' : 'failed',
+      prompt,
+      createdAt,
+    };
+    const update: BuildUpdateRun = { id: updateId, buildId: build.id, createdAt, workspace: build.root, userMessage, status, prompt, logPath, session };
+    this.buildUpdates.set(update.id, update);
+    return update;
   }
 
   updateBuildFromChat(buildId: string, message: string, options: { uiLook?: string; mode?: string; launch?: boolean; browserContext?: string; brainMode?: BuildBrainMode; aiProvider?: string; aiModel?: string } = {}): BuildUpdateRun {
@@ -687,6 +958,7 @@ export class BuilderPlatform {
       this.buildUpdateProcesses.delete(build.id);
       run.status = status;
       run.session.status = status;
+      build.status = status;
       if (!this.startNextQueuedUpdate(build.id)) {
         this.stopPreview(build.id);
         this.startPreview(build.id);
@@ -696,8 +968,9 @@ export class BuilderPlatform {
       this.prepareBuildUpdate(build, run);
       run.status = 'running';
       run.session.status = 'running';
+      build.status = 'opencode-running';
       const child = this.launchCodeExecution(build.root, run.prompt, run.session.mode, run.logPath, (code) => {
-        finish(code === 0 ? 'completed' : 'failed');
+        finish(code === 0 || this.executorLogShowsVerifiedBuild(run.logPath) ? 'completed' : 'failed');
       }, () => finish('failed'), promptFile);
       if (child) this.buildUpdateProcesses.set(build.id, child);
     } catch (error: any) {
@@ -720,7 +993,7 @@ export class BuilderPlatform {
     build.previewPort = port;
     build.previewUrl = `http://127.0.0.1:${port}`;
     build.previewStatus = 'starting';
-    build.previewCommand = `npm install && npm run dev -- --host 0.0.0.0 --port ${port}`;
+    build.previewCommand = this.previewCommandForBuild(build, port);
 
     fs.writeFileSync(build.previewLogPath, `Starting preview for ${build.name}\n${build.previewCommand}\n\n`, { flag: 'a' });
     const commandParts = process.platform === 'win32'
@@ -738,7 +1011,14 @@ export class BuilderPlatform {
     child.stdout.on('data', (chunk) => {
       const text = chunk.toString();
       log.write(text);
-      if (/local:\s+https?:\/\//i.test(text) || /ready in/i.test(text)) build.previewStatus = 'running';
+      const localUrl = text.match(/local:\s+(https?:\/\/[^\s]+)/i)?.[1];
+      if (localUrl) {
+        const resolvedUrl = localUrl.replace('localhost', '127.0.0.1');
+        build.previewUrl = resolvedUrl;
+        const actualPort = Number(new URL(resolvedUrl).port);
+        if (actualPort) build.previewPort = actualPort;
+      }
+      if (localUrl || /ready in|development server|listening on|server running|started server/i.test(text)) build.previewStatus = 'running';
     });
     child.stderr.on('data', (chunk) => log.write(chunk));
     child.on('exit', (code) => {
@@ -785,24 +1065,78 @@ export class BuilderPlatform {
     return (currentRun >= 0 ? log.slice(currentRun) : log).slice(-maxLength);
   }
 
+  private previewCommandForBuild(build: BuildWorkspace, port: number): string {
+    const root = build.root;
+    const packagePath = path.join(root, 'package.json');
+    if (fs.existsSync(path.join(root, 'artisan'))) return `php artisan serve --host=0.0.0.0 --port=${port}`;
+    if (fs.existsSync(packagePath)) {
+      const pkg = this.safeJson(packagePath);
+      const manager = fs.existsSync(path.join(root, 'pnpm-lock.yaml')) ? 'pnpm' : fs.existsSync(path.join(root, 'yarn.lock')) ? 'yarn' : fs.existsSync(path.join(root, 'bun.lockb')) ? 'bun' : 'npm';
+      const install = manager === 'yarn' ? 'yarn install' : `${manager} install`;
+      const run = manager === 'npm' ? 'npm run dev' : `${manager} run dev`;
+      if (pkg.scripts?.dev) {
+        const next = Boolean(pkg.dependencies?.next || pkg.devDependencies?.next || /\bnext\b/.test(String(pkg.scripts.dev)));
+        const flags = next ? `-- --hostname 0.0.0.0 --port ${port}` : `-- --host 0.0.0.0 --port ${port}`;
+        return `${install} && ${run} ${flags}`;
+      }
+      if (pkg.scripts?.start) return `${install} && ${manager === 'npm' ? 'npm start' : `${manager} start`}`;
+    }
+    if (fs.existsSync(path.join(root, 'public', 'index.php'))) return `php -S 0.0.0.0:${port} -t public`;
+    if (fs.existsSync(path.join(root, 'index.php'))) return `php -S 0.0.0.0:${port} -t .`;
+    if (fs.existsSync(path.join(root, 'manage.py'))) return `python manage.py runserver 0.0.0.0:${port}`;
+    if (fs.existsSync(path.join(root, 'Cargo.toml'))) return 'cargo run';
+    if (fs.existsSync(path.join(root, 'go.mod'))) return 'go run .';
+    if (fs.existsSync(path.join(root, 'Gemfile'))) return `bundle exec rails server -b 0.0.0.0 -p ${port}`;
+    const projectFile = fs.readdirSync(root).find((file) => file.endsWith('.csproj'));
+    if (projectFile) return `dotnet run --urls http://0.0.0.0:${port}`;
+    return this.resolveStackPlan(build).devCommand.replace('{port}', String(port));
+  }
+
+  private resolveStackPlan(build: BuildWorkspace): BuildStackPlan {
+    if (build.stackPlan) return build.stackPlan;
+    const planPath = path.join(build.root, '.nexus', 'stack-plan.json');
+    if (fs.existsSync(planPath)) {
+      const saved = this.safeJson(planPath) as Partial<BuildStackPlan>;
+      if (saved.primaryLanguage && saved.framework && Array.isArray(saved.expertIds)) {
+        build.stackPlan = saved as BuildStackPlan;
+        return build.stackPlan;
+      }
+    }
+    const fileSignals = [
+      fs.existsSync(path.join(build.root, 'artisan')) ? 'laravel php composer' : '',
+      fs.existsSync(path.join(build.root, 'composer.json')) ? 'php composer' : '',
+      fs.existsSync(path.join(build.root, 'manage.py')) ? 'django python' : '',
+      fs.existsSync(path.join(build.root, 'Cargo.toml')) ? 'rust cargo' : '',
+      fs.existsSync(path.join(build.root, 'go.mod')) ? 'golang app' : '',
+      fs.existsSync(path.join(build.root, 'Gemfile')) ? 'ruby on rails' : '',
+    ].filter(Boolean).join(' ');
+    build.stackPlan = this.planBuildStack(`${build.prompt}\n${fileSignals}`);
+    return build.stackPlan;
+  }
+
   async runBuildDoctor(buildId: string, options: { runBuild?: boolean; autoHeal?: boolean } = {}): Promise<BuildDoctorReport> {
     const build = this.getBuild(buildId);
     if (!build) throw new Error('Build not found');
     const issues: BuildDoctorIssue[] = [];
     const checks: Record<string, any> = { files: {}, scripts: {}, commands: {}, logs: {} };
+    const stackPlan = this.resolveStackPlan(build);
+    checks.stackPlan = stackPlan;
     const packagePath = path.join(build.root, 'package.json');
+    const composerPath = path.join(build.root, 'composer.json');
     const srcDir = path.join(build.root, 'src');
     const indexHtml = path.join(build.root, 'index.html');
 
-    checks.files.packageJson = fs.existsSync(packagePath);
-    checks.files.src = fs.existsSync(srcDir);
-    checks.files.indexHtml = fs.existsSync(indexHtml);
-    if (!checks.files.packageJson) issues.push(this.issue('critical', 'package', 'Missing package.json', packagePath, 'Create package.json with dev, build, preview scripts and React/Vite dependencies.'));
-    if (!checks.files.src) issues.push(this.issue('critical', 'workspace', 'Missing src directory', srcDir, 'Create src directory and application entry files.'));
-    if (!checks.files.indexHtml) issues.push(this.issue('high', 'workspace', 'Missing index.html', indexHtml, 'Create index.html with a root element and module script entry.'));
+    if (stackPlan.runtime === 'Node.js') {
+      checks.files.packageJson = fs.existsSync(packagePath);
+      checks.files.src = fs.existsSync(srcDir) || fs.existsSync(path.join(build.root, 'app')) || fs.existsSync(path.join(build.root, 'pages'));
+      checks.files.indexHtml = fs.existsSync(indexHtml);
+      if (!checks.files.packageJson) issues.push(this.issue('critical', 'package', 'Missing package.json', packagePath, `Create package.json for the planned ${stackPlan.framework} application.`));
+      if (!checks.files.src) issues.push(this.issue('critical', 'workspace', 'Missing application source directory', srcDir, `Create the ${stackPlan.framework} application source files.`));
+      if (stackPlan.framework === 'React + Vite' && !checks.files.indexHtml) issues.push(this.issue('high', 'workspace', 'Missing Vite index.html', indexHtml, 'Create index.html with a root element and module script entry.'));
+    }
 
     let pkg: any = undefined;
-    if (checks.files.packageJson) {
+    if (fs.existsSync(packagePath)) {
       try {
         pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
         checks.scripts = pkg.scripts || {};
@@ -811,12 +1145,36 @@ export class BuilderPlatform {
         }
         const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
         checks.dependencies = Object.keys(deps);
-        for (const dep of ['react', 'react-dom', 'vite']) {
+        const expectedDependencies = stackPlan.framework === 'React + Vite' ? ['react', 'react-dom', 'vite'] : stackPlan.framework === 'Next.js' ? ['react', 'react-dom', 'next'] : [];
+        for (const dep of expectedDependencies) {
           if (!deps[dep]) issues.push(this.issue('high', 'dependencies', `Missing dependency: ${dep}`, packagePath, `Install and declare ${dep}.`));
         }
       } catch (error: any) {
         issues.push(this.issue('critical', 'package', 'Invalid package.json', error.message, 'Fix package.json so it is valid JSON.'));
       }
+    }
+
+    if (stackPlan.primaryLanguage === 'PHP') {
+      const phpEntry = fs.existsSync(path.join(build.root, 'public', 'index.php')) ? path.join(build.root, 'public', 'index.php') : path.join(build.root, 'index.php');
+      checks.files.composerJson = fs.existsSync(composerPath);
+      checks.files.phpEntry = fs.existsSync(phpEntry);
+      if (!checks.files.composerJson) issues.push(this.issue('critical', 'package', 'Missing composer.json', composerPath, 'Create a valid Composer project with the required PHP version, autoloading, dependencies, and scripts.'));
+      if (!checks.files.phpEntry) issues.push(this.issue('critical', 'workspace', 'Missing PHP web entry point', phpEntry, 'Create public/index.php or the framework entry point.'));
+      if (checks.files.composerJson) {
+        try {
+          const composer = JSON.parse(fs.readFileSync(composerPath, 'utf8'));
+          checks.dependencies = Object.keys({ ...(composer.require || {}), ...(composer['require-dev'] || {}) });
+          if (!composer.require?.php) issues.push(this.issue('medium', 'package', 'Composer PHP platform version is not declared', composerPath, 'Declare the supported PHP version in composer.json.'));
+        } catch (error: any) {
+          issues.push(this.issue('critical', 'package', 'Invalid composer.json', error.message, 'Fix composer.json so Composer can parse it.'));
+        }
+      }
+    }
+
+    if (!['Node.js', 'PHP 8.1+', 'PHP 8.2+'].includes(stackPlan.runtime)) {
+      const projectFiles = this.listWorkspaceFiles(build.root).filter((file) => !file.path.startsWith('.nexus'));
+      checks.files.projectFiles = projectFiles.length;
+      if (projectFiles.length < 2) issues.push(this.issue('critical', 'workspace', `Incomplete ${stackPlan.framework} workspace`, build.root, `Create the manifests and source files required by the ${stackPlan.framework} expert plan.`));
     }
 
     const envExample = path.join(build.root, '.env.example');
@@ -837,10 +1195,17 @@ export class BuilderPlatform {
       if (/failed|error|exception|cannot|not found/i.test(opencodeLog)) issues.push(this.issue('medium', 'quality', 'OpenCode build log shows possible failures', opencodeLog.slice(-4000), 'Review OpenCode output and complete failed implementation tasks.'));
     }
 
-    if (options.runBuild && pkg?.scripts?.build) {
-      const result = await this.runCommand(build.root, process.platform === 'win32' ? 'cmd.exe' : 'npm', process.platform === 'win32' ? ['/c', 'npm', 'run', 'build'] : ['run', 'build'], 90000);
-      checks.commands.build = result;
-      if (result.code !== 0) issues.push(this.issue('critical', 'build', 'Production build failed', `${result.stdout}\n${result.stderr}`.slice(-8000), 'Fix TypeScript, imports, bundler config, missing dependencies, and failing build scripts until npm run build passes.'));
+    if (options.runBuild) {
+      const phpEntry = fs.existsSync(path.join(build.root, 'public', 'index.php')) ? 'public/index.php' : 'index.php';
+      const nodeManager = fs.existsSync(path.join(build.root, 'pnpm-lock.yaml')) ? 'pnpm' : fs.existsSync(path.join(build.root, 'yarn.lock')) ? 'yarn' : fs.existsSync(path.join(build.root, 'bun.lockb')) ? 'bun' : 'npm';
+      const commands = stackPlan.primaryLanguage === 'PHP' && checks.files.phpEntry
+        ? [`php -l ${phpEntry}`, ...stackPlan.buildCommands]
+        : pkg?.scripts?.build ? [`${nodeManager === 'npm' ? 'npm' : nodeManager} run build`] : stackPlan.buildCommands.slice(0, 1);
+      for (const command of commands) {
+        const result = await this.runShellCommand(build.root, command, 90000);
+        checks.commands[command] = result;
+        if (result.code !== 0) issues.push(this.issue('critical', 'build', `${stackPlan.framework} verification failed`, `${result.stdout}\n${result.stderr}`.slice(-8000), `Use the selected ${stackPlan.expertIds.join(', ')} experts to fix the failure, then rerun: ${command}`));
+      }
     }
 
     const report = this.createDoctorReport(build, issues, checks);
@@ -878,7 +1243,11 @@ export class BuilderPlatform {
     if (!build) throw new Error('Build not found');
     const packagePath = path.join(build.root, 'package.json');
     const pkg = fs.existsSync(packagePath) ? this.safeJson(packagePath) : {};
-    const deps = Object.keys({ ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) });
+    const composerPath = path.join(build.root, 'composer.json');
+    const composer = fs.existsSync(composerPath) ? this.safeJson(composerPath) : {};
+    const stackPlan = this.resolveStackPlan(build);
+    const plannedExperts = new Set(stackPlan.expertIds);
+    const deps = Object.keys({ ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}), ...(composer.require || {}), ...(composer['require-dev'] || {}) });
     const files = this.listWorkspaceFiles(build.root).slice(0, 600).map((file) => file.path.replace(/\\/g, '/'));
     const logs = [build.logPath, build.previewLogPath]
       .filter((file) => fs.existsSync(file))
@@ -890,9 +1259,17 @@ export class BuilderPlatform {
       files: files.slice(0, 160),
       logTerms: this.extractSignalTerms(logs),
       promptTerms: this.extractSignalTerms(build.prompt),
+      stackPlan,
     };
     const selectedExperts = getLanguageExperts()
-      .map((expert) => this.scoreExpert(expert, files, deps, logs, build.prompt))
+      .map((expert) => {
+        const decision = this.scoreExpert(expert, files, deps, logs, build.prompt);
+        if (plannedExperts.has(expert.id)) {
+          decision.score = Math.max(decision.score, 70);
+          decision.reasons = Array.from(new Set([`Selected during ${stackPlan.framework} preflight`, ...decision.reasons]));
+        }
+        return decision;
+      })
       .filter((decision) => decision.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 12);
@@ -1177,11 +1554,12 @@ export class BuilderPlatform {
 
   private buildChatUpdatePrompt(build: BuildWorkspace, message: string, uiLook: string, brain: BuildBrainProfile, browserContext = ''): string {
     const memory = this.loadProjectMemory(build);
+    const stackPlan = this.resolveStackPlan(build);
     const latestCreative = Array.from(this.creativeDirections.values()).filter((item) => item.buildId === build.id).slice(-1)[0];
     const latestRoute = Array.from(this.expertRoutes.values()).filter((item) => item.buildId === build.id).slice(-1)[0];
     const previewLog = this.readCurrentPreviewLog(build, 5000);
     const swarm = getProjectAgentSwarm();
-    return `You are OpenCode updating an existing NexusBrowser generated app from a conversational user request.\n\nWorkspace: ${build.root}\nOriginal app goal: ${build.prompt}\nUser follow-up request: ${message}\nCurrent preview URL: ${build.previewUrl || 'not running'}\nRequested look/mode: ${uiLook}\n\nBuild brain:\n- Mode: ${brain.mode}\n- Provider: ${brain.provider}\n- Model: ${brain.model || 'default'}\n- Executor: ${brain.executor}\n${brain.notes.map((note) => `- ${note}`).join('\n')}\n\nLive browser intelligence packet:\n${browserContext || 'No live browser packet was available. Use files, logs, and preview evidence.'}\n\nShared Nexus agent knowledge to apply:\n${swarm.sharedKnowledge.map((item) => `- ${item}`).join('\n')}\n\nProject memory:\n${memory.entries.slice(-20).map((entry) => `- [${entry.type}] ${entry.summary}`).join('\n') || '- No memory yet.'}\n\n${latestCreative ? `Creative direction to preserve and improve:\n${latestCreative.prompt.slice(0, 6000)}` : 'No creative direction exists yet. Create a distinct, anti-template design direction before changing UI.'}\n\n${latestRoute ? `Relevant expert routing context:\n${latestRoute.selectedExperts.map((expert) => `- ${expert.name}: ${expert.reasons.join('; ')}`).join('\n')}` : 'No expert route exists yet. Infer needed experts from package.json, files, and errors.'}\n\nRecent preview log:\n${previewLog || 'No preview log yet.'}\n\nNexusBrowser advantage to preserve:\n- Use the browser and DevTools-style evidence as the main development loop, not an afterthought.\n- Connect visible UI, DOM structure, computed styles, console errors, network calls, storage state, screenshots, and visual QA to concrete code edits.\n- If the request is vague, improve the app in the direction that makes the browser-powered coding loop clearer, smarter, and more useful.\n\nUpdate rules:\n- Treat the user message as a modification to the existing app, not a request to start over.\n- Inspect files before editing.\n- Make the smallest complete code changes that satisfy the request.\n- If UI changes are requested, make them visually distinctive and avoid generic templates.\n- Preserve existing working functionality unless the user explicitly asks to replace it.\n- Update related loading, empty, error, hover, focus, mobile, and reduced-motion states when relevant.\n- Run npm install only if dependencies change.\n- Run npm run build and fix any failures.\n- Leave a concise summary in .nexus/memory/project-memory.md if you learn a durable decision.\n`;
+    return `You are OpenCode updating an existing NexusBrowser generated app from a conversational user request.\n\nWorkspace: ${build.root}\nOriginal app goal: ${build.prompt}\nUser follow-up request: ${message}\nCurrent preview URL: ${build.previewUrl || 'not running'}\nRequested look/mode: ${uiLook}\n\nBuild brain:\n- Mode: ${brain.mode}\n- Provider: ${brain.provider}\n- Model: ${brain.model || 'default'}\n- Executor: ${brain.executor}\n${brain.notes.map((note) => `- ${note}`).join('\n')}\n\nStack plan and active expert team:\n${this.buildStackAgentBrief(stackPlan)}\n\nLive browser intelligence packet:\n${browserContext || 'No live browser packet was available. Use files, logs, and preview evidence.'}\n\nShared Nexus agent knowledge to apply:\n${swarm.sharedKnowledge.map((item) => `- ${item}`).join('\n')}\n\nProject memory:\n${memory.entries.slice(-20).map((entry) => `- [${entry.type}] ${entry.summary}`).join('\n') || '- No memory yet.'}\n\n${latestCreative ? `Creative direction to preserve and improve:\n${latestCreative.prompt.slice(0, 6000)}` : 'No creative direction exists yet. Create a distinct, anti-template design direction before changing UI.'}\n\n${latestRoute ? `Relevant expert routing context:\n${latestRoute.selectedExperts.map((expert) => `- ${expert.name}: ${expert.reasons.join('; ')}`).join('\n')}` : 'Use the preflight stack experts in .nexus/agents/selected-experts.md and add specialists only when new evidence requires them.'}\n\nRecent preview log:\n${previewLog || 'No preview log yet.'}\n\nNexusBrowser advantage to preserve:\n- Use the browser and DevTools-style evidence as the main development loop, not an afterthought.\n- Connect visible UI, DOM structure, computed styles, console errors, network calls, storage state, screenshots, and visual QA to concrete code edits.\n- If the request is vague, improve the app in the direction that makes the browser-powered coding loop clearer, smarter, and more useful.\n\nUpdate rules:\n- Treat the user message as a modification to the existing app, not a request to start over.\n- Inspect files and .nexus/stack-plan.json before editing.\n- Keep the planned ${stackPlan.framework} stack unless the user explicitly requests a migration. Do not introduce React/npm assumptions into a non-React project.\n- Make the smallest complete code changes that satisfy the request.\n- If UI changes are requested, make them visually distinctive and avoid generic templates.\n- Preserve existing working functionality unless the user explicitly asks to replace it.\n- Update related loading, empty, error, hover, focus, mobile, and reduced-motion states when relevant.\n- Install dependencies only with ${stackPlan.packageManager} and only when they change.\n- Run the relevant checks: ${[...stackPlan.buildCommands, ...stackPlan.testCommands].join('; ')}. Fix failures before finishing.\n- Leave a concise summary in .nexus/memory/project-memory.md if you learn a durable decision.\n`;
   }
 
   private stagingDevicePresets(): StagingDevicePreset[] {
@@ -1346,7 +1724,14 @@ export class BuilderPlatform {
   }
 
   private buildDoctorRepairPrompt(build: BuildWorkspace, issues: BuildDoctorIssue[], checks: Record<string, any>): string {
-    return `You are the NexusBrowser Build Doctor Auto-Heal Agent. You understand the full app-building lifecycle: package setup, dev server, React/Vite/Next structure, API clients, env vars, database wiring, tests, visual QA, deployment readiness, and safe agent repair.\n\nWorkspace: ${build.root}\nOriginal user request: ${build.prompt}\nPreview URL: ${build.previewUrl || 'not running'}\n\nDiagnosed issues:\n${issues.map((item) => `- [${item.severity}] ${item.area}: ${item.issue}\n  Evidence: ${item.evidence.slice(0, 1000)}\n  Fix: ${item.fix}`).join('\n') || '- No hard failures found; improve production readiness.'}\n\nChecks JSON:\n${JSON.stringify(checks, null, 2).slice(0, 12000)}\n\nAuto-heal rules:\n- Inspect files before editing.\n- Fix package scripts, dependencies, imports, missing files, TypeScript errors, Vite/runtime errors, API/env setup, and broken preview wiring.\n- Create .env.example when APIs, auth, payments, database, email, storage, AI, or deployment are implied.\n- Add safe mocks or local fallbacks when live APIs require secrets.\n- Preserve maintainable React/Tailwind code.\n- Never hardcode secrets or captured cookies.\n- Run npm install when dependencies change.\n- Run npm run build and fix failures.\n- If preview failed, ensure npm run dev works.\n- Update README with setup, env vars, scripts, and known limitations.\n- Keep changes minimal but complete enough for a working app.\n`;
+    const stackPlan = this.resolveStackPlan(build);
+    return `You are the NexusBrowser Build Doctor Auto-Heal Agent for a ${stackPlan.framework} application. You diagnose the full lifecycle: workspace shape, ${stackPlan.packageManager} setup, ${stackPlan.runtime} runtime, framework conventions, APIs, env vars, database wiring, tests, browser QA, deployment readiness, and safe repair.\n\nWorkspace: ${build.root}\nOriginal user request: ${build.prompt}\nPreview URL: ${build.previewUrl || 'not running'}\n\nAssigned stack experts:\n${this.buildStackAgentBrief(stackPlan)}\n\nDiagnosed issues:\n${issues.map((item) => `- [${item.severity}] ${item.area}: ${item.issue}\n  Evidence: ${item.evidence.slice(0, 1000)}\n  Fix: ${item.fix}`).join('\n') || '- No hard failures found; improve production readiness.'}\n\nChecks JSON:\n${JSON.stringify(checks, null, 2).slice(0, 12000)}\n\nAuto-heal rules:\n- Inspect files, .nexus/stack-plan.json, and the selected expert manifest before editing.\n- Keep the ${stackPlan.framework} architecture unless the user explicitly requested a migration.\n- Route each failure to the relevant selected specialist and apply that specialist's checks and repair skills.\n- Fix manifests, dependencies, imports, missing files, compiler/runtime errors, API/env setup, and preview wiring using ${stackPlan.packageManager}.\n- Create .env.example when APIs, auth, payments, database, email, storage, AI, or deployment are implied.\n- Add safe mocks or local fallbacks when live APIs require secrets.\n- Never hardcode secrets or captured cookies.\n- Run setup only if dependencies changed: ${stackPlan.setupCommands.join('; ')}.\n- Run and fix the stack checks: ${[...stackPlan.buildCommands, ...stackPlan.testCommands].join('; ')}.\n- If preview failed, ensure this works: ${stackPlan.devCommand}.\n- Update README with setup, env vars, scripts, and known limitations.\n- Keep changes minimal but complete enough for a working app.\n`;
+  }
+
+  private runShellCommand(cwd: string, command: string, timeoutMs: number): Promise<{ code: number | null; stdout: string; stderr: string; timedOut: boolean }> {
+    return process.platform === 'win32'
+      ? this.runCommand(cwd, 'cmd.exe', ['/c', command], timeoutMs)
+      : this.runCommand(cwd, 'sh', ['-lc', command], timeoutMs);
   }
 
   private async runCommand(cwd: string, command: string, args: string[], timeoutMs: number, env?: NodeJS.ProcessEnv): Promise<{ code: number | null; stdout: string; stderr: string; timedOut: boolean }> {
@@ -1481,26 +1866,50 @@ export class BuilderPlatform {
 
   private hydrateBuildFromRoot(id: string, root: string): BuildWorkspace | undefined {
     const packagePath = path.join(root, 'package.json');
-    if (!fs.existsSync(packagePath)) return undefined;
+    const composerPath = path.join(root, 'composer.json');
+    const stackPlanPath = path.join(root, '.nexus', 'stack-plan.json');
+    const hasProjectManifest = [packagePath, composerPath, stackPlanPath, path.join(root, 'pyproject.toml'), path.join(root, 'requirements.txt'), path.join(root, 'go.mod'), path.join(root, 'Cargo.toml'), path.join(root, 'Gemfile')].some((file) => fs.existsSync(file));
+    if (!hasProjectManifest) return undefined;
     const name = path.basename(root).replace(new RegExp(`-${id}$`, 'i'), '');
     const readmePath = path.join(root, 'README.md');
     const readme = fs.existsSync(readmePath) ? fs.readFileSync(readmePath, 'utf8') : '';
-    const prompt = readme.match(/Prompt:\s*\n([\s\S]*?)(?:\n\nRun locally:|$)/)?.[1]?.trim() || name.replace(/-/g, ' ');
+    const prompt = readme.match(/Prompt:\s*\n([\s\S]*?)(?:\n\nPlanned stack:|\n\nRun locally:|$)/)?.[1]?.trim() || name.replace(/-/g, ' ');
+    const savedPlan = fs.existsSync(stackPlanPath) ? this.safeJson(stackPlanPath) as Partial<BuildStackPlan> : undefined;
+    const fileSignals = fs.existsSync(path.join(root, 'artisan')) ? 'laravel php' : fs.existsSync(composerPath) ? 'php composer' : fs.existsSync(path.join(root, 'manage.py')) ? 'django python' : '';
+    const stackPlan = savedPlan?.primaryLanguage && savedPlan.framework ? savedPlan as BuildStackPlan : this.planBuildStack(`${prompt}\n${fileSignals}`);
+    const logPath = path.join(root, 'opencode-build.log');
+    const persistedLog = this.cleanExecutorLog(fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').slice(-20000) : '');
+    const persistedStatus: BuildWorkspace['status'] = /Code executor exited with code 0\b/i.test(persistedLog)
+      ? 'completed'
+      : /Code executor exited with code (?!0\b)\d+|cannot connect to api|unable to connect|code executor failed|could not be launched/i.test(persistedLog)
+        ? 'failed'
+        : 'created';
     const build: BuildWorkspace = {
       id,
       name,
       root,
       prompt,
-      status: 'created',
+      status: persistedStatus,
       previewStatus: 'stopped',
       opencodeCommand: 'opencode run OPENCODE_BUILD_PROMPT.md',
-      logPath: path.join(root, 'opencode-build.log'),
+      logPath,
       previewLogPath: path.join(root, 'preview.log'),
-      previewCommand: 'npm install && npm run dev',
+      previewCommand: stackPlan.devCommand,
       brain: this.createBuildBrain('hybrid', process.env.LLM_PROVIDER || 'openai'),
+      stackPlan,
       createdAt: new Date(fs.statSync(root).birthtimeMs || Date.now()).toISOString(),
     };
     this.builds.set(id, build);
+    const updatesRoot = path.join(root, '.nexus', 'chat-updates');
+    if (fs.existsSync(updatesRoot)) {
+      const latestUpdate = fs.readdirSync(updatesRoot, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => this.hydrateBuildUpdate(build, entry.name))
+        .filter((item): item is BuildUpdateRun => Boolean(item))
+        .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0];
+      if (latestUpdate?.status === 'completed') build.status = 'completed';
+      else if (latestUpdate?.status === 'failed') build.status = 'failed';
+    }
     return build;
   }
 
@@ -1519,20 +1928,49 @@ export class BuilderPlatform {
     return base || 'nexus-app';
   }
 
-  private writeStarterApp(root: string, name: string, prompt: string): void {
-    const data = this.createGeneratedAppData(name, prompt, []);
-    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
-      scripts: { dev: 'vite --host 0.0.0.0', build: 'vite build', preview: 'vite preview' },
-      dependencies: { '@vitejs/plugin-react': 'latest', vite: 'latest', typescript: 'latest', react: 'latest', 'react-dom': 'latest' },
-      devDependencies: {},
-    }, null, 2));
-    fs.writeFileSync(path.join(root, 'index.html'), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>\n');
-    fs.writeFileSync(path.join(root, 'src', 'main.jsx'), `import React from 'react';\nimport { createRoot } from 'react-dom/client';\nimport './styles.css';\n\nfunction App() {\n  return (\n    <main className="page">\n      <nav className="nav"><strong>${name}</strong><a>Features</a><a>Pricing</a><button>Start Building</button></nav>\n      <section className="hero">\n        <p className="eyebrow">NexusBrowser generated starter</p>\n        <h1>${this.escapeHtml(prompt).slice(0, 90) || 'Build a production landing page'}</h1>\n        <p>OpenCode is now connected to this workspace. It should turn this starter into a polished application using the prompt in OPENCODE_BUILD_PROMPT.md.</p>\n        <div className="actions"><button>Get Started</button><button className="ghost">View Plan</button></div>\n      </section>\n      <section className="grid"><article>Research</article><article>Plan</article><article>Build</article></section>\n    </main>\n  );\n}\n\ncreateRoot(document.getElementById('root')).render(<App />);\n`);
-    fs.writeFileSync(path.join(root, 'src', 'styles.css'), `body{margin:0;font-family:Inter,system-ui,sans-serif;background:#f7fbff;color:#0f172a}.page{min-height:100vh}.nav{height:64px;display:flex;align-items:center;gap:24px;padding:0 40px;border-bottom:1px solid #dbeafe;background:white}.nav strong{margin-right:auto;color:#0284c7}.nav a{color:#475569}.nav button,.hero button{border:0;border-radius:12px;background:#0284c7;color:white;padding:12px 18px;font-weight:700}.hero{max-width:920px;margin:0 auto;padding:96px 24px;text-align:center}.eyebrow{color:#0284c7;font-weight:800;text-transform:uppercase;letter-spacing:.16em}.hero h1{font-size:clamp(40px,8vw,84px);line-height:.95;margin:16px 0}.hero p{font-size:20px;color:#475569}.actions{display:flex;gap:12px;justify-content:center;margin-top:28px}.hero .ghost{background:white;color:#0284c7;border:1px solid #bae6fd}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:980px;margin:0 auto;padding:0 24px 80px}.grid article{border:1px solid #dbeafe;border-radius:20px;background:white;padding:28px;font-weight:800;color:#0284c7}@media(max-width:760px){.nav{padding:0 16px}.nav a{display:none}.grid{grid-template-columns:1fr}.hero{text-align:left}.actions{justify-content:flex-start}}`);
-    fs.writeFileSync(path.join(root, 'src', 'app-data.js'), this.renderGeneratedAppData(data));
-    fs.writeFileSync(path.join(root, 'src', 'main.jsx'), this.renderGeneratedAppMain());
-    fs.writeFileSync(path.join(root, 'src', 'styles.css'), this.renderGeneratedAppCss());
-    fs.writeFileSync(path.join(root, 'README.md'), `# ${name}\n\nGenerated by NexusBrowser Builder.\n\nPrompt:\n${prompt}\n\nRun locally:\n\n\`\`\`bash\nnpm install\nnpm run dev\n\`\`\`\n`);
+  private writeStarterApp(root: string, name: string, prompt: string, stackPlan: BuildStackPlan): void {
+    if (stackPlan.primaryLanguage === 'PHP') {
+      const publicDir = path.join(root, 'public');
+      fs.mkdirSync(publicDir, { recursive: true });
+      fs.writeFileSync(path.join(root, 'composer.json'), JSON.stringify({
+        name: `nexus/${name}`,
+        description: prompt,
+        type: 'project',
+        require: { php: '>=8.1' },
+        scripts: { test: 'php -l public/index.php' },
+      }, null, 2));
+      fs.writeFileSync(path.join(publicDir, 'index.php'), `<?php\ndeclare(strict_types=1);\n$title = ${JSON.stringify(prompt.slice(0, 120) || name)};\n?>\n<!doctype html>\n<html lang="en">\n<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title><link rel="stylesheet" href="/styles.css"></head>\n<body><main><p class="eyebrow">Nexus PHP workspace</p><h1><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></h1><p>The PHP and Composer experts are preparing this application from the saved Nexus stack plan.</p></main></body>\n</html>\n`);
+      fs.writeFileSync(path.join(publicDir, 'styles.css'), `*{box-sizing:border-box}body{margin:0;background:#f5f7f4;color:#17201b;font-family:Inter,system-ui,sans-serif}main{width:min(920px,calc(100% - 36px));margin:0 auto;padding:clamp(72px,12vw,160px) 0}.eyebrow{color:#087f5b;font-weight:800;text-transform:uppercase}h1{max-width:850px;font-size:clamp(42px,8vw,92px);line-height:.95;margin:18px 0}p{font-size:20px;line-height:1.55}`);
+    } else if (stackPlan.framework === 'React + Vite') {
+      const data = this.createGeneratedAppData(name, prompt, []);
+      fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
+        scripts: { dev: 'vite --host 0.0.0.0', build: 'vite build', preview: 'vite preview', test: 'node scripts/no-tests.mjs' },
+        dependencies: { '@vitejs/plugin-react': 'latest', vite: 'latest', typescript: 'latest', react: 'latest', 'react-dom': 'latest' },
+        devDependencies: {},
+      }, null, 2));
+      fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
+      fs.writeFileSync(path.join(root, 'scripts', 'no-tests.mjs'), "console.log('No automated tests configured; build verification is the primary check.');\n");
+      fs.writeFileSync(path.join(root, 'index.html'), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>\n');
+      fs.writeFileSync(path.join(root, 'src', 'app-data.js'), this.renderGeneratedAppData(data));
+      fs.writeFileSync(path.join(root, 'src', 'main.jsx'), this.renderGeneratedAppMain());
+      fs.writeFileSync(path.join(root, 'src', 'styles.css'), this.renderGeneratedAppCss());
+    } else {
+      fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(root, 'src', '.gitkeep'), '');
+    }
+    fs.writeFileSync(path.join(root, 'README.md'), `# ${name}\n\nGenerated by NexusBrowser Builder.\n\nPrompt:\n${prompt}\n\nPlanned stack: ${stackPlan.framework} (${stackPlan.primaryLanguage})\n\nSetup:\n\n\`\`\`bash\n${stackPlan.setupCommands.join('\n')}\n\`\`\`\n\nRun locally:\n\n\`\`\`bash\n${stackPlan.devCommand.replace('{port}', '5173')}\n\`\`\`\n`);
+  }
+
+  private writeStackAgentManifest(root: string, stackPlan: BuildStackPlan): void {
+    const nexusDir = path.join(root, '.nexus');
+    const agentsDir = path.join(nexusDir, 'agents');
+    fs.mkdirSync(agentsDir, { recursive: true });
+    fs.writeFileSync(path.join(nexusDir, 'stack-plan.json'), JSON.stringify(stackPlan, null, 2));
+    const languageExperts = getLanguageExperts().filter((expert) => stackPlan.expertIds.includes(expert.id));
+    const projectAgents = getProjectAgentSwarm().agents.filter((agent) => stackPlan.projectAgentIds.includes(agent.id));
+    const manifest = `# Nexus Build Agent Team\n\n## Stack\n- Language: ${stackPlan.primaryLanguage}\n- Framework: ${stackPlan.framework}\n- Runtime: ${stackPlan.runtime}\n- Package manager: ${stackPlan.packageManager}\n\n## Setup And Verification\n${[...stackPlan.setupCommands, ...stackPlan.buildCommands, ...stackPlan.testCommands].map((command) => `- \`${command}\``).join('\n')}\n\n## Orchestrating Agents\n${projectAgents.map((agent) => `### ${agent.name} (${agent.id})\n${agent.role}\n\nExpected outputs: ${agent.outputs.join(', ')}.`).join('\n\n')}\n\n## Stack Experts\n${languageExperts.map((expert) => `### ${expert.name} (${expert.id})\nOfficial source: https://github.com/${expert.officialGithub}\n\nChecks:\n${expert.checks.map((check) => `- ${check}`).join('\n')}\n\nSkills:\n${expert.repairSkills.map((skill) => `- ${skill}`).join('\n')}`).join('\n\n')}\n`;
+    fs.writeFileSync(path.join(agentsDir, 'selected-experts.md'), manifest);
   }
 
   private applyDeterministicAppUpdate(build: BuildWorkspace, message: string): void {
@@ -1541,9 +1979,16 @@ export class BuilderPlatform {
     const nextUpdates = Array.isArray(updates) ? [...updates, message].slice(-12) : [message];
     fs.mkdirSync(path.dirname(updateLogPath), { recursive: true });
     fs.writeFileSync(updateLogPath, JSON.stringify(nextUpdates, null, 2));
+    if (this.resolveStackPlan(build).framework !== 'React + Vite') return;
     fs.mkdirSync(path.join(build.root, 'src'), { recursive: true });
-    fs.writeFileSync(path.join(build.root, 'src', 'app-data.js'), this.renderGeneratedAppData(this.createGeneratedAppData(build.name, build.prompt, nextUpdates)));
-    if (!fs.existsSync(path.join(build.root, 'src', 'main.jsx'))) fs.writeFileSync(path.join(build.root, 'src', 'main.jsx'), this.renderGeneratedAppMain());
+    const appDataPath = path.join(build.root, 'src', 'app-data.js');
+    const mainPath = path.join(build.root, 'src', 'main.jsx');
+    const mainSource = fs.existsSync(mainPath) ? fs.readFileSync(mainPath, 'utf8') : '';
+    const usesGeneratedDataSchema = /data\.pages\b/.test(mainSource) && /data\.workflow\b/.test(mainSource);
+    if (!fs.existsSync(appDataPath) || usesGeneratedDataSchema) {
+      fs.writeFileSync(appDataPath, this.renderGeneratedAppData(this.createGeneratedAppData(build.name, build.prompt, nextUpdates)));
+    }
+    if (!fs.existsSync(mainPath)) fs.writeFileSync(mainPath, this.renderGeneratedAppMain());
     if (!fs.existsSync(path.join(build.root, 'src', 'styles.css'))) fs.writeFileSync(path.join(build.root, 'src', 'styles.css'), this.renderGeneratedAppCss());
   }
 
@@ -1593,9 +2038,15 @@ export class BuilderPlatform {
     return `*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--paper);color:var(--ink)}button{font:inherit}.app-shell{min-height:100vh;overflow:hidden;background:radial-gradient(circle at 12% 10%,color-mix(in srgb,var(--accent),transparent 72%),transparent 30%),linear-gradient(135deg,var(--paper),color-mix(in srgb,var(--accent),white 88%))}.nav{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:14px clamp(16px,4vw,52px);backdrop-filter:blur(18px);background:color-mix(in srgb,var(--paper),transparent 14%);border-bottom:1px solid color-mix(in srgb,var(--ink),transparent 86%)}.nav strong{margin-right:auto;font-size:18px;letter-spacing:-.04em}.nav button{border:1px solid color-mix(in srgb,var(--ink),transparent 82%);border-radius:999px;background:transparent;color:inherit;padding:9px 12px;cursor:pointer}.nav button.active{background:var(--ink);color:var(--paper)}.hero{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:34px;align-items:center;padding:clamp(44px,8vw,118px) clamp(18px,5vw,72px)}.eyebrow{text-transform:uppercase;letter-spacing:.18em;color:var(--accent);font-weight:900}.hero h1{max-width:980px;font-size:clamp(42px,8vw,104px);line-height:.86;letter-spacing:-.08em;margin:10px 0 18px}.hero p{max-width:720px;font-size:clamp(17px,2vw,23px);line-height:1.45;color:color-mix(in srgb,var(--ink),transparent 28%)}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}.actions button{border:0;border-radius:18px;background:var(--accent);color:white;padding:14px 19px;font-weight:900;box-shadow:0 18px 40px color-mix(in srgb,var(--accent),transparent 64%)}.actions .ghost{background:transparent;color:var(--ink);border:1px solid color-mix(in srgb,var(--ink),transparent 78%);box-shadow:none}.artifact{min-height:360px;border:1px solid color-mix(in srgb,var(--ink),transparent 80%);border-radius:34px;padding:24px;display:grid;align-content:end;background:linear-gradient(160deg,color-mix(in srgb,var(--accent),transparent 12%),color-mix(in srgb,var(--ink),transparent 8%));color:white;box-shadow:0 40px 90px color-mix(in srgb,var(--ink),transparent 82%);transform:rotate(2deg)}.artifact span{font-size:13px;text-transform:uppercase;letter-spacing:.2em}.artifact b{font-size:72px;line-height:.9;letter-spacing:-.08em}.artifact small{font-size:15px;opacity:.82}.feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:0 clamp(18px,5vw,72px) 28px}.feature-grid article,.workflow,.updates{border:1px solid color-mix(in srgb,var(--ink),transparent 84%);border-radius:28px;background:color-mix(in srgb,var(--paper),white 55%);padding:24px;box-shadow:0 18px 54px color-mix(in srgb,var(--ink),transparent 92%)}.feature-grid span{color:var(--accent);font-weight:900}.feature-grid h2{font-size:24px;letter-spacing:-.05em}.feature-grid p,.updates p{color:color-mix(in srgb,var(--ink),transparent 35%);line-height:1.55}.workflow,.updates{margin:14px clamp(18px,5vw,72px)}.workflow div{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid color-mix(in srgb,var(--ink),transparent 88%)}.workflow div span{width:11px;height:11px;border-radius:99px;background:var(--accent);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent),transparent 82%)}@media(max-width:880px){.hero{grid-template-columns:1fr}.artifact{min-height:220px;transform:none}.feature-grid{grid-template-columns:1fr}.nav{overflow:auto}.nav strong{position:sticky;left:0;background:var(--paper)}}@media(prefers-reduced-motion:no-preference){.artifact{animation:float 7s ease-in-out infinite}@keyframes float{50%{transform:translateY(-12px) rotate(-1deg)}}}`;
   }
 
-  private buildOpenCodeAppPrompt(prompt: string, uiLook: string, brain: BuildBrainProfile, browserContext = ''): string {
+  private buildStackAgentBrief(stackPlan: BuildStackPlan): string {
+    const experts = getLanguageExperts().filter((expert) => stackPlan.expertIds.includes(expert.id));
+    const projectAgents = getProjectAgentSwarm().agents.filter((agent) => stackPlan.projectAgentIds.includes(agent.id));
+    return `- Language: ${stackPlan.primaryLanguage}\n- Framework: ${stackPlan.framework}\n- Runtime: ${stackPlan.runtime}\n- Package manager: ${stackPlan.packageManager}\n- Setup: ${stackPlan.setupCommands.join('; ')}\n- Development: ${stackPlan.devCommand}\n- Build checks: ${stackPlan.buildCommands.join('; ')}\n- Tests: ${stackPlan.testCommands.join('; ')}\n\nOrchestrating agents:\n${projectAgents.map((agent) => `- ${agent.name} (${agent.id}): ${agent.role}`).join('\n')}\n\nStack specialists:\n${experts.map((expert) => `- ${expert.name} (${expert.id}), official source https://github.com/${expert.officialGithub}\n  Check: ${expert.checks.join('; ')}\n  Apply: ${expert.repairSkills.join('; ')}`).join('\n')}`;
+  }
+
+  private buildOpenCodeAppPrompt(prompt: string, uiLook: string, brain: BuildBrainProfile, stackPlan: BuildStackPlan, browserContext = ''): string {
     const swarm = getProjectAgentSwarm();
-    return `You are OpenCode inside a NexusBrowser generated app workspace.\n\nUser request: ${prompt}\n\nUI look: ${uiLook}\n\nBuild brain:\n- Mode: ${brain.mode}\n- Provider: ${brain.provider}\n- Model: ${brain.model || 'default'}\n- Executor: ${brain.executor}\n${brain.notes.map((note) => `- ${note}`).join('\n')}\n\nLive browser intelligence packet:\n${browserContext || 'No live browser packet was available. Build from the request, then verify in the real browser preview.'}\n\nShared Nexus agent knowledge to apply:\n${swarm.sharedKnowledge.map((item) => `- ${item}`).join('\n')}\n\nBuild a real working application, not just notes. Use the generated files already created in this workspace. Improve the application with clean React, production-quality CSS, responsive layout, accessible components, and clear project structure.\n\nNexusBrowser advantage to design around:\n- Make the browser the development command center: target page, live preview, DOM, styles, screenshots, console, network, storage, API discovery, and visual QA all inform the code.\n- Show how AI uses DevTools evidence to build smarter than a normal chat-only coding tool.\n- Favor workflows where the user can research, build, inspect, debug, repair, and visually verify without leaving the browser.\n\nRequired work:\n- Inspect the current files.\n- Replace generated placeholder sections with a polished implementation matching the request.\n- Think like a senior full-stack developer, system engineer, QA engineer, and graphic/product designer.\n- Use the selected brain mode: OpenCode-only, hybrid local/cloud reasoning, Ollama-assisted, or cloud-assisted as requested.\n- Keep the app runnable with npm install and npm run dev.\n- Add clear README usage instructions.\n- Do not hardcode secrets.\n- Beat visual builders on substance: include realistic data/state, responsive mobile behavior, empty/loading/error states, accessible focus paths, and one distinctive interaction or visual system that fits the product.\n- Beat chat-only builders on verification: add a short QA checklist covering desktop, mobile, console errors, API/data flows, and production build status.\n- Beat template builders on design: avoid generic centered hero plus three cards unless the product specifically calls for it; make layout, typography, color, and component rhythm feel product-specific.\n- Run or explain build verification.\n`;
+    return `You are the implementation executor for a NexusBrowser multi-agent build.\n\nUser request: ${prompt}\n\nUI look: ${uiLook}\n\nBuild brain:\n- Mode: ${brain.mode}\n- Provider: ${brain.provider}\n- Model: ${brain.model || 'default'}\n- Executor: ${brain.executor}\n${brain.notes.map((note) => `- ${note}`).join('\n')}\n\nPreflight stack plan and assigned agents:\n${this.buildStackAgentBrief(stackPlan)}\n\nThe complete persisted plan is in .nexus/stack-plan.json and the specialist manifest is in .nexus/agents/selected-experts.md. Read both before editing.\n\nAgent orchestration contract:\n1. Framework Expert Router validates the planned stack against the request and current files. Do not silently replace it with a familiar default.\n2. Each selected stack specialist owns framework conventions, dependencies, configuration, and its listed checks. Apply its advice during setup, not only after errors.\n3. OpenCode Build Agent implements the application and runs commands.\n4. Build Doctor classifies failures and sends them back to the relevant specialist.\n5. QA Agent verifies real browser behavior, accessibility, responsive layouts, data flows, console output, and production readiness.\n6. Memory Agent records durable architecture and repair decisions under .nexus/memory.\n\nLive browser intelligence packet:\n${browserContext || 'No live browser packet was available. Build from the request, then verify in the real browser preview.'}\n\nShared Nexus agent knowledge to apply:\n${swarm.sharedKnowledge.map((item) => `- ${item}`).join('\n')}\n\nBuild a real working ${stackPlan.framework} application, not notes or a mock plan. Use the generated files as a starting point, but replace placeholders and incomplete scaffolding. Use production-quality styling, responsive layout, accessible components, and a maintainable project structure appropriate to ${stackPlan.primaryLanguage}.\n\nNexusBrowser advantage to design around:\n- Make the browser the development command center: target page, live preview, DOM, styles, screenshots, console, network, storage, API discovery, and visual QA all inform the code.\n- Show how AI uses DevTools evidence to build smarter than a normal chat-only coding tool.\n- Favor workflows where the user can research, build, inspect, debug, repair, and visually verify without leaving the browser.\n\nRequired work:\n- Inspect the current files, stack plan, and expert manifest first.\n- Set up ${stackPlan.framework} using its normal directory layout, dependency manager, configuration, environment conventions, and security practices.\n- Do not introduce React, Vite, npm, PHP, Composer, or any other stack unless it is in the plan or genuinely required by the request.\n- Implement the complete user-facing and backend behavior implied by the request.\n- Run setup only as needed: ${stackPlan.setupCommands.join('; ')}.\n- Verify with: ${[...stackPlan.buildCommands, ...stackPlan.testCommands].join('; ')}. Fix failures before finishing.\n- Confirm the development command works: ${stackPlan.devCommand}.\n- Add clear README usage instructions for the actual stack.\n- Do not hardcode secrets; create .env.example when configuration is required.\n- Include realistic data/state, responsive mobile behavior, empty/loading/error states, accessible focus paths, and one distinctive interaction or visual system that fits the product.\n- Add a short QA checklist covering desktop, mobile, console/runtime errors, API/data flows, and the stack-specific production check.\n- Avoid generic centered hero plus three cards unless the product specifically calls for it; make layout, typography, color, and component rhythm product-specific.\n`;
   }
 
   private escapeHtml(value: string): string {

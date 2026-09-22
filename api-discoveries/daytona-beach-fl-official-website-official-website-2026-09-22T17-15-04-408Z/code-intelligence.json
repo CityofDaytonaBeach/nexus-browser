@@ -1,0 +1,1102 @@
+{
+  "architecture": [
+    "Create an SDK layer for https://daytonabeach.gov with one typed function per endpoint.",
+    "Keep browser-discovered endpoint details in a generated manifest and hand-written business logic in separate files.",
+    "Use environment variables for tokens, API keys, base URLs, and tenant/domain identifiers.",
+    "Add cache/retry/rate-limit wrappers around read-heavy GET endpoints.",
+    "Expose MCP tools as thin wrappers over SDK functions so agents call stable tool names instead of raw URLs."
+  ],
+  "dataModels": [
+    {
+      "name": "Antiforgery",
+      "source": "https://daytonabeach.gov/antiforgery",
+      "fields": [
+        {
+          "name": "token",
+          "type": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Toggle",
+      "source": "https://daytonabeach.gov/Toggle",
+      "fields": [
+        {
+          "name": "CivicPlus.CMS.API.V1",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.DomainMapping",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.FileRepository.MVP.Local",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.DocumentCenter.FileStorage.FileRepository",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.DocumentCenter.FileStorage.Local",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.DocumentCenter.FolderExport",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Bids.PlanHoldersForm",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.CivicAlerts.FroalaEditor",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Pages.CarouselWidget",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.DocumentCenter.UnlinkedDocuments",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.NewsFlash.FullTextEditor",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Custom404.FileStorage.Local",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.AuthenticationResponseCache",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Calendar.RecurringEvents",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Calendar.RelatedEventsEnabled",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.ImageService",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.ProfileImage",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.AgendaCenter.RelateToEvent",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Facilities.FacilitiesEnhancement",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Activities.ActivitiesEnhancement",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Pages.FroalalWidgetEnabled",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.NewHelpLinks",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Activities.SearchEnhancements",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.CRT.FileStorage.Local",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.DesignEnhancement.SmoothScrolling",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.DesignEnhancement.Slideshow",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.FormCenter.SendEmailCopy",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Search.AllowSolrFallback",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.GroupAdministration.AllowPermissionExport",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.GroupAdministration.AllowPermissionExportByGroup",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.CityDirectory.CallablePhoneNumber",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.CityDirectory.DragAndDropReorderWidget",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.CivicAlerts.ChronologicalOrder",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Saml.ForcedReauthentication",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Saml.ValidateSchema",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Saml.SignatureSigning",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.FAQ.FroalaEditor",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.DesignCenter.AnimationsManager",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "CMS.Search.UseElasticSearch",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "FeatureToggleIsAlive",
+          "type": "boolean",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Get",
+      "source": "https://daytonabeach.gov/api/v1/SplashModal/Get?targetId=%7BtargetId%7D&targetType=%7BtargetType%7D&requestMode=%7BrequestMode%7D&_=%7B_%7D",
+      "fields": [
+        {
+          "name": "Id",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "TargetId",
+          "type": "unknown",
+          "required": false
+        },
+        {
+          "name": "TargetType",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "InheritedFrom",
+          "type": "unknown",
+          "required": false
+        },
+        {
+          "name": "InheritedFromPageTitle",
+          "type": "unknown",
+          "required": false
+        },
+        {
+          "name": "Title",
+          "type": "unknown",
+          "required": false
+        },
+        {
+          "name": "Content",
+          "type": "unknown",
+          "required": false
+        },
+        {
+          "name": "StartDate",
+          "type": "unknown",
+          "required": false
+        },
+        {
+          "name": "StartTime",
+          "type": "unknown",
+          "required": false
+        },
+        {
+          "name": "EndDate",
+          "type": "unknown",
+          "required": false
+        },
+        {
+          "name": "EndTime",
+          "type": "unknown",
+          "required": false
+        },
+        {
+          "name": "AllowScheduling",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "Visibility",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "DateFormat",
+          "type": "unknown",
+          "required": false
+        },
+        {
+          "name": "EnableFontOptions",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "LastModifiedBy",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "LastModifiedOn",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "PushDown",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "Inherited",
+          "type": "boolean",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "databaseTables": [
+    {
+      "name": "antiforgery",
+      "purpose": "Stores or caches data returned by https://daytonabeach.gov/antiforgery",
+      "columns": [
+        {
+          "name": "id",
+          "type": "string primary key"
+        },
+        {
+          "name": "token",
+          "type": "text"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp"
+        }
+      ]
+    },
+    {
+      "name": "toggle",
+      "purpose": "Stores or caches data returned by https://daytonabeach.gov/Toggle",
+      "columns": [
+        {
+          "name": "id",
+          "type": "string primary key"
+        },
+        {
+          "name": "civic_plus_cms_api_v1",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_domain_mapping",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_file_repository_mvp_local",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_document_center_file_storage_file_repository",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_document_center_file_storage_local",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_document_center_folder_export",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_bids_plan_holders_form",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_civic_alerts_froala_editor",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_pages_carousel_widget",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_document_center_unlinked_documents",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_news_flash_full_text_editor",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_custom404_file_storage_local",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_authentication_response_cache",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_calendar_recurring_events",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_calendar_related_events_enabled",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_image_service",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_profile_image",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_agenda_center_relate_to_event",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_facilities_facilities_enhancement",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_activities_activities_enhancement",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_pages_froalal_widget_enabled",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_new_help_links",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_activities_search_enhancements",
+          "type": "boolean"
+        },
+        {
+          "name": "cms_crt_file_storage_local",
+          "type": "boolean"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp"
+        }
+      ]
+    },
+    {
+      "name": "get",
+      "purpose": "Stores or caches data returned by https://daytonabeach.gov/api/v1/SplashModal/Get?targetId=%7BtargetId%7D&targetType=%7BtargetType%7D&requestMode=%7BrequestMode%7D&_=%7B_%7D",
+      "columns": [
+        {
+          "name": "id",
+          "type": "string primary key"
+        },
+        {
+          "name": "id",
+          "type": "numeric"
+        },
+        {
+          "name": "target_id",
+          "type": "text"
+        },
+        {
+          "name": "target_type",
+          "type": "numeric"
+        },
+        {
+          "name": "inherited_from",
+          "type": "text"
+        },
+        {
+          "name": "inherited_from_page_title",
+          "type": "text"
+        },
+        {
+          "name": "title",
+          "type": "text"
+        },
+        {
+          "name": "content",
+          "type": "text"
+        },
+        {
+          "name": "start_date",
+          "type": "text"
+        },
+        {
+          "name": "start_time",
+          "type": "text"
+        },
+        {
+          "name": "end_date",
+          "type": "text"
+        },
+        {
+          "name": "end_time",
+          "type": "text"
+        },
+        {
+          "name": "allow_scheduling",
+          "type": "boolean"
+        },
+        {
+          "name": "visibility",
+          "type": "numeric"
+        },
+        {
+          "name": "date_format",
+          "type": "text"
+        },
+        {
+          "name": "enable_font_options",
+          "type": "boolean"
+        },
+        {
+          "name": "last_modified_by",
+          "type": "numeric"
+        },
+        {
+          "name": "last_modified_on",
+          "type": "text"
+        },
+        {
+          "name": "push_down",
+          "type": "boolean"
+        },
+        {
+          "name": "inherited",
+          "type": "boolean"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "get_antiforgery",
+      "language": "cross-sdk",
+      "purpose": "GET /antiforgery. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output": "application/json; charset=utf-8",
+      "endpoint": "https://daytonabeach.gov/antiforgery"
+    },
+    {
+      "name": "get_toggle",
+      "language": "cross-sdk",
+      "purpose": "GET /Toggle. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output": "application/json; charset=utf-8",
+      "endpoint": "https://daytonabeach.gov/Toggle"
+    },
+    {
+      "name": "get_agents_3e4af47e_b3e9_4b83_8bc1_ab65735efc32_configuration",
+      "language": "cross-sdk",
+      "purpose": "GET /api/v1/public/agents/3e4af47e-b3e9-4b83-8bc1-ab65735efc32/configuration. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output": "unknown response",
+      "endpoint": "https://residentagent-api-production.azurewebsites.net/api/v1/public/agents/3e4af47e-b3e9-4b83-8bc1-ab65735efc32/configuration"
+    },
+    {
+      "name": "get_pages_menu_main_hidden_main_sub_menus",
+      "language": "cross-sdk",
+      "purpose": "GET /Pages/MenuMain/HiddenMainSubMenus. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "pageID": {
+            "type": "string",
+            "description": "Query parameter observed as {pageID}"
+          },
+          "moduleID": {
+            "type": "string",
+            "description": "Query parameter observed as {moduleID}"
+          },
+          "themeID": {
+            "type": "string",
+            "description": "Query parameter observed as {themeID}"
+          },
+          "menuContainerID": {
+            "type": "string",
+            "description": "Query parameter observed as {menuContainerID}"
+          },
+          "_": {
+            "type": "string",
+            "description": "Query parameter observed as {_}"
+          }
+        },
+        "required": []
+      },
+      "output": "text/html; charset=utf-8",
+      "endpoint": "https://daytonabeach.gov/Pages/MenuMain/HiddenMainSubMenus?pageID=%7BpageID%7D&moduleID=%7BmoduleID%7D&themeID=%7BthemeID%7D&menuContainerID=%7BmenuContainerID%7D&_=%7B_%7D"
+    },
+    {
+      "name": "get_v1_splash_modal_get",
+      "language": "cross-sdk",
+      "purpose": "GET /api/v1/SplashModal/Get. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "targetId": {
+            "type": "string",
+            "description": "Query parameter observed as {targetId}"
+          },
+          "targetType": {
+            "type": "string",
+            "description": "Query parameter observed as {targetType}"
+          },
+          "requestMode": {
+            "type": "string",
+            "description": "Query parameter observed as {requestMode}"
+          },
+          "_": {
+            "type": "string",
+            "description": "Query parameter observed as {_}"
+          }
+        },
+        "required": []
+      },
+      "output": "application/json; charset=utf-8",
+      "endpoint": "https://daytonabeach.gov/api/v1/SplashModal/Get?targetId=%7BtargetId%7D&targetType=%7BtargetType%7D&requestMode=%7BrequestMode%7D&_=%7B_%7D"
+    },
+    {
+      "name": "get_muli_v34_7auwp_0qiz_af_tlglq_woff2",
+      "language": "cross-sdk",
+      "purpose": "GET /s/muli/v34/7Auwp_0qiz-afTLGLQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output": "font/woff2",
+      "endpoint": "https://fonts.gstatic.com/s/muli/v34/7Auwp_0qiz-afTLGLQ.woff2"
+    },
+    {
+      "name": "get_muli_v34_7aujp_0qiz_af_tfc_iyoi_gtm2p0w_g05fz4eq_vww_woff2",
+      "language": "cross-sdk",
+      "purpose": "GET /s/muli/v34/7Aujp_0qiz-afTfcIyoiGtm2P0wG05Fz4eqVww.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output": "font/woff2",
+      "endpoint": "https://fonts.gstatic.com/s/muli/v34/7Aujp_0qiz-afTfcIyoiGtm2P0wG05Fz4eqVww.woff2"
+    },
+    {
+      "name": "get_poppins_v24_pxi_byp8kv8jhg_fvr_lcz7z1xl_fq_woff2",
+      "language": "cross-sdk",
+      "purpose": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output": "font/woff2",
+      "endpoint": "https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2"
+    },
+    {
+      "name": "get_poppins_v24_pxi_eyp8kv8jhg_fvr_jjfecg_woff2",
+      "language": "cross-sdk",
+      "purpose": "GET /s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output": "font/woff2",
+      "endpoint": "https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2"
+    },
+    {
+      "name": "get_poppins_v24_pxi_byp8kv8jhg_fvr_lej6z1xl_fq_woff2",
+      "language": "cross-sdk",
+      "purpose": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output": "font/woff2",
+      "endpoint": "https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2"
+    },
+    {
+      "name": "get_yellowtail_v25_ozp_gg_pno_dt_inpf_ril_lohlv_hw_q_woff2",
+      "language": "cross-sdk",
+      "purpose": "GET /s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHwQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output": "font/woff2",
+      "endpoint": "https://fonts.gstatic.com/s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHwQ.woff2"
+    },
+    {
+      "name": "get_opensans_v44_memv_ya_gs126mi_zp_ba_uv_wb_x2v_vn_xbb_obj2ovts_muw_woff2",
+      "language": "cross-sdk",
+      "purpose": "GET /s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output": "font/woff2",
+      "endpoint": "https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2"
+    },
+    {
+      "name": "get_poppins_v24_pxi_byp8kv8jhg_fvr_lgt9z1xl_fq_woff2",
+      "language": "cross-sdk",
+      "purpose": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output": "font/woff2",
+      "endpoint": "https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2"
+    },
+    {
+      "name": "get_domains_daytonabeach_gov_domain_json",
+      "language": "cross-sdk",
+      "purpose": "GET /domains/daytonabeach.gov/domain.json. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "output": "application/json",
+      "endpoint": "https://docaccess.com/domains/daytonabeach.gov/domain.json"
+    },
+    {
+      "name": "post_g_collect",
+      "language": "cross-sdk",
+      "purpose": "POST /g/collect. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "string",
+            "description": "Query parameter observed as {v}"
+          },
+          "tid": {
+            "type": "string",
+            "description": "Query parameter observed as {tid}"
+          },
+          "gtm": {
+            "type": "string",
+            "description": "Query parameter observed as {gtm}"
+          },
+          "_p": {
+            "type": "string",
+            "description": "Query parameter observed as {_p}"
+          },
+          "gcd": {
+            "type": "string",
+            "description": "Query parameter observed as {gcd}"
+          },
+          "npa": {
+            "type": "string",
+            "description": "Query parameter observed as {npa}"
+          },
+          "dma": {
+            "type": "string",
+            "description": "Query parameter observed as {dma}"
+          },
+          "cid": {
+            "type": "string",
+            "description": "Query parameter observed as {cid}"
+          },
+          "frm": {
+            "type": "string",
+            "description": "Query parameter observed as {frm}"
+          },
+          "ngs": {
+            "type": "string",
+            "description": "Query parameter observed as {ngs}"
+          },
+          "pscdl": {
+            "type": "string",
+            "description": "Query parameter observed as {pscdl}"
+          },
+          "rcb": {
+            "type": "string",
+            "description": "Query parameter observed as {rcb}"
+          },
+          "sr": {
+            "type": "string",
+            "description": "Query parameter observed as {sr}"
+          },
+          "uaa": {
+            "type": "string",
+            "description": "Query parameter observed as {uaa}"
+          },
+          "uab": {
+            "type": "string",
+            "description": "Query parameter observed as {uab}"
+          },
+          "uafvl": {
+            "type": "string",
+            "description": "Query parameter observed as {uafvl}"
+          },
+          "uam": {
+            "type": "string",
+            "description": "Query parameter observed as {uam}"
+          },
+          "uamb": {
+            "type": "string",
+            "description": "Query parameter observed as {uamb}"
+          },
+          "uap": {
+            "type": "string",
+            "description": "Query parameter observed as {uap}"
+          },
+          "uapv": {
+            "type": "string",
+            "description": "Query parameter observed as {uapv}"
+          },
+          "uaw": {
+            "type": "string",
+            "description": "Query parameter observed as {uaw}"
+          },
+          "ul": {
+            "type": "string",
+            "description": "Query parameter observed as {ul}"
+          },
+          "_s": {
+            "type": "string",
+            "description": "Query parameter observed as {_s}"
+          },
+          "tag_exp": {
+            "type": "string",
+            "description": "Query parameter observed as {tag_exp}"
+          },
+          "sid": {
+            "type": "string",
+            "description": "Query parameter observed as {sid}"
+          },
+          "sct": {
+            "type": "string",
+            "description": "Query parameter observed as {sct}"
+          },
+          "seg": {
+            "type": "string",
+            "description": "Query parameter observed as {seg}"
+          },
+          "dl": {
+            "type": "string",
+            "description": "Query parameter observed as {dl}"
+          },
+          "dt": {
+            "type": "string",
+            "description": "Query parameter observed as {dt}"
+          },
+          "en": {
+            "type": "string",
+            "description": "Query parameter observed as {en}"
+          },
+          "_fv": {
+            "type": "string",
+            "description": "Query parameter observed as {_fv}"
+          },
+          "_nsi": {
+            "type": "string",
+            "description": "Query parameter observed as {_nsi}"
+          },
+          "_ss": {
+            "type": "string",
+            "description": "Query parameter observed as {_ss}"
+          },
+          "_ee": {
+            "type": "string",
+            "description": "Query parameter observed as {_ee}"
+          },
+          "tfd": {
+            "type": "string",
+            "description": "Query parameter observed as {tfd}"
+          }
+        },
+        "required": []
+      },
+      "output": "text/plain",
+      "endpoint": "https://www.google-analytics.com/g/collect?v=%7Bv%7D&tid=%7Btid%7D&gtm=%7Bgtm%7D&_p=%7B_p%7D&gcd=%7Bgcd%7D&npa=%7Bnpa%7D&dma=%7Bdma%7D&cid=%7Bcid%7D&frm=%7Bfrm%7D&ngs=%7Bngs%7D&pscdl=%7Bpscdl%7D&rcb=%7Brcb%7D&sr=%7Bsr%7D&uaa=%7Buaa%7D&uab=%7Buab%7D&uafvl=%7Buafvl%7D&uam=%7Buam%7D&uamb=%7Buamb%7D&uap=%7Buap%7D&uapv=%7Buapv%7D&uaw=%7Buaw%7D&ul=%7Bul%7D&_s=%7B_s%7D&tag_exp=%7Btag_exp%7D&sid=%7Bsid%7D&sct=%7Bsct%7D&seg=%7Bseg%7D&dl=%7Bdl%7D&dt=%7Bdt%7D&en=%7Ben%7D&_fv=%7B_fv%7D&_nsi=%7B_nsi%7D&_ss=%7B_ss%7D&_ee=%7B_ee%7D&tfd=%7Btfd%7D"
+    },
+    {
+      "name": "post_g_collect",
+      "language": "cross-sdk",
+      "purpose": "POST /g/collect. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "string",
+            "description": "Query parameter observed as {v}"
+          },
+          "tid": {
+            "type": "string",
+            "description": "Query parameter observed as {tid}"
+          },
+          "gtm": {
+            "type": "string",
+            "description": "Query parameter observed as {gtm}"
+          },
+          "_p": {
+            "type": "string",
+            "description": "Query parameter observed as {_p}"
+          },
+          "gcd": {
+            "type": "string",
+            "description": "Query parameter observed as {gcd}"
+          },
+          "npa": {
+            "type": "string",
+            "description": "Query parameter observed as {npa}"
+          },
+          "dma": {
+            "type": "string",
+            "description": "Query parameter observed as {dma}"
+          },
+          "cid": {
+            "type": "string",
+            "description": "Query parameter observed as {cid}"
+          },
+          "frm": {
+            "type": "string",
+            "description": "Query parameter observed as {frm}"
+          },
+          "ngs": {
+            "type": "string",
+            "description": "Query parameter observed as {ngs}"
+          },
+          "pscdl": {
+            "type": "string",
+            "description": "Query parameter observed as {pscdl}"
+          },
+          "rcb": {
+            "type": "string",
+            "description": "Query parameter observed as {rcb}"
+          },
+          "sr": {
+            "type": "string",
+            "description": "Query parameter observed as {sr}"
+          },
+          "uaa": {
+            "type": "string",
+            "description": "Query parameter observed as {uaa}"
+          },
+          "uab": {
+            "type": "string",
+            "description": "Query parameter observed as {uab}"
+          },
+          "uafvl": {
+            "type": "string",
+            "description": "Query parameter observed as {uafvl}"
+          },
+          "uam": {
+            "type": "string",
+            "description": "Query parameter observed as {uam}"
+          },
+          "uamb": {
+            "type": "string",
+            "description": "Query parameter observed as {uamb}"
+          },
+          "uap": {
+            "type": "string",
+            "description": "Query parameter observed as {uap}"
+          },
+          "uapv": {
+            "type": "string",
+            "description": "Query parameter observed as {uapv}"
+          },
+          "uaw": {
+            "type": "string",
+            "description": "Query parameter observed as {uaw}"
+          },
+          "ul": {
+            "type": "string",
+            "description": "Query parameter observed as {ul}"
+          },
+          "_s": {
+            "type": "string",
+            "description": "Query parameter observed as {_s}"
+          },
+          "tag_exp": {
+            "type": "string",
+            "description": "Query parameter observed as {tag_exp}"
+          },
+          "sid": {
+            "type": "string",
+            "description": "Query parameter observed as {sid}"
+          },
+          "sct": {
+            "type": "string",
+            "description": "Query parameter observed as {sct}"
+          },
+          "seg": {
+            "type": "string",
+            "description": "Query parameter observed as {seg}"
+          },
+          "dl": {
+            "type": "string",
+            "description": "Query parameter observed as {dl}"
+          },
+          "dt": {
+            "type": "string",
+            "description": "Query parameter observed as {dt}"
+          },
+          "en": {
+            "type": "string",
+            "description": "Query parameter observed as {en}"
+          },
+          "_fv": {
+            "type": "string",
+            "description": "Query parameter observed as {_fv}"
+          },
+          "_ss": {
+            "type": "string",
+            "description": "Query parameter observed as {_ss}"
+          },
+          "tfd": {
+            "type": "string",
+            "description": "Query parameter observed as {tfd}"
+          }
+        },
+        "required": []
+      },
+      "output": "text/plain",
+      "endpoint": "https://www.google-analytics.com/g/collect?v=%7Bv%7D&tid=%7Btid%7D&gtm=%7Bgtm%7D&_p=%7B_p%7D&gcd=%7Bgcd%7D&npa=%7Bnpa%7D&dma=%7Bdma%7D&cid=%7Bcid%7D&frm=%7Bfrm%7D&ngs=%7Bngs%7D&pscdl=%7Bpscdl%7D&rcb=%7Brcb%7D&sr=%7Bsr%7D&uaa=%7Buaa%7D&uab=%7Buab%7D&uafvl=%7Buafvl%7D&uam=%7Buam%7D&uamb=%7Buamb%7D&uap=%7Buap%7D&uapv=%7Buapv%7D&uaw=%7Buaw%7D&ul=%7Bul%7D&_s=%7B_s%7D&tag_exp=%7Btag_exp%7D&sid=%7Bsid%7D&sct=%7Bsct%7D&seg=%7Bseg%7D&dl=%7Bdl%7D&dt=%7Bdt%7D&en=%7Ben%7D&_fv=%7B_fv%7D&_ss=%7B_ss%7D&tfd=%7Btfd%7D"
+    }
+  ],
+  "authStrategy": [
+    "No auth-required endpoints were observed; keep auth configuration available because deeper pages may require cookies, bearer tokens, or API keys."
+  ],
+  "errorHandling": [
+    "Handle 401/403 as authentication or permission failures and never retry indefinitely.",
+    "Handle 429 with exponential backoff and respect Retry-After headers when present.",
+    "Treat 5xx responses as transient unless response body indicates a permanent validation error.",
+    "Log method, path, status, and request ID headers; never log secrets, cookies, bearer tokens, or raw PII."
+  ],
+  "recommendedFiles": [
+    {
+      "path": "src/sdk/client.ts",
+      "purpose": "Shared request client with auth, retries, JSON parsing, and redaction."
+    },
+    {
+      "path": "src/sdk/endpoints.ts",
+      "purpose": "Typed functions generated from endpoints.json."
+    },
+    {
+      "path": "src/sdk/types.ts",
+      "purpose": "Inferred TypeScript data models."
+    },
+    {
+      "path": "src/mcp/server.ts",
+      "purpose": "MCP server exposing one safe tool per SDK function."
+    },
+    {
+      "path": "database/schema.sql",
+      "purpose": "Optional tables for local cache, sync jobs, or cloned app backend."
+    },
+    {
+      "path": "examples/",
+      "purpose": "Runnable examples for public and authenticated calls."
+    }
+  ]
+}

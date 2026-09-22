@@ -53,6 +53,56 @@ describe('BuilderPlatform intelligence systems', () => {
     expect(fs.existsSync(path.join(report.outputDir, 'expert-routing-report.json'))).toBe(true);
   });
 
+  test('plans React and PHP expert teams before scaffolding', () => {
+    const react = platform.planBuildStack('Build a React TypeScript dashboard with Supabase and Stripe');
+    const php = platform.planBuildStack('Build a Laravel PHP API with MySQL authentication');
+
+    expect(react.framework).toBe('React + Vite');
+    expect(react.expertIds).toEqual(expect.arrayContaining(['typescript', 'react', 'vite', 'supabase', 'stripe']));
+    expect(php.framework).toBe('Laravel');
+    expect(php.expertIds).toEqual(expect.arrayContaining(['php', 'laravel', 'composer', 'mysql', 'oauth2']));
+    expect(php.expertIds).not.toContain('react');
+  });
+
+  test('creates a PHP workspace and persists its selected agent knowledge', async () => {
+    const phpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-php-builder-test-'));
+    try {
+      const prompt = 'Build a PHP customer portal with Composer and MySQL';
+      const stackPlan = platform.planBuildStack(prompt);
+      (platform as any).writeStarterApp(phpRoot, 'php-portal', prompt, stackPlan);
+      (platform as any).writeStackAgentManifest(phpRoot, stackPlan);
+      const phpBuild: BuildWorkspace = {
+        ...build,
+        id: 'php-build',
+        root: phpRoot,
+        prompt,
+        stackPlan,
+        logPath: path.join(phpRoot, 'opencode-build.log'),
+        previewLogPath: path.join(phpRoot, 'preview.log'),
+      };
+      (platform as any).builds.set(phpBuild.id, phpBuild);
+
+      const route = platform.routeExperts(phpBuild.id);
+      const doctor = await platform.runBuildDoctor(phpBuild.id, { runBuild: false });
+      const previewCommand = (platform as any).previewCommandForBuild(phpBuild, 5179) as string;
+      const brief = (platform as any).buildOpenCodeAppPrompt(prompt, 'work-focused', phpBuild.brain, stackPlan, '') as string;
+      const manifest = fs.readFileSync(path.join(phpRoot, '.nexus', 'agents', 'selected-experts.md'), 'utf8');
+
+      expect(fs.existsSync(path.join(phpRoot, 'composer.json'))).toBe(true);
+      expect(fs.existsSync(path.join(phpRoot, 'public', 'index.php'))).toBe(true);
+      expect(fs.existsSync(path.join(phpRoot, 'package.json'))).toBe(false);
+      expect(previewCommand).toBe('php -S 0.0.0.0:5179 -t public');
+      expect(route.selectedExperts.some((expert) => expert.expertId === 'php')).toBe(true);
+      expect(route.selectedExperts.some((expert) => expert.expertId === 'composer')).toBe(true);
+      expect(doctor.issues.some((issue) => /package\.json|React|Vite/.test(`${issue.issue} ${issue.fix}`))).toBe(false);
+      expect(manifest).toContain('PHP Expert Agent');
+      expect(brief).toContain('Do not silently replace it with a familiar default');
+      expect(brief).toContain('Composer Expert Agent');
+    } finally {
+      fs.rmSync(phpRoot, { recursive: true, force: true });
+    }
+  });
+
   test('creates creative direction and persists memory', () => {
     const direction = platform.createCreativeDirection(build.id, 'dark neon game');
     const memory = platform.getProjectMemory(build.id);
@@ -76,6 +126,18 @@ describe('BuilderPlatform intelligence systems', () => {
     expect(memory.entries.some((entry) => entry.tags.includes('chat-update'))).toBe(true);
   });
 
+  test('preserves a custom React data schema during chat update preflight', () => {
+    const mainPath = path.join(root, 'src', 'main.jsx');
+    const dataPath = path.join(root, 'src', 'app-data.js');
+    const customData = "export default { events: [{ title: 'Community ride' }] };\n";
+    fs.writeFileSync(mainPath, "import data from './app-data.js';\nexport default function App(){ return data.events.map((event) => event.title); }\n");
+    fs.writeFileSync(dataPath, customData);
+
+    platform.updateBuildFromChat(build.id, 'add a route map without changing the content model', { launch: false });
+
+    expect(fs.readFileSync(dataPath, 'utf8')).toBe(customData);
+  });
+
   test('queues chat updates while the initial build executor is running', () => {
     build.status = 'opencode-running';
     const update = platform.updateBuildFromChat(build.id, 'make every section responsive on phone and tablet', { mode: 'build' });
@@ -86,6 +148,22 @@ describe('BuilderPlatform intelligence systems', () => {
     build.status = 'completed';
     expect(platform.getBuildActivity(build.id).pendingUpdates).toBe(1);
     expect(platform.getBuildActivity(build.id).terminal).toBe(false);
+  });
+
+  test('reports agent stages and a useful executor connection failure', () => {
+    build.status = 'failed';
+    build.stackPlan = platform.planBuildStack('Build a React TypeScript website');
+    fs.writeFileSync(build.logPath, '\u001b[31mError: Cannot connect to API: Unable to connect.\u001b[0m\nCode executor exited with code 1\n');
+
+    const activity = platform.getBuildActivity(build.id);
+
+    expect(activity.progress.phase).toBe('Executor connection failed');
+    expect(activity.progress.failure?.code).toBe('executor-connection');
+    expect(activity.progress.failure?.recovery).toContain('retry');
+    expect(activity.progress.agents).toEqual(expect.arrayContaining(['opencode-build-agent', 'react-agent', 'typescript', 'react']));
+    expect(activity.progress.steps.find((step) => step.id === 'implementation')?.status).toBe('failed');
+    expect(activity.progress.recentOutput.join(' ')).not.toContain('\u001b');
+    expect(activity.terminal).toBe(true);
   });
 
   test('passes long OpenCode briefs by file on local builds', () => {
@@ -108,9 +186,17 @@ describe('BuilderPlatform intelligence systems', () => {
     fs.mkdirSync(path.join(diskBuildRoot, 'src'), { recursive: true });
     fs.writeFileSync(path.join(diskBuildRoot, 'package.json'), JSON.stringify({ scripts: { dev: 'vite', build: 'vite build' }, dependencies: {} }));
     fs.writeFileSync(path.join(diskBuildRoot, 'README.md'), '# rehydrate-test\n\nPrompt:\nBuild a habitats app\n\nRun locally:');
+    fs.writeFileSync(path.join(diskBuildRoot, 'opencode-build.log'), 'Error: Cannot connect to API: Unable to connect.\nCode executor exited with code 1\n');
+    const restoredUpdateDir = path.join(diskBuildRoot, '.nexus', 'chat-updates', '1234abcd');
+    fs.mkdirSync(restoredUpdateDir, { recursive: true });
+    fs.writeFileSync(path.join(restoredUpdateDir, 'opencode-update-prompt.md'), 'User follow-up request:\nRepair and continue the app\n');
+    fs.writeFileSync(path.join(restoredUpdateDir, 'opencode-update.log'), '✓ built in 400ms\nNo automated tests configured; build verification is the primary check.\nCode executor exited with code 1\n');
     const freshPlatform = new BuilderPlatform();
     const hydrated = freshPlatform.getBuild('abcdef12');
     expect(hydrated?.id).toBe('abcdef12');
+    expect(hydrated?.status).toBe('completed');
+    expect(freshPlatform.getBuildActivity('abcdef12').progress.failure).toBeUndefined();
+    expect(freshPlatform.getBuildActivity('abcdef12', '1234abcd').status).toBe('completed');
     const update = freshPlatform.updateBuildFromChat('abcdef12', 'add an additional education page about habitats', { launch: false });
     expect(update.prompt).toContain('habitats');
     fs.rmSync(diskBuildRoot, { recursive: true, force: true });

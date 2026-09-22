@@ -1,0 +1,37 @@
+{
+  "primaryLanguage": "TypeScript",
+  "framework": "React + Vite",
+  "runtime": "Node.js",
+  "packageManager": "npm",
+  "expertIds": [
+    "typescript",
+    "react",
+    "vite",
+    "node",
+    "npm",
+    "accessibility",
+    "playwright",
+    "owasp"
+  ],
+  "projectAgentIds": [
+    "framework-expert-router",
+    "opencode-build-agent",
+    "build-doctor-agent",
+    "qa-agent",
+    "memory-agent",
+    "react-agent"
+  ],
+  "setupCommands": [
+    "npm install"
+  ],
+  "devCommand": "npm run dev -- --host 0.0.0.0 --port {port}",
+  "buildCommands": [
+    "npm run build"
+  ],
+  "testCommands": [
+    "npm test -- --runInBand"
+  ],
+  "evidence": [
+    "No explicit backend stack was requested; React + Vite is the browser-app default."
+  ]
+}

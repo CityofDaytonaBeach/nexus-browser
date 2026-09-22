@@ -1,0 +1,1414 @@
+[
+  {
+    "id": "GET /antiforgery",
+    "url": "https://daytonabeach.gov/antiforgery",
+    "origin": "https://daytonabeach.gov",
+    "path": "/antiforgery",
+    "method": "GET",
+    "resourceType": "xhr",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://daytonabeach.gov/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "content-security-policy": "frame-ancestors 'self' https://*.granicus.com https://*.civicplus.com; img-src * data: blob:; worker-src * data: blob: 'unsafe-eval' 'unsafe-inline'; script-src * about: 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; media-src * blob:; font-src * data:; default-src *",
+      "cache-control": "public, no-store, max-age=0, s-maxage=600,no-transform",
+      "x-content-type-options": "nosniff",
+      "expires": "Tue, 22 Sep 2026 17:14:59 GMT",
+      "p3p": "CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"",
+      "content-length": "120",
+      "date": "Tue, 22 Sep 2026 17:14:58 GMT",
+      "content-type": "application/json; charset=utf-8",
+      "last-modified": "Tue, 22 Sep 2026 17:14:59 GMT",
+      "vary": "*",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "contentType": "application/json; charset=utf-8",
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "responseSample": "{\"token\":\"[REDACTED]\"}",
+    "mcpTool": {
+      "name": "get_daytonabeach_gov_antiforgery",
+      "description": "GET /antiforgery",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "usage": "GET /antiforgery. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /Toggle",
+    "url": "https://daytonabeach.gov/Toggle",
+    "origin": "https://daytonabeach.gov",
+    "path": "/Toggle",
+    "method": "GET",
+    "resourceType": "xhr",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://daytonabeach.gov/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "content-security-policy": "frame-ancestors 'self' https://*.granicus.com https://*.civicplus.com; img-src * data: blob:; worker-src * data: blob: 'unsafe-eval' 'unsafe-inline'; script-src * about: 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; media-src * blob:; font-src * data:; default-src *",
+      "cache-control": "private, s-maxage=600,no-transform",
+      "x-content-type-options": "nosniff",
+      "p3p": "CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"",
+      "content-length": "11360",
+      "date": "Tue, 22 Sep 2026 17:14:59 GMT",
+      "content-type": "application/json; charset=utf-8",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "contentType": "application/json; charset=utf-8",
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "responseSample": "{\"CivicPlus.CMS.API.V1\":true,\"CMS.DomainMapping\":false,\"CMS.FileRepository.MVP.Local\":true,\"CMS.DocumentCenter.FileStorage.FileRepository\":false,\"CMS.DocumentCenter.FileStorage.Local\":true,\"CMS.DocumentCenter.FolderExport\":true,\"CMS.Bids.PlanHoldersForm\":true,\"CMS.CivicAlerts.FroalaEditor\":true,\"CMS.Pages.CarouselWidget\":true,\"CMS.DocumentCenter.UnlinkedDocuments\":true,\"CMS.NewsFlash.FullTextEditor\":true,\"CMS.Custom404.FileStorage.Local\":true,\"CMS.AuthenticationResponseCache\":true,\"CMS.Calendar.RecurringEvents\":true,\"CMS.Calendar.RelatedEventsEnabled\":true,\"CMS.ImageService\":false,\"CMS.ProfileImage\":false,\"CMS.AgendaCenter.RelateToEvent\":true,\"CMS.Facilities.FacilitiesEnhancement\":true,\"CMS.Activities.ActivitiesEnhancement\":true,\"CMS.Pages.FroalalWidgetEnabled\":true,\"CMS.NewHelpLinks\":true,\"CMS.Activities.SearchEnhancements\":true,\"CMS.CRT.FileStorage.Local\":true,\"CMS.DesignEnhancement.SmoothScrolling\":true,\"CMS.DesignEnhancement.Slideshow\":true,\"CMS.FormCenter.SendEmailCopy\":true,\"CMS.Search.AllowSolrFallback\":false,\"CMS.GroupAdministration.AllowPermissionExport\":true,\"CMS.GroupAdministration.AllowPermissionExportByGroup\":true,\"CMS.CityDirectory.CallablePhoneNumber\":true,\"CMS.CityDirectory.DragAndDropReorderWidget\":true,\"CMS.CivicAlerts.ChronologicalOrder\":true,\"CMS.Saml.ForcedReauthentication\":true,\"CMS.Saml.ValidateSchema\":true,\"CMS.Saml.SignatureSigning\":true,\"CMS.FAQ.FroalaEditor\":true,\"CMS.DesignCenter.AnimationsManager\":true,\"CMS.Search.UseElasticSearch\":true,\"FeatureToggleIsAlive\":true,\"CMS.MyAccount.LeaderboardPropertyEnabled\":true,\"CMS.NotifyMe.AutoUnsubscribe\":true,\"CMS.AgendaCenter.AllowShowAsAmendedOption\":true,\"CMS.AgendaCenter.AllowChooseNewOrModifiedForEmail\":true,\"CMS.Facilities.ZipcodeSortEnhancement\":true,\"CMS.AgendaCenter.ShowMinutesPreview\":true,\"CMS.Blog.UpdatedPagination\":true,\"CMS.DesignCenter.ExternalVideoLink\":true,\"CMS.Blog.DisableCommentNotification\":true,\"CMS.Search.AutoExpand\":true,\"CMS.AgendaCenter.AlwaysShowMediaColumn\":true,\"CMS.Search.ElasticSearchEnhancement\":true,\"CMS.NotifyMe.ShowSubscriptionDate\":true,\"CMS.DocumentCenter.DocumentLink\":true,\"CMS.Pages.EnablePagePreview\":true,\"CMS.Facilities.MapDefaultEnhancement\":true,\"CMS.AgendaCenter.CollapseCategories\":true,\"CMS.Facilities.CalendarMondayToSunday\":true,\"CMS.IdentityServer.LogUserClaimsOnDomainRedirect\":false,\"CMS.NotifyMe.ShowSenderNameForConfirmation\":true,\"CMS.NotifyMe.IncludeLinkInSmsMessages\":true,\"CMS.EnableFroalaAdaChecker\":true,\"CMS.DocumentCenter.RelatedDocumentsMultipleDocumentSelectionEnabled\":true,\"CMS.DocumentCenter.ViewDocumentNameInLink\":true,\"CMS.Pages.PageTagsEnabled\":true,\"CMS.DocumentCenter.RelatedDocumentsWidgetLinkedFolders\":true,\"CMS.MakePermissionsConsistentAcrossModules\":true,\"CivicPlus.CMS.AllowMInutesUploadWithSimpleAgendas\":true,\"CMS.NotifyMe.ShowUnsubscribeAll\":true,\"CMS.CustomizeSubjectLine\":true,\"CMS.DocumentCenter.ImageRepoMove\":true,\"CMS.AgendaCenter.UseFirstPublishDate\":true,\"CMS.EnableMixedContentReport\":true,\"CMS.EnableAdminForceSsl\":true,\"CMS.TrackGoogleViewMapClicks\":true,\"CMS.AgendaCenter.PostedDateEditEnabled\":true,\"CMS.Pages.UseTitleForMenuText\":true,\"CMS.AgendaCenter.MarkMinutesAsDraft\":true,\"CMS.InvisibleRecaptcha\":true,\"CMS.CustomizeAgendaSubjects\":true,\"CMS.Pages.TeleriklWidgetEnabled\":false,\"CMS.EnableBitlyShortener\":true,\"CMS.UseCivicSendCore\":true,\"CMS.DocumentCenter.ImageResize\":true,\"CMS.FormCenter.IncludeSubmissionIDinEmail\":true,\"CMS.RelatedDocuments.WidgetSearch\":true,\"CMS.AntiForgery.Logging\":true,\"CMS.Site.ShowHiddenPagesinSitemap\":true,\"CMS.DocumentCenter.EnableImageRepositoryReferenceLinks\":true,\"CMS.Calendar.FroalaEditor\":true,\"CMS.NotifyMe.FroalaEditor\":true,\"CMS.Custom404.FroalaEditor\":true,\"CMS.NewsFlash.FroalaEditor\":true,\"CMS.Calendar.ShowICalFeedEvents\":true,\"CMS.Calendar.UseNewCalendarWidgetStructure\":false,\"CMS.NewsFlash.LinktoWebAddress\":true,\"CMS.Jobs.FroalaEditor\":true,\"CMS.Blogs.FroalaEditor\":true,\"CMS.JqueryUpgrade.UpgradeTo224\":true,\"CMS.StaffDirectory.FroalaEditor\":true,\"CMS.AlertCenter.OverrideAlertBarLinkAddres\":true,\"CMS.CivicSend.ShowSenderNameInMessagesList\":true,\"CMS.Site.UpdateIntegrationHub\":true,\"CMS.DocumentCenter.ReplaceTelerikTreeAndGridWithReact\":true,\"CMS.Pages.Froala3Editor\":true,\"CivicPlus.SendNotificationSmsViaCPNotify\":true,\"CMS.Activities.ExportActivityRoster\":true,\"CMS.Activities.ImportSessions\":true,\"CMS.CivicSend.FroalaEditor\":true,\"CMS.NewsFlash.TruncateNewsFlashCarouselWidgetDescription\":true,\"CMS.DocumentCenter.EnableImageRepositoryDefaultHideFromPublic\":true,\"CMS.Pages.NavCache\":true,\"CMS.NewsFlash.FeatureItemEnabled\":true,\"CMS.CivicSend.BypassBackconnection\":true,\"CMS.NewsFlash.EnableCaching\":false,\"CMS.Site.EnableBackendModulePageTitles\":true,\"CMS.Site.EnableFrontendModulePageTitles\":true,\"CMS.FormCenter.FroalaInstructions\":true,\"CMS.Shared.DragAndDropToReorderItems\":true,\"CMS.NewsFlash.RedirectArchivedLinksToLatestArchivedVersion\":true,\"CMS.AgendaCenter.AdditionalMediaLinks\":true,\"CMS.AgendaCenter.FroalaEditor\":true,\"CMS.ArchiveCenter.FroalaEditor\":true,\"CMS.Bids.FroalaEditorEnabledForBackend\":true,\"CMS.Facilities.FroalaEditor\":true,\"CMS.FormCenter.FroalaEditorEnabledForBackend\":true,\"CMS.InfoAdvanced.FroalaEditor\":true,\"CMS.Activities.FroalaEditor\":true,\"CMS.Redirects.Export\":true,\"CMS.NotifyMe.EnableModuleListAlphabeticalOrder\":true,\"CMS.ArchiveCenter.ElasticSearch\":true,\"CMS.AgendaCenter.EnableElasticSearch\":true,\"CMS.NewsFlash.RelateCategories\":true,\"CMS.AlertCenter.RedirectArchivedLinksToLatestArchivedVersion\":true,\"CMS.AlertCenter.FroalaAddUpdate\":true,\"CMS.NewsFlash.CodeRefactor\":false,\"CMS.CivicSend.AdditionalSendingDates\":true,\"CMS.Sitemap.Export\":true,\"CMS.Widgets.AtomFeedEnabled\":true,\"CMS.FAQ.CategoryReferences\":true,\"CMS.Calendar.VirtualLocationsForMeeting\":true,\"CMS.GraphicLinks.AddNumberOfColumnsOption\":true,\"CMS.FormCenter.ExportSubmissionAttachments\":true,\"CMS.FormCenter.WidgetEnabled\":true,\"CMS.Pages.HideIndividualPageFromMegaMenu\":true,\"CMS.FormCenter.HideFormFromFrontEndList\":true,\"CMS.NewsFlash.LimitMaximumItemsNewsFlashCarousel\":true,\"CMS.CivicSend.UseImageRepoCropper\":true,\"CMS.AgendaCenter.RememberLastOpenedTab\":true,\"CMS.CivicSend.AddImageBorders\":true,\"CMS.FAQ.ExpandToShowAnswerOption\":true,\"CMS.FormCenter.TemplateManager\":true,\"CMS.RelatedDocumentWidgets.ZToASorting\":true,\"CMS.NewsFlash.ShowPublishedFirst\":true,\"CMS.Site.EnableSplashScreenScheduler\":true,\"CMS.Calendar.LinkToWebAddressAdjustmentsAndNotifications\":true,\"CMS.Site.EnableSplashModalPerPage\":true,\"CMS.StaffDirectory.PronounAndAdditionalPhoneFields\":true,\"CMS.EnableCityPollsWidget\":true,\"CMS.Pages.ShowLastPageUpdated\":true,\"CMS.Site.EnableBackendModuleCategoryReferences\":true,\"CMS.ImageRepository.CacheThumbnails\":true,\"CMS.NewsFlash.ShowFilterKeyword\":true,\"CMS.FormCenter.ShowMoveAction\":true,\"CMS.NewsFlash.ShowFilterKeywordFrontEnd\":true,\"CMS.Site.ShowPublishedFirst\":true,\"CMS.Calendar.UpdatesToReflectEventsOfMonth\":true,\"CMS.AgendaCenter.EnableStorageFootprintReduction\":false,\"CMS.Pages.PageSectionTracking\":true,\"CMS.SiteReport.UpdateUI\":true,\"CMS.SiteReport.ShowReportsSection\":true,\"CMS.QuickLinks.ImportQuickLinks\":true,\"CMS.Calendar.ShowViewAllCustomLinkFields\":true,\"CMS.Redirects.Import\":true,\"CMS.FAQ.ShowViewAllCustomLinkFields\":true,\"CMS.QuickLinks.ShowViewAllCustomLinkFields\":true,\"CMS.AlertCenter.ShowViewAllCustomLinkFields\":true,\"CMS.StaffDirectory.ShowViewAllCustomLinkFields\":true,\"CMS.QuickLinks.Export\":true,\"CMS.ArchiveCenter.ExportAttachments\":true,\"CMS.FAQ.Import\":true,\"CMS.QuickLinks.Import\":true,\"CMS.Calendar.CalendarWidgetImageOptions\":true,\"CMS.FormCenter.ViewSubmissionFileByAccessToken\":\"[REDACTED]\",\"CMS.DesignCenter.BoxShadow\":true,\"CMS.FormCenter.MultipleFileUpload\":true,\"CMS.Site.SelectAllItems\":true,\"CMS.DesignCenter.BackgroundBorderStylesForViewAllLinks\":true,\"CMS.CivicSend.ElasticSearch\":true,\"CMS.FormCenter.RecaptchaV3Enabled\":true,\"CMS.CivisSend.ExpiredStatus\":true,\"MS.FormCenter.MultipleFileUpload\":true,\"CMS.CivicSend.ExpireStatus\":true,\"CMS.FormCenter.MultipleFileUploadEnhancement\":true,\"CMS.DesignCenter.ReadOnStylingOptionsForSkins\":true,\"CMS.NewsFlash.FunctionalUpdates\":true,\"CMS.StaffDirectory.ImageAlignment\":true,\"CMS.DesignCenter.AdditionalShadows\":false,\"CMS.Pages.MegaMenuAccessibility\":false,\"CMS.DocumentCenter.ImageEnhancement\":false,\"CMS.StaffDirectory.ImageDisplayAlignLeft\":true,\"CMS.Site.UpdateToolbar\":true,\"CMS.JqueryUpgrade.UpgradeTo371\":true,\"CMS.NewsFlash.CategoryColor\":true,\"CMS.NewsFlash.FocusPointImages\":true,\"CMS.Site.UpdateAdminSignInAndDashboard\":true,\"CMS.Site.UseAuthenticationManager\":true,\"CMS.MyAccount.EnableSwitchToCPAuth\":true,\"CMS.NewsFlash.Redesign\":true,\"CMS.FAQ.Redesign\":true,\"CMS.Site.DisableBundleHash\":true,\"CMS.Site.UseRedisForSessionKeys\":true,\"CMS.Site.UseForethoughtChatbot\":true,\"CMS.Site.FroalaChatGpt\":false,\"CMS.Pages.AccessibleMainMenuWithIndicators\":false,\"CMS.Pages.ContentAdvisor\":false,\"CMS.NewsFlash.CategoryImageUpload\":true,\"CMS.NewsFlash.EnableRedesignedArchivePage\":true,\"CMS.StaffDirectory.Redesign\":true,\"CMS.Site.ChatPandaAccess\":false,\"CMS.CRT.ShowAnonymousSubmitPopup\":true,\"CMS.Site.KAMRedesign\":true,\"CMS.Site.EnforceAIAssistantPolicy\":false,\"CMS.AlertCenter.LinkToWebAddressAdjustmentsAndNotifications\":true,\"CMS.AlertCenter.ModuleParameters\":false,\"CMS.CivicMedia.UseImageRepositoryForCoverVideos\":false,\"CMS.CivicMedia.UseNewCivicPlusVideos\":false,\"CMS.DesignCenter.CarouselArrows\":false,\"CMS.DesignCenter.BorderRadius\":false,\"CMS.DesignCenter.HoverBackgroundAndBorderStylingOptionsForItem\":false,\"CMS.DesignCenter.EnablePauseAndPlayForBannerVideo\":false,\"CMS.DesignCenter.EnablePauseAndPlayForBannerSlideshow\":false,\"CMS.DesignCenter.StickyEnhancements\":false,\"CMS.DocumentCenter.EnableBulkEdit\":false,\"CMS.DocumentCenter.EnableCaching\":true,\"CMS.DocumentCenter.EnableCloudStorage\":false,\"CMS.EnableInProcessFallbackOnOutOfProcessFailure\":true,\"CMS.EnableFileRepositoryAccountAutoCreation\":false,\"CMS.EnableMaxImageFileSizeLimit\":false,\"CMS.Site.UseCachedLayout\":false,\"CMS.Site.DisableExceptionlessLogging\":false,\"CMS.Site.NewAppSwitcher\":false,\"CMS.Site.MatchPhrasePrefixAutocomplete\":false,\"CMS.Site.ContainerQueries\":false,\"CMS.FormCenter.FileStorage.Local\":true,\"CMS.FormCenter.EnableServerSideValidationsForSubmissions\":false,\"CMS.Calendar.FileStorage.Local\":true,\"CMS.Calendar.Redesign\":false,\"CMS.Calendar.ShowDatesOutsideOfTheMonth\":false,\"CMS.Calendar.BulkInsert\":false,\"CMS.AgendaCenter.FileStorage.Local\":true,\"CMS.AgendaCenter.UseSolrForSearch\":false,\"CMS.AgendaCenter.PerformanceImprovements\":false,\"CMS.AgendaCenter.EnableS3Storage\":false,\"CMS.AgendaCenter.SupportMultipleDocumentsForAgenda\":false,\"CMS.StaffDirectory.AllowAlphabetizeStaffList\":false,\"CMS.Widgets.RemoveTableWidget\":false,\"CMS.Widget.EnablePauseAndPlayForCarousel\":false,\"CMS.Widget.EnablePauseAndPlayForSlideshow\":false,\"CMS.ArchiveCenter.FileStorage.Local\":true,\"CMS.Forms.FileStorage.Local\":true,\"CMS.PdfConverterUpgrade\":false,\"CMS.NotifyMe.SendPublishNotificationRefactor\":false,\"CMS.NotifyMe.WidgetEnabled\":false,\"CMS.NotifyMe.ReactInWidget\":false,\"CMS.NewsFlash.LinkToWebAddressAdjustmentsAndNotifications\":true,\"CMS.AntiForgery.AntiForgery\":false,\"CMS.Pages.PreviewMediaFramework\":false,\"CMS.Pages.ShowArrowIndicatorsInMainMenuTopLevelItems\":false,\"CMS.Pages.EnableDualStrokeArrowsAndPlayPauseButtons\":false,\"CMS.QuickLinks.AddMultipleAtOnce\":false}",
+    "mcpTool": {
+      "name": "get_daytonabeach_gov_Toggle",
+      "description": "GET /Toggle",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "usage": "GET /Toggle. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /api/v1/public/agents/3e4af47e-b3e9-4b83-8bc1-ab65735efc32/configuration",
+    "url": "https://residentagent-api-production.azurewebsites.net/api/v1/public/agents/3e4af47e-b3e9-4b83-8bc1-ab65735efc32/configuration",
+    "origin": "https://residentagent-api-production.azurewebsites.net",
+    "path": "/api/v1/public/agents/3e4af47e-b3e9-4b83-8bc1-ab65735efc32/configuration",
+    "method": "GET",
+    "resourceType": "fetch",
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://daytonabeach.gov/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {},
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "mcpTool": {
+      "name": "get_residentagent_api_production_azurewebsites_net_api_v1_public_agents_3e4af47e",
+      "description": "GET /api/v1/public/agents/3e4af47e-b3e9-4b83-8bc1-ab65735efc32/configuration",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "usage": "GET /api/v1/public/agents/3e4af47e-b3e9-4b83-8bc1-ab65735efc32/configuration. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /Pages/MenuMain/HiddenMainSubMenus",
+    "url": "https://daytonabeach.gov/Pages/MenuMain/HiddenMainSubMenus?pageID=%7BpageID%7D&moduleID=%7BmoduleID%7D&themeID=%7BthemeID%7D&menuContainerID=%7BmenuContainerID%7D&_=%7B_%7D",
+    "origin": "https://daytonabeach.gov",
+    "path": "/Pages/MenuMain/HiddenMainSubMenus",
+    "method": "GET",
+    "resourceType": "xhr",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://daytonabeach.gov/",
+      "accept-language": "en-US",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "sec-ch-ua-mobile": "?0",
+      "x-requested-with": "XMLHttpRequest",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "accept": "text/html, */*; q=0.01"
+    },
+    "responseHeaders": {
+      "content-security-policy": "frame-ancestors 'self' https://*.granicus.com https://*.civicplus.com; img-src * data: blob:; worker-src * data: blob: 'unsafe-eval' 'unsafe-inline'; script-src * about: 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; media-src * blob:; font-src * data:; default-src *",
+      "cache-control": "private, s-maxage=600,no-transform",
+      "content-encoding": "gzip",
+      "x-content-type-options": "nosniff",
+      "p3p": "CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"",
+      "content-length": "28690",
+      "date": "Tue, 22 Sep 2026 17:15:00 GMT",
+      "content-type": "text/html; charset=utf-8",
+      "vary": "Accept-Encoding",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "contentType": "text/html; charset=utf-8",
+    "requestBodyExample": null,
+    "queryParameters": [
+      {
+        "name": "pageID",
+        "example": "{pageID}"
+      },
+      {
+        "name": "moduleID",
+        "example": "{moduleID}"
+      },
+      {
+        "name": "themeID",
+        "example": "{themeID}"
+      },
+      {
+        "name": "menuContainerID",
+        "example": "{menuContainerID}"
+      },
+      {
+        "name": "_",
+        "example": "{_}"
+      }
+    ],
+    "responseSample": "\r\n\r\n\r\n    <ol id=\"ParentMainItem31\" class=\"navMenu\" role=\"menu\">\n        <li id=\"MainItem31MenuHeader\" class=\"subMenuItem toParent\" role=\"none\">\n            <a id=\"pagelink31\" class=\"navMenuItem openThePageLink\" href=\"/31/Government\" target=\"_self\" role=\"menuitem\" >Open the <em>Government</em> page</a>\n        </li>\n            <li id=\"MainItem577\" data-pageid=\"577\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/577/Agendas-Minutes\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Agendas &amp; Minutes <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem380\" data-pageid=\"380\" class=\"subMenuItem hasChildren\" role=\"none\">\n                <a class=\"navMenuItem  withChildren\" href=\"/380/Boards-Committees\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"true\" >Boards &amp; Committees <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem619\" data-pageid=\"619\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/619/Budget\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Budget <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem393\" data-pageid=\"393\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/384/City-Commission\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >City Commission <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem399\" data-pageid=\"399\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/399/City-Hall-Information\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >City Hall Information <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem392\" data-pageid=\"392\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"http://www.municode.com/library/FL/Daytona_Beach\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Code of Ordinances <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem394\" data-pageid=\"394\" class=\"subMenuItem hasChildren\" role=\"none\">\n                <a class=\"navMenuItem  withChildren\" href=\"/394/Elections\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"true\" >Elections <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem667\" data-pageid=\"667\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"http://www.municode.com/library/FL/Daytona_Beach\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Land Development Code <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem1037\" data-pageid=\"1037\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/1037/Legislative-Priorities\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Legislative Priorities <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem688\" data-pageid=\"688\" class=\"subMenuItem hasChildren\" role=\"none\">\n                <a class=\"navMenuItem  withChildren\" href=\"/688/Mayors-Welcome\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"true\" >Mayor&#39;s Welcome <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem1007\" data-pageid=\"1007\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"http://codb.us/directory.aspx\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Staff Directory <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem378\" data-pageid=\"378\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/378/Vision-Plan\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Vision Plan <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem1337\" data-pageid=\"1337\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/1337/DBTV\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >DBTV <span class=\"arrow\"></span></a>\r\n            </li>\r\n    </ol>\r\n\r\n\r\n\r\n    <ol id=\"ParentMainItem380\" class=\"navMenu\" role=\"menu\">\n        <li id=\"MainItem380MenuHeader\" class=\"subMenuItem toParent\" role=\"none\">\n            <a id=\"pagelink380\" class=\"navMenuItem openThePageLink\" href=\"/380/Boards-Committees\" target=\"_self\" role=\"menuitem\" >Open the <em>Boards &amp; Committees</em> page</a>\n        </li>\n            <li id=\"MainItem1224\" data-pageid=\"1224\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"https://forms.daytonabeach.gov/260045423792051\" target=\"_blank\" role=\"menuitem\" aria-haspopup=\"false\" rel=\"noopener\">Board Application <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem1332\" data-pageid=\"1332\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/1332/Youth-Advisory-Board-Application\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Youth Advisory Board Application <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem893\" data-pageid=\"893\" class=\"subMenuItem hasChildren\" role=\"none\">\n                <a class=\"navMenuItem  withChildren\" href=\"/893/Serving-the-City\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"true\" >Serving the City <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem1024\" data-pageid=\"1024\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/1024/Affordable-Housing-Advisory-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Affordable Housing Advisory Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem388\" data-pageid=\"388\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/388/Beachside-Redevelopment-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Beachside Redevelopment Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem401\" data-pageid=\"401\" class=\"subMenuItem hasChildren\" role=\"none\">\n                <a class=\"navMenuItem  withChildren\" href=\"/401/Beautification-Tree-Advisory-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"true\" >Beautification / Tree Advisory Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem383\" data-pageid=\"383\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/383/Board-of-Adjustments\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Board of Adjustments <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem862\" data-pageid=\"862\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/862/Board-of-Building-Codes\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Board of Building Codes <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem726\" data-pageid=\"726\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/726/Charter-Review-Commission\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Charter Review Commission <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem384\" data-pageid=\"384\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/384/City-Commission\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >City Commission <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem402\" data-pageid=\"402\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/402/Code-Enforcement-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Code Enforcement Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem385\" data-pageid=\"385\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/385/Community-Redevelopment-Agency\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Community Redevelopment Agency <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem386\" data-pageid=\"386\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/386/Downtown-Development-Authority\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Downtown Development Authority <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem403\" data-pageid=\"403\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/403/Downtown-Redevelopment-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Downtown Redevelopment Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem387\" data-pageid=\"387\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/387/Economic-Development-Advisory-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Economic Development Advisory Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem404\" data-pageid=\"404\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/404/Historic-Preservation-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Historic Preservation Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem389\" data-pageid=\"389\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/389/Midtown-Redevelopment-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Midtown Redevelopment Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem722\" data-pageid=\"722\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/722/Nuisance-Abatement-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Nuisance Abatement Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem1026\" data-pageid=\"1026\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/1026/Peabody-Auditorium-Advisory-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Peabody Auditorium Advisory Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem390\" data-pageid=\"390\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/390/Planning-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Planning Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem632\" data-pageid=\"632\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/632/Police-Firefighters-Pension-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Police &amp; Firefighters&#39; Pension Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem405\" data-pageid=\"405\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/405/Special-Magistrate-Proceedings\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Special Magistrate Proceedings <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem1336\" data-pageid=\"1336\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"/1336/Youth-Advisory-Board\" target=\"_self\" role=\"menuitem\" aria-haspopup=\"false\" >Youth Advisory Board <span class=\"arrow\"></span></a>\r\n            </li>\r\n    </ol>\r\n\r\n\r\n\r\n    <ol id=\"ParentMainItem893\" class=\"navMenu\" role=\"menu\">\n        <li id=\"MainItem893MenuHeader\" class=\"subMenuItem toParent\" role=\"none\">\n            <a id=\"pagelink893\" class=\"navMenuItem openThePageLink\" href=\"/893/Serving-the-City\" target=\"_self\" role=\"menuitem\" >Open the <em>Serving the City</em> page</a>\n        </li>\n            <li id=\"MainItem1333\" data-pageid=\"1333\" class=\"subMenuItem\" role=\"none\">\n                <a class=\"navMenuItem \" href=\"https://codb.us/1332/Youth-Advisory-Board\" target=\"_blank\" role=\"menuitem\" aria-haspopup=\"false\" rel=\"noopener\">Youth Advisory Board Application <span class=\"arrow\"></span></a>\r\n            </li>\r\n            <li id=\"MainItem625\" d",
+    "mcpTool": {
+      "name": "get_daytonabeach_gov_Pages_MenuMain_HiddenMainSubMenus",
+      "description": "GET /Pages/MenuMain/HiddenMainSubMenus",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pageID": {
+            "type": "string",
+            "description": "Query parameter observed as {pageID}"
+          },
+          "moduleID": {
+            "type": "string",
+            "description": "Query parameter observed as {moduleID}"
+          },
+          "themeID": {
+            "type": "string",
+            "description": "Query parameter observed as {themeID}"
+          },
+          "menuContainerID": {
+            "type": "string",
+            "description": "Query parameter observed as {menuContainerID}"
+          },
+          "_": {
+            "type": "string",
+            "description": "Query parameter observed as {_}"
+          }
+        },
+        "required": []
+      }
+    },
+    "usage": "GET /Pages/MenuMain/HiddenMainSubMenus. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /api/v1/SplashModal/Get",
+    "url": "https://daytonabeach.gov/api/v1/SplashModal/Get?targetId=%7BtargetId%7D&targetType=%7BtargetType%7D&requestMode=%7BrequestMode%7D&_=%7B_%7D",
+    "origin": "https://daytonabeach.gov",
+    "path": "/api/v1/SplashModal/Get",
+    "method": "GET",
+    "resourceType": "xhr",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://daytonabeach.gov/",
+      "accept-language": "en-US",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "sec-ch-ua-mobile": "?0",
+      "x-requested-with": "XMLHttpRequest",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "accept": "*/*"
+    },
+    "responseHeaders": {
+      "content-security-policy": "frame-ancestors 'self' https://*.granicus.com https://*.civicplus.com; img-src * data: blob:; worker-src * data: blob: 'unsafe-eval' 'unsafe-inline'; script-src * about: 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; media-src * blob:; font-src * data:; default-src *",
+      "cache-control": "no-cache,no-transform",
+      "pragma": "no-cache",
+      "x-content-type-options": "nosniff",
+      "expires": "-1",
+      "p3p": "CP=\"IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT\"",
+      "content-length": "358",
+      "date": "Tue, 22 Sep 2026 17:15:00 GMT",
+      "content-type": "application/json; charset=utf-8",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "contentType": "application/json; charset=utf-8",
+    "requestBodyExample": null,
+    "queryParameters": [
+      {
+        "name": "targetId",
+        "example": "{targetId}"
+      },
+      {
+        "name": "targetType",
+        "example": "{targetType}"
+      },
+      {
+        "name": "requestMode",
+        "example": "{requestMode}"
+      },
+      {
+        "name": "_",
+        "example": "{_}"
+      }
+    ],
+    "responseSample": "{\"Id\":0,\"TargetId\":null,\"TargetType\":0,\"InheritedFrom\":null,\"InheritedFromPageTitle\":null,\"Title\":null,\"Content\":null,\"StartDate\":null,\"StartTime\":null,\"EndDate\":null,\"EndTime\":null,\"AllowScheduling\":false,\"Visibility\":1,\"DateFormat\":null,\"EnableFontOptions\":false,\"LastModifiedBy\":0,\"LastModifiedOn\":\"0001-01-01T00:00:00\",\"PushDown\":false,\"Inherited\":false}",
+    "mcpTool": {
+      "name": "get_daytonabeach_gov_api_v1_SplashModal_Get",
+      "description": "GET /api/v1/SplashModal/Get",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targetId": {
+            "type": "string",
+            "description": "Query parameter observed as {targetId}"
+          },
+          "targetType": {
+            "type": "string",
+            "description": "Query parameter observed as {targetType}"
+          },
+          "requestMode": {
+            "type": "string",
+            "description": "Query parameter observed as {requestMode}"
+          },
+          "_": {
+            "type": "string",
+            "description": "Query parameter observed as {_}"
+          }
+        },
+        "required": []
+      }
+    },
+    "usage": "GET /api/v1/SplashModal/Get. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /s/muli/v34/7Auwp_0qiz-afTLGLQ.woff2",
+    "url": "https://fonts.gstatic.com/s/muli/v34/7Auwp_0qiz-afTLGLQ.woff2",
+    "origin": "https://fonts.gstatic.com",
+    "path": "/s/muli/v34/7Auwp_0qiz-afTLGLQ.woff2",
+    "method": "GET",
+    "resourceType": "font",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "origin": "https://daytonabeach.gov",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://fonts.googleapis.com/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "age": "112622",
+      "report-to": "{\"group\":\"apps-themes\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/apps-themes\"}]}",
+      "x-content-type-options": "nosniff",
+      "expires": "Tue, 21 Sep 2027 09:57:59 GMT",
+      "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+      "date": "Mon, 21 Sep 2026 09:57:59 GMT",
+      "last-modified": "Mon, 08 Sep 2025 18:05:36 GMT",
+      "content-type": "font/woff2",
+      "cache-control": "public, max-age=31536000",
+      "timing-allow-origin": "*",
+      "cross-origin-opener-policy": "same-origin; report-to=\"apps-themes\"",
+      "cross-origin-resource-policy": "cross-origin",
+      "content-security-policy-report-only": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/apps-themes",
+      "accept-ranges": "bytes",
+      "access-control-allow-origin": "*",
+      "content-length": "32868",
+      "x-xss-protection": "0",
+      "server": "sffe"
+    },
+    "contentType": "font/woff2",
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "mcpTool": {
+      "name": "get_fonts_gstatic_com_s_muli_v34_7Auwp_0qiz_afTLGLQ_woff2",
+      "description": "GET /s/muli/v34/7Auwp_0qiz-afTLGLQ.woff2",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "usage": "GET /s/muli/v34/7Auwp_0qiz-afTLGLQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /s/muli/v34/7Aujp_0qiz-afTfcIyoiGtm2P0wG05Fz4eqVww.woff2",
+    "url": "https://fonts.gstatic.com/s/muli/v34/7Aujp_0qiz-afTfcIyoiGtm2P0wG05Fz4eqVww.woff2",
+    "origin": "https://fonts.gstatic.com",
+    "path": "/s/muli/v34/7Aujp_0qiz-afTfcIyoiGtm2P0wG05Fz4eqVww.woff2",
+    "method": "GET",
+    "resourceType": "font",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "origin": "https://daytonabeach.gov",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://fonts.googleapis.com/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "age": "112218",
+      "report-to": "{\"group\":\"apps-themes\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/apps-themes\"}]}",
+      "x-content-type-options": "nosniff",
+      "expires": "Tue, 21 Sep 2027 10:04:43 GMT",
+      "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+      "date": "Mon, 21 Sep 2026 10:04:43 GMT",
+      "last-modified": "Mon, 08 Sep 2025 18:07:10 GMT",
+      "content-type": "font/woff2",
+      "cache-control": "public, max-age=31536000",
+      "timing-allow-origin": "*",
+      "cross-origin-opener-policy": "same-origin; report-to=\"apps-themes\"",
+      "cross-origin-resource-policy": "cross-origin",
+      "content-security-policy-report-only": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/apps-themes",
+      "accept-ranges": "bytes",
+      "access-control-allow-origin": "*",
+      "content-length": "18916",
+      "x-xss-protection": "0",
+      "server": "sffe"
+    },
+    "contentType": "font/woff2",
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "mcpTool": {
+      "name": "get_fonts_gstatic_com_s_muli_v34_7Aujp_0qiz_afTfcIyoiGtm2P0wG05Fz4eqVww_woff2",
+      "description": "GET /s/muli/v34/7Aujp_0qiz-afTfcIyoiGtm2P0wG05Fz4eqVww.woff2",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "usage": "GET /s/muli/v34/7Aujp_0qiz-afTfcIyoiGtm2P0wG05Fz4eqVww.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2",
+    "url": "https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2",
+    "origin": "https://fonts.gstatic.com",
+    "path": "/s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2",
+    "method": "GET",
+    "resourceType": "font",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "origin": "https://daytonabeach.gov",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://fonts.googleapis.com/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "age": "11103",
+      "report-to": "{\"group\":\"apps-themes\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/apps-themes\"}]}",
+      "x-content-type-options": "nosniff",
+      "expires": "Wed, 22 Sep 2027 14:09:58 GMT",
+      "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+      "date": "Tue, 22 Sep 2026 14:09:58 GMT",
+      "last-modified": "Mon, 15 Sep 2025 16:35:07 GMT",
+      "content-type": "font/woff2",
+      "cache-control": "public, max-age=31536000",
+      "timing-allow-origin": "*",
+      "cross-origin-opener-policy": "same-origin; report-to=\"apps-themes\"",
+      "cross-origin-resource-policy": "cross-origin",
+      "content-security-policy-report-only": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/apps-themes",
+      "accept-ranges": "bytes",
+      "access-control-allow-origin": "*",
+      "content-length": "7816",
+      "x-xss-protection": "0",
+      "server": "sffe"
+    },
+    "contentType": "font/woff2",
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "mcpTool": {
+      "name": "get_fonts_gstatic_com_s_poppins_v24_pxiByp8kv8JHgFVrLCz7Z1xlFQ_woff2",
+      "description": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "usage": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2",
+    "url": "https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2",
+    "origin": "https://fonts.gstatic.com",
+    "path": "/s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2",
+    "method": "GET",
+    "resourceType": "font",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "origin": "https://daytonabeach.gov",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://fonts.googleapis.com/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "age": "103202",
+      "report-to": "{\"group\":\"apps-themes\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/apps-themes\"}]}",
+      "x-content-type-options": "nosniff",
+      "expires": "Tue, 21 Sep 2027 12:34:59 GMT",
+      "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+      "date": "Mon, 21 Sep 2026 12:34:59 GMT",
+      "last-modified": "Mon, 15 Sep 2025 16:34:42 GMT",
+      "content-type": "font/woff2",
+      "cache-control": "public, max-age=31536000",
+      "timing-allow-origin": "*",
+      "cross-origin-opener-policy": "same-origin; report-to=\"apps-themes\"",
+      "cross-origin-resource-policy": "cross-origin",
+      "content-security-policy-report-only": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/apps-themes",
+      "accept-ranges": "bytes",
+      "access-control-allow-origin": "*",
+      "content-length": "7884",
+      "x-xss-protection": "0",
+      "server": "sffe"
+    },
+    "contentType": "font/woff2",
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "mcpTool": {
+      "name": "get_fonts_gstatic_com_s_poppins_v24_pxiEyp8kv8JHgFVrJJfecg_woff2",
+      "description": "GET /s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "usage": "GET /s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2",
+    "url": "https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2",
+    "origin": "https://fonts.gstatic.com",
+    "path": "/s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2",
+    "method": "GET",
+    "resourceType": "font",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "origin": "https://daytonabeach.gov",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://fonts.googleapis.com/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "age": "112642",
+      "report-to": "{\"group\":\"apps-themes\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/apps-themes\"}]}",
+      "x-content-type-options": "nosniff",
+      "expires": "Tue, 21 Sep 2027 09:57:39 GMT",
+      "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+      "date": "Mon, 21 Sep 2026 09:57:39 GMT",
+      "last-modified": "Mon, 15 Sep 2025 16:33:57 GMT",
+      "content-type": "font/woff2",
+      "cache-control": "public, max-age=31536000",
+      "timing-allow-origin": "*",
+      "cross-origin-opener-policy": "same-origin; report-to=\"apps-themes\"",
+      "cross-origin-resource-policy": "cross-origin",
+      "content-security-policy-report-only": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/apps-themes",
+      "accept-ranges": "bytes",
+      "access-control-allow-origin": "*",
+      "content-length": "8000",
+      "x-xss-protection": "0",
+      "server": "sffe"
+    },
+    "contentType": "font/woff2",
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "mcpTool": {
+      "name": "get_fonts_gstatic_com_s_poppins_v24_pxiByp8kv8JHgFVrLEj6Z1xlFQ_woff2",
+      "description": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "usage": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHwQ.woff2",
+    "url": "https://fonts.gstatic.com/s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHwQ.woff2",
+    "origin": "https://fonts.gstatic.com",
+    "path": "/s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHwQ.woff2",
+    "method": "GET",
+    "resourceType": "font",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "origin": "https://daytonabeach.gov",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://fonts.googleapis.com/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "age": "4366",
+      "report-to": "{\"group\":\"apps-themes\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/apps-themes\"}]}",
+      "x-content-type-options": "nosniff",
+      "expires": "Wed, 22 Sep 2027 16:02:15 GMT",
+      "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+      "date": "Tue, 22 Sep 2026 16:02:15 GMT",
+      "last-modified": "Mon, 08 Sep 2025 18:00:41 GMT",
+      "content-type": "font/woff2",
+      "cache-control": "public, max-age=31536000",
+      "timing-allow-origin": "*",
+      "cross-origin-opener-policy": "same-origin; report-to=\"apps-themes\"",
+      "cross-origin-resource-policy": "cross-origin",
+      "content-security-policy-report-only": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/apps-themes",
+      "accept-ranges": "bytes",
+      "access-control-allow-origin": "*",
+      "content-length": "18308",
+      "x-xss-protection": "0",
+      "server": "sffe"
+    },
+    "contentType": "font/woff2",
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "mcpTool": {
+      "name": "get_fonts_gstatic_com_s_yellowtail_v25_OZpGg_pnoDtINPfRIlLohlvHwQ_woff2",
+      "description": "GET /s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHwQ.woff2",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "usage": "GET /s/yellowtail/v25/OZpGg_pnoDtINPfRIlLohlvHwQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2",
+    "url": "https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2",
+    "origin": "https://fonts.gstatic.com",
+    "path": "/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2",
+    "method": "GET",
+    "resourceType": "font",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "origin": "https://daytonabeach.gov",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://fonts.googleapis.com/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "age": "112665",
+      "report-to": "{\"group\":\"apps-themes\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/apps-themes\"}]}",
+      "x-content-type-options": "nosniff",
+      "expires": "Tue, 21 Sep 2027 09:57:16 GMT",
+      "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+      "date": "Mon, 21 Sep 2026 09:57:16 GMT",
+      "last-modified": "Mon, 15 Sep 2025 16:30:41 GMT",
+      "content-type": "font/woff2",
+      "cache-control": "public, max-age=31536000",
+      "timing-allow-origin": "*",
+      "cross-origin-opener-policy": "same-origin; report-to=\"apps-themes\"",
+      "cross-origin-resource-policy": "cross-origin",
+      "content-security-policy-report-only": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/apps-themes",
+      "accept-ranges": "bytes",
+      "access-control-allow-origin": "*",
+      "content-length": "48320",
+      "x-xss-protection": "0",
+      "server": "sffe"
+    },
+    "contentType": "font/woff2",
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "mcpTool": {
+      "name": "get_fonts_gstatic_com_s_opensans_v44_memvYaGs126MiZpBA_UvWbX2vVnXBbObj2OVTS_muw_",
+      "description": "GET /s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "usage": "GET /s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-muw.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2",
+    "url": "https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2",
+    "origin": "https://fonts.gstatic.com",
+    "path": "/s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2",
+    "method": "GET",
+    "resourceType": "font",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "origin": "https://daytonabeach.gov",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://fonts.googleapis.com/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "age": "112650",
+      "report-to": "{\"group\":\"apps-themes\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/apps-themes\"}]}",
+      "x-content-type-options": "nosniff",
+      "expires": "Tue, 21 Sep 2027 09:57:31 GMT",
+      "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+      "date": "Mon, 21 Sep 2026 09:57:31 GMT",
+      "last-modified": "Mon, 15 Sep 2025 16:36:26 GMT",
+      "content-type": "font/woff2",
+      "cache-control": "public, max-age=31536000",
+      "timing-allow-origin": "*",
+      "cross-origin-opener-policy": "same-origin; report-to=\"apps-themes\"",
+      "cross-origin-resource-policy": "cross-origin",
+      "content-security-policy-report-only": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/apps-themes",
+      "accept-ranges": "bytes",
+      "access-control-allow-origin": "*",
+      "content-length": "7748",
+      "x-xss-protection": "0",
+      "server": "sffe"
+    },
+    "contentType": "font/woff2",
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "mcpTool": {
+      "name": "get_fonts_gstatic_com_s_poppins_v24_pxiByp8kv8JHgFVrLGT9Z1xlFQ_woff2",
+      "description": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "usage": "GET /s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "GET /domains/daytonabeach.gov/domain.json",
+    "url": "https://docaccess.com/domains/daytonabeach.gov/domain.json",
+    "origin": "https://docaccess.com",
+    "path": "/domains/daytonabeach.gov/domain.json",
+    "method": "GET",
+    "resourceType": "fetch",
+    "status": 200,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://daytonabeach.gov/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "access-control-expose-headers": "*",
+      "content-encoding": "gzip",
+      "x-amz-version-id": "K6yMnhiky91Ob5HGUzV9rGKcDz8n0LJi",
+      "etag": "\"9c4049f5bcf9465ee4dc41c87d4963bd\"",
+      "age": "12",
+      "x-cache": "Hit from cloudfront",
+      "x-amz-cf-id": "Wx4wZsibyfpdKv27DYNe-fF-yl1wydzdOu47NrYAYFAXOp0DpA_HvA==",
+      "date": "Tue, 22 Sep 2026 17:15:01 GMT",
+      "content-type": "application/json",
+      "vary": "Accept-Encoding",
+      "last-modified": "Tue, 22 Sep 2026 14:36:24 GMT",
+      "cache-control": "max-age=15",
+      "via": "1.1 108b086b0477318ec0574190d48b941a.cloudfront.net (CloudFront)",
+      "accept-ranges": "bytes",
+      "access-control-allow-origin": "*",
+      "content-length": "260485",
+      "x-amz-cf-pop": "ATL58-P13",
+      "server": "AmazonS3",
+      "x-amz-server-side-encryption": "AES256"
+    },
+    "contentType": "application/json",
+    "requestBodyExample": null,
+    "queryParameters": [],
+    "responseSample": "{\"domain\":\"daytonabeach.gov\",\"aliases\":[],\"site_id\":\"6c186a9a-fa9f-4811-b867-046b991a76d3\",\"docbox_enabled\":false,\"private_serving\":true,\"docbox_installed\":true,\"scripts\":[{\"src\":\"integrated-report-central\"}],\"_settings\":{\"transcribe_on_demand\":true,\"request_mode\":\"email_required\",\"allow_user_request\":true,\"canvas_v2\":false},\"generation\":1790087783,\"aecb29d7530e9eb7620b\":\"056509103d3a46c18637c5c2c291a0c04615c1bf8bf87b2652f2095dab9386a6\",\"056509103d3a46c18637\":false,\"f56b59b0347884142b66\":false,\"eaae027be1aa88227db6\":false,\"1628c865c084bb3ee592\":\"cc00589536b0fbca460635c0a6ce32ba3caaf91c9c33a830cf30665ae45cd658\",\"cc00589536b0fbca4606\":false,\"fbf0afea7fff8efd918c\":\"fedc8385baa83b526a83312bd37d3069b8e24ddf8e6e37f428d6cf0bb3deb5c8\",\"fedc8385baa83b526a83\":false,\"9f85119302c850cf7898\":\"add6f7b420ddc3a6a300a301f770623d\",\"add6f7b420ddc3a6a300\":false,\"38730cb45d75acfbce95\":\"442afa102f90af7896ae92ca391d50d51780fc34d7de94f1315554da7427fcaa\",\"442afa102f90af7896ae\":false,\"6acdc3781d0827cbf53f\":false,\"0e832901e51f33619217\":false,\"b5d46722c83282891297\":\"ebaed58c1f4bf68eb76c9c5e5fb369604e8af8d9c4e5e45f09e165dde46203cb\",\"ebaed58c1f4bf68eb76c\":false,\"8e4deb21114c962bc13e\":\"28d58ff2d88e5c0125d5998c9356015f6b80de1a8f0eb82acd629b48f14f722e\",\"28d58ff2d88e5c0125d5\":false,\"11afa6a6a18dd731b960\":\"60c2ade7b94cd5c5eec89aab1e93c81f0b41f6fec0ea83a7ce9eb2265b828e6f\",\"60c2ade7b94cd5c5eec8\":false,\"4b41d924c36f54bbeeae\":\"85c71ecc07bba419be1ab77238c40fa1d6aed7e2e60db2b843486fcade563ffb\",\"85c71ecc07bba419be1a\":false,\"c4e420358ca5896677b0\":false,\"f55c0fd6afe7631706bb\":false,\"882a738d0b2de7440e0c\":false,\"8552bcd0b6f12ab85710\":false,\"6b55e0b84d3ec190560c\":false,\"10fae5329a2673517641\":\"e61eee8390a70c66701b8c749af7a3bb3007b16de636bc7ba1eb6473b9f6720e\",\"e61eee8390a70c66701b\":false,\"44705ec22a346b8e85a1\":\"6822873399e210bc2d89a7135b8635c511d050455ed78fd8ddb374bddc7b99d5\",\"6822873399e210bc2d89\":false,\"11db03da840a6c076a30\":\"bde921ce41cf07871774eec46c4d07d1000afcf5b3999d300eec2199d7718df4\",\"bde921ce41cf07871774\":false,\"d93efa65c84908651102\":\"bb8583110d6b31bfece4d1188867e166f6347423482cb667ed5464767887c182\",\"bb8583110d6b31bfece4\":false,\"725850d39ec1a09e6edd\":\"0ca9baa49e2e8a31129019167800dcfeff97b1e7a571566e0cdbc26b65b82b88\",\"0ca9baa49e2e8a311290\":false,\"a1d3db5e900e3f1c52ed\":false,\"66c7cd59d309f13b0918\":false,\"699672b90e0a8e8ee798\":\"3622df2997abeb0860fe3bc3e9e56bdcc03919ee7683f2e19a79e8155fd0471e\",\"3622df2997abeb0860fe\":false,\"287de3b265721d6643cc\":\"f4dec7170735bc8942a9ce0723320373a1d6da4c9248cf7b1e6b80182cf6ffdb\",\"f4dec7170735bc8942a9\":false,\"0943dc46d82b3380be98\":false,\"723e99bfcae18e81855e\":false,\"f10101d0bf897b540fc3\":false,\"16e7506bb20675a51c10\":false,\"5d38a34ed17640036693\":\"a50c84d497f8af50d679e4cdf5de423d26b89a5d609c94cf02aa3bd4429d8486\",\"a50c84d497f8af50d679\":false,\"bfbdad5b13cf1c08f0e5\":false,\"9875e61d3d92a7ca1a14\":\"b0118b422194c62e8cb1aa7148233ff6\",\"b0118b422194c62e8cb1\":false,\"23919b3385d2b8d896e0\":false,\"1645d4af6941e5e89077\":false,\"733f39b4611bc906becf\":false,\"c612261b30045e15c099\":false,\"87caa29f710d6b7ee77d\":false,\"a76b200c42b21f0ce591\":false,\"8cc8c13289cfe896a147\":false,\"d94aa4d990c7aa23bfd8\":false,\"57778ddc0ab4dbcfab3b\":false,\"54d20c4e54de1c13e781\":false,\"0bb7265427aa12ac1a21\":false,\"9674ee4543f1213c0470\":false,\"8cfa74d8780c431fe28f\":false,\"a966564b09487216d82a\":false,\"2816bdc76f2dcb55c3d9\":false,\"70de120ca88a881f0a47\":\"66e799a167fd8f560c12df1490601797e391b17b2fb13e8d3859f51c6ad5f425\",\"66e799a167fd8f560c12\":false,\"f5a853f4891757a0721f\":false,\"8c02814a29767270e01f\":false,\"3c04564036405f53abed\":\"6c07b30b21a08ffb0649d6fca56f9d43128dce8978b3d29fd719cab51021167d\",\"6c07b30b21a08ffb0649\":false,\"6797e58ab0da9849797d\":false,\"45c5151729d27120b632\":false,\"33fd28a290d6e6047358\":false,\"2460de30889008853a42\":false,\"01069fbf836b4f7804e2\":false,\"6a486d7fa4b6c703306a\":\"f5a4ea611a3be5e74a168eb850aa01a0e6288b41cd28eb3bbb1597dfecafa29b\",\"f5a4ea611a3be5e74a16\":false,\"5762b37a4dbf51e573fd\":false,\"5003ca7b00e0d4864d10\":false,\"55541e48b1769d41ae0e\":false,\"064dd040f100b4018fd3\":false,\"5bd62755820970783731\":false,\"4b84e208800ec5336031\":false,\"0d026c4641edac5b0932\":\"73bf0059f207de43f459f6757dd7b1c3dae66fe42c0651baf25c212e705a2bb8\",\"73bf0059f207de43f459\":false,\"d153c17a2789391f2967\":\"a7d6a8c653d43c8ddda1327d25b567b4d2e6213383073153e0d22602934f288b\",\"a7d6a8c653d43c8ddda1\":false,\"98c6d71c9a1bddc2d664\":false,\"011302ab36b5c18f9418\":false,\"f93e08e789b7691cfc5e\":false,\"27245c3242d90d9903fa\":false,\"c7e847deaeaa7297e1c2\":false,\"cdb39a6e5f0d73645524\":false,\"e82ff67a9c12a12147f2\":false,\"984a871e6f6f253a520e\":false,\"b0cd800520be58e5dff3\":false,\"1fcc4e494501337f52c2\":false,\"fc60c2623bcce7873af1\":false,\"97fe051851621f59c65d\":false,\"36a9cd06025668d7ccdf\":false,\"75846ae79efc2169186e\":false,\"b6500128fbfb8e3b77d7\":false,\"3cb359bfd5c496b0335d\":false,\"e0dd8691e76755b3efa6\":false,\"52686d79f122338dd0a7\":false,\"799e97a8fbee9950d7c4\":false,\"0618c8e0640dc89d1031\":false,\"84e173a39570de1753cd\":false,\"7ddb67cf6404eaf40c2d\":false,\"2afffa10c9ac40a21d4a\":false,\"023c103ab8f702a314bf\":\"3f5c8cbb9d19cd1eb5a5a1124a283dc264af42ead5bec5e1c65bb7691baa5191\",\"3f5c8cbb9d19cd1eb5a5\":false,\"8b1ca2ef631a2030cbb0\":false,\"e4359605f96a8067aab7\":\"4258aa55ed7e231ed523016be848def7a3e8925a29b360bc844a42305f9601e2\",\"4258aa55ed7e231ed523\":false,\"999b104bacd2a73b9844\":\"4258aa55ed7e231ed523016be848def7a3e8925a29b360bc844a42305f9601e2\",\"6789b8eeaa1f40e242e4\":false,\"3fe903291d62b7a3fbc6\":false,\"d35e2b52ed8511a3e780\":false,\"1423399eb95521b0593b\":false,\"5923db433eed6a013472\":false,\"b0649a07a6b08d101969\":false,\"856f4103b8171a3bca13\":false,\"5200a1771e950180e723\":\"215af1fb052b4ec2f41fe56009092de7d061c7659266f352b9c3f01649710d78\",\"215af1fb052b4ec2f41f\":false,\"a065a6a35febf6aee542\":false,\"72751adb888f3abe0003\":\"252e01eb74d2c78d0f79d0783c46749d7c00777648fbf41aec17a2752e3f9b7f\",\"252e01eb74d2c78d0f79\":false,\"d5c24d61f687001fae56\":false,\"5123e40cc5b505f2d398\":false,\"fe2da541866cd860b129\":false,\"7a9810fac49a85879ff5\":false,\"9cfbc6683bad473e2616\":false,\"2fc9638393e8c7338968\":\"ff5442056c0f3864b7654ee62904676c574ce794906f04a25eb6da221dd7e4ef\",\"ff5442056c0f3864b765\":false,\"28df7bf1e9de016bed3b\":\"24e7a94812d9fa6ab522f7ab25f7bb8d\",\"24e7a94812d9fa6ab522\":false,\"516d97cdc0e869ed2c29\":false,\"d3bc96201998a1d8e879\":false,\"2dfbdef17f530a5bf458\":false,\"7802561ff59ac1f7d902\":false,\"80a788a0e9322b016b4d\":false,\"a06882c45173a23caf56\":\"c71057dc4da674eb4b4f8f464e5dbb32abc9b38af8a80715d85dc2e2e731d9aa\",\"c71057dc4da674eb4b4f\":false,\"327fd6b9a3bc564751d3\":\"c71057dc4da674eb4b4f8f464e5dbb32abc9b38af8a80715d85dc2e2e731d9aa\",\"72ecb60ac68b1cefb7be\":false,\"7b11375b11c477a78cd4\":false,\"15a12132674291b195f3\":\"541e3416775900a2f0cfe5c67379c11305e3433e86418423f10ed4b4d0405589\",\"541e3416775900a2f0cf\":false,\"9762adde4c23705359d1\":\"541e3416775900a2f0cfe5c67379c11305e3433e86418423f10ed4b4d0405589\",\"1f44efd0c097ca8fe361\":false,\"68e6247c9879561fce28\":false,\"92842121e9947b7b508d\":false,\"18c7ef633f5fce92131e\":\"66cd0b9e9804d6d33bf9a0ceaec99a3034086cce81f1acb0c699d979dba03607\",\"66cd0b9e9804d6d33bf9\":false,\"a16c3294bcb07eb5c1e6\":\"210af4a855312aa989363e258c5eb934a8ce47ccfb846a4fdd986d4d7aebab38\",\"210af4a855312aa98936\":false,\"75d3b8570e11d1f0bc9c\":\"b64dab515a3d314598cbac6c853126a0a05c8234af57861bcc4da3ceba83b2ec\",\"b64dab515a3d314598cb\":false,\"b85ba07153a9c680761b\":\"da51bcc7722d446b328f485933110ae62a25bfd5a0025246b5b3d385eba71004\",\"da51bcc7722d446b328f\":false,\"f3a16d83d53ad64bb358\":false,\"cd32ea9b0b792b1ca2ab\":\"bdd7b7dcdb17fcd9bae4454b94b7a303b1f8456d3d71262c3ee925a2ba2684af\",\"bdd7b7dcdb17fcd9bae4\":false,\"b3b57230fe418e9a08eb\":false,\"8a54c7b323f53d08f6ea\":false,\"7fd10407b75dcd18e65b\":\"23184b8f9c3014c60279d54539da07d4a0645a64f8e07aea1e30b7397c0539bf\",\"23184b8f9c3014c60279\":false,\"6a5dfafbbcc2b25f75ca\":false,\"b2b814e1208bddf92f25\":false,\"046f416bf36161211260\":false,\"fe09325bfb9f371c9dc6\":false,\"540df8f04b094e8168f8\":false,\"ff2ff09959e06b89226c\":false,\"31c3113c70d18e1aeecc\":false,\"9966770dedba4197cf2a\":\"2cf30c9b3aab401553a336f7d965aa35\",\"2cf30c9b3aab401553a3\":false,\"b1fed723c25ec2c2d751\":false,\"09f44404310dba1aba4b\":false,\"1317c5407019ee4a0913\":false,\"ab910100952c06a87482\":\"269326a574d7389835afc905d40f191cca146c32bafa69791180ef19bc927f5c\",\"269326a574d7389835af\":false,\"9d33ee7ca83ee540bb05\":false,\"e7d5fb1cf70dadb3860d\":false,\"8f3da781f9ff6039e65b\":false,\"b655d3d4a3e2d5f0ed58\":false,\"c2853a1933441cfbf5f8\":false,\"313996a5941596e4262e\":false,\"ec2a18b5bdfca199eec2\":false,\"b07202ac1ae6a55819b4\":false,\"295eee80c5f4e99462a7\":false,\"febf124a5d298a4e9954\":false,\"a835769393693b0aad02\":false,\"5f25a00ff1230f6023f3\":\"b6e40cd8311d5b563af30dbf6fe0a038\",\"b6e40cd8311d5b563af3\":false,\"2e45fc0ca381085b0690\":false,\"f4eaa9e604d6af1ed989\":false,\"6ff886170c380939db5c\":\"4836bc3d92ec3eab3702116a46af0031\",\"4836bc3d92ec3eab3702\":false,\"07256c1ced65f84ab58e\":false,\"29a923bee6d6d775f9ea\":false,\"483ec69feb63bc1610bb\":false,\"1590f73f03a8caccf11d\":false,\"a3697f97dd60449a48c2\":\"4a5282162de3760bbc497c9d11039ddb\",\"4a5282162de3760bbc49\":false,\"38eca663cd441bc2ce9b\":\"df908e2234eddc33b1c69f38fe7f1f12\",\"df908e2234eddc33b1c6\":false,\"40aed13867f6585f88bb\":false,\"819219c7872d357a8797\":false,\"0f9069575ea3618052cb\":\"8b1ca2ef631a2030cbb0834227c348c8d3ff9d2b506f7ea15cf910e39cc4dd8e\",\"1977e0aab92df4b9285f\":\"99bc9088535ea39f9b4d11161678718ae0d2539c74d3c158d26c29cd555b80e6\",\"99bc9088535ea39f9b4d\":false,\"153d5c1a3a50b0a7e587\":false,\"6250fdaeb367901c6325\":false,\"a9e56f94d0147238b53e\":false,\"f09af718e1a54c5379a8\":\"1b504d577ea781d800f08c5502c67031cca46ffd492fdfdded515a002445abea\",\"1b504d577ea781d800f0\":false,\"8b22a6b84e0a0e87b0dc\":false,\"0646436f851d0509d998\":\"6a6549aa570d88f33464cddbfedae8fbc773887c966cb0bbe32adbaa3bb3c2a6\",\"6a6549aa570d88f33464\":false,\"e9582f4bfbf4e8a62b17\":\"696c9f1d344f1d26a6af1b01e59ca1c2\",\"696c9f1d344f1d26a6af\":false,\"71c56f10533d36184112\":\"fee0ab8649bc8df45a8c4cd623e44d0b\",\"fee0ab8649bc8df45a8c\":false,\"bec81520f2d803929d58\":\"2c9a61b4b4776324434b2a6b7737801249ea82eb28fe940c7be953f071ead7b6\",\"2c9a61b4b4776324434b\":false,\"70d3ef8d0e7a0fb9623a\":false,\"a59e691173ac79374226\":false,\"708b02310a1d35feb351\":false,\"e2bbfd8b66367143a742\":\"e66448afaf710b8eaca337eb25d08ef04890883d09852cabc24eee6484c6c52e\",\"e66448afaf710b8eaca3\":false,\"22c17e5e775a86789f27\":false,\"6ae181d8ae6b9900e3f3\":false,\"23cac05c2f0f25572cbf\":false,\"93fdd8411f82d58a06eb\":false,\"afe1604f79cce0987957\":false,\"7ea3e9d9f4708a039d1b\":\"d32a97dddb4ca8fabf9698b57461758af33771533c8445f9fb11cb457e90ac90\",\"d32a97dddb4ca8fabf96\":false,\"c903b5120f77d82b3475\":false,\"0e730071c35e47bc669d\":false,\"e5f197ff1ed857004db4\":false,\"d36dc3a34918586e7f61\":\"a7d008f24c24ffb7e93aa8bc9942a65886bfd3925db6143c04725537b22481b5\",\"a7d008f24c24ffb7e93a\":false,\"16e68824775f3b9af4a7\":false,\"78faaf14576750b9becd\":\"e4e3492bdcb461950b5750d0f14291fb\",\"e4e3492bdcb461950b57\":false,\"a7bf0ea50c84d6a61902\":false,\"6f806860485e12126aa8\":false,\"5ecd56c0de7060dd3755\":false,\"ccb952e334814bb61239\":false,\"d0a92dfa6eea304499ca\":\"86ed07d26c265f893a45d1c01cd8eaf7\",\"86ed07d26c265f893a45\":false,\"7d6b5ac05234cc664a3e\":\"285ff694015634d36f631f81ef0794ddb5a8ddf20e779cad26b86fcad4afdd4b\",\"285ff694015634d36f63\":false,\"43a7cd38b97603e18a18\":false,\"fb96b30aa46dd05fb752\":false,\"2836ce088adbba577d22\":\"43d1c94140d8393cf031179909c0ecfe\",\"43d1c94140d8393cf031\":false,\"723876c28261de4d9d87\":false,\"4715d774195b60fa2c76\":false,\"f74e4fbec49705e64e11\":false,\"7a2e2766757c94b5a0ab\":false,\"34b76616c4834564065c\":\"02d9a696fe79ba8efe47bacd5bab767dc4690966583ded4fd935784892581a23\",\"02d9a696fe79ba8efe47\":false,\"a0007e067c523ec4f739\":false,\"8eb82dc93549d77094d7\":\"6aa3b473c21a3de766844460889978cf0b2e043cfe073aacbb3533c535df20fd\",\"6aa3b473c21a3de76684\":false,\"4dbb088e70ed2d8efc36\":false,\"74d70fc7023a2b86b4a8\":\"4dbb088e70ed2d8efc36cc6120bd6d0277eb58b6f407c353e7286211adc19aca\",\"9cfce39dc5187c2670ff\":false,\"57920b7fa886f8a905f5\":false,\"723af7a64d778b78b204\":false,\"d5c8e33138b9c21cacd4\":false,\"b1ca19aabbd6926627a0\":false,\"a2ea8b3bc2eaa1f6d7e6\":false,\"a74a4f0064cb9e263773\":false,\"6d3c13a7a7173c543879\":false,\"004726a28b45901ac976\":false,\"c9aa8176fa954d6da6e2\":\"004726a28b45901ac976e17c0ae7ad672bed5cd1121ab5b51",
+    "mcpTool": {
+      "name": "get_docaccess_com_domains_daytonabeach_gov_domain_json",
+      "description": "GET /domains/daytonabeach.gov/domain.json",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "usage": "GET /domains/daytonabeach.gov/domain.json. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "POST /g/collect",
+    "url": "https://www.google-analytics.com/g/collect?v=%7Bv%7D&tid=%7Btid%7D&gtm=%7Bgtm%7D&_p=%7B_p%7D&gcd=%7Bgcd%7D&npa=%7Bnpa%7D&dma=%7Bdma%7D&cid=%7Bcid%7D&frm=%7Bfrm%7D&ngs=%7Bngs%7D&pscdl=%7Bpscdl%7D&rcb=%7Brcb%7D&sr=%7Bsr%7D&uaa=%7Buaa%7D&uab=%7Buab%7D&uafvl=%7Buafvl%7D&uam=%7Buam%7D&uamb=%7Buamb%7D&uap=%7Buap%7D&uapv=%7Buapv%7D&uaw=%7Buaw%7D&ul=%7Bul%7D&_s=%7B_s%7D&tag_exp=%7Btag_exp%7D&sid=%7Bsid%7D&sct=%7Bsct%7D&seg=%7Bseg%7D&dl=%7Bdl%7D&dt=%7Bdt%7D&en=%7Ben%7D&_fv=%7B_fv%7D&_nsi=%7B_nsi%7D&_ss=%7B_ss%7D&_ee=%7B_ee%7D&tfd=%7Btfd%7D",
+    "origin": "https://www.google-analytics.com",
+    "path": "/g/collect",
+    "method": "POST",
+    "resourceType": "fetch",
+    "status": 204,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://daytonabeach.gov/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "cache-control": "no-cache, no-store, must-revalidate",
+      "pragma": "no-cache",
+      "cross-origin-resource-policy": "cross-origin",
+      "access-control-allow-credentials": "true",
+      "content-security-policy-report-only": "script-src 'none'; form-action 'none'; frame-src 'none'; report-uri https://csp.withgoogle.com/csp/scaffolding/ascnsrsggc:139:0",
+      "report-to": "{\"group\":\"ascnsrsggc:139:0\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/scaffolding/ascnsrsggc:139:0\"}],}",
+      "expires": "Fri, 01 Jan 1990 00:00:00 GMT",
+      "access-control-allow-origin": "https://daytonabeach.gov",
+      "cross-origin-opener-policy-report-only": "same-origin; report-to=ascnsrsggc:139:0",
+      "content-length": "0",
+      "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+      "date": "Tue, 22 Sep 2026 17:15:02 GMT",
+      "content-type": "text/plain",
+      "server": "Golfe2"
+    },
+    "contentType": "text/plain",
+    "requestBodyExample": null,
+    "queryParameters": [
+      {
+        "name": "v",
+        "example": "{v}"
+      },
+      {
+        "name": "tid",
+        "example": "{tid}"
+      },
+      {
+        "name": "gtm",
+        "example": "{gtm}"
+      },
+      {
+        "name": "_p",
+        "example": "{_p}"
+      },
+      {
+        "name": "gcd",
+        "example": "{gcd}"
+      },
+      {
+        "name": "npa",
+        "example": "{npa}"
+      },
+      {
+        "name": "dma",
+        "example": "{dma}"
+      },
+      {
+        "name": "cid",
+        "example": "{cid}"
+      },
+      {
+        "name": "frm",
+        "example": "{frm}"
+      },
+      {
+        "name": "ngs",
+        "example": "{ngs}"
+      },
+      {
+        "name": "pscdl",
+        "example": "{pscdl}"
+      },
+      {
+        "name": "rcb",
+        "example": "{rcb}"
+      },
+      {
+        "name": "sr",
+        "example": "{sr}"
+      },
+      {
+        "name": "uaa",
+        "example": "{uaa}"
+      },
+      {
+        "name": "uab",
+        "example": "{uab}"
+      },
+      {
+        "name": "uafvl",
+        "example": "{uafvl}"
+      },
+      {
+        "name": "uam",
+        "example": "{uam}"
+      },
+      {
+        "name": "uamb",
+        "example": "{uamb}"
+      },
+      {
+        "name": "uap",
+        "example": "{uap}"
+      },
+      {
+        "name": "uapv",
+        "example": "{uapv}"
+      },
+      {
+        "name": "uaw",
+        "example": "{uaw}"
+      },
+      {
+        "name": "ul",
+        "example": "{ul}"
+      },
+      {
+        "name": "_s",
+        "example": "{_s}"
+      },
+      {
+        "name": "tag_exp",
+        "example": "{tag_exp}"
+      },
+      {
+        "name": "sid",
+        "example": "{sid}"
+      },
+      {
+        "name": "sct",
+        "example": "{sct}"
+      },
+      {
+        "name": "seg",
+        "example": "{seg}"
+      },
+      {
+        "name": "dl",
+        "example": "{dl}"
+      },
+      {
+        "name": "dt",
+        "example": "{dt}"
+      },
+      {
+        "name": "en",
+        "example": "{en}"
+      },
+      {
+        "name": "_fv",
+        "example": "{_fv}"
+      },
+      {
+        "name": "_nsi",
+        "example": "{_nsi}"
+      },
+      {
+        "name": "_ss",
+        "example": "{_ss}"
+      },
+      {
+        "name": "_ee",
+        "example": "{_ee}"
+      },
+      {
+        "name": "tfd",
+        "example": "{tfd}"
+      }
+    ],
+    "mcpTool": {
+      "name": "post_www_google_analytics_com_g_collect",
+      "description": "POST /g/collect",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "string",
+            "description": "Query parameter observed as {v}"
+          },
+          "tid": {
+            "type": "string",
+            "description": "Query parameter observed as {tid}"
+          },
+          "gtm": {
+            "type": "string",
+            "description": "Query parameter observed as {gtm}"
+          },
+          "_p": {
+            "type": "string",
+            "description": "Query parameter observed as {_p}"
+          },
+          "gcd": {
+            "type": "string",
+            "description": "Query parameter observed as {gcd}"
+          },
+          "npa": {
+            "type": "string",
+            "description": "Query parameter observed as {npa}"
+          },
+          "dma": {
+            "type": "string",
+            "description": "Query parameter observed as {dma}"
+          },
+          "cid": {
+            "type": "string",
+            "description": "Query parameter observed as {cid}"
+          },
+          "frm": {
+            "type": "string",
+            "description": "Query parameter observed as {frm}"
+          },
+          "ngs": {
+            "type": "string",
+            "description": "Query parameter observed as {ngs}"
+          },
+          "pscdl": {
+            "type": "string",
+            "description": "Query parameter observed as {pscdl}"
+          },
+          "rcb": {
+            "type": "string",
+            "description": "Query parameter observed as {rcb}"
+          },
+          "sr": {
+            "type": "string",
+            "description": "Query parameter observed as {sr}"
+          },
+          "uaa": {
+            "type": "string",
+            "description": "Query parameter observed as {uaa}"
+          },
+          "uab": {
+            "type": "string",
+            "description": "Query parameter observed as {uab}"
+          },
+          "uafvl": {
+            "type": "string",
+            "description": "Query parameter observed as {uafvl}"
+          },
+          "uam": {
+            "type": "string",
+            "description": "Query parameter observed as {uam}"
+          },
+          "uamb": {
+            "type": "string",
+            "description": "Query parameter observed as {uamb}"
+          },
+          "uap": {
+            "type": "string",
+            "description": "Query parameter observed as {uap}"
+          },
+          "uapv": {
+            "type": "string",
+            "description": "Query parameter observed as {uapv}"
+          },
+          "uaw": {
+            "type": "string",
+            "description": "Query parameter observed as {uaw}"
+          },
+          "ul": {
+            "type": "string",
+            "description": "Query parameter observed as {ul}"
+          },
+          "_s": {
+            "type": "string",
+            "description": "Query parameter observed as {_s}"
+          },
+          "tag_exp": {
+            "type": "string",
+            "description": "Query parameter observed as {tag_exp}"
+          },
+          "sid": {
+            "type": "string",
+            "description": "Query parameter observed as {sid}"
+          },
+          "sct": {
+            "type": "string",
+            "description": "Query parameter observed as {sct}"
+          },
+          "seg": {
+            "type": "string",
+            "description": "Query parameter observed as {seg}"
+          },
+          "dl": {
+            "type": "string",
+            "description": "Query parameter observed as {dl}"
+          },
+          "dt": {
+            "type": "string",
+            "description": "Query parameter observed as {dt}"
+          },
+          "en": {
+            "type": "string",
+            "description": "Query parameter observed as {en}"
+          },
+          "_fv": {
+            "type": "string",
+            "description": "Query parameter observed as {_fv}"
+          },
+          "_nsi": {
+            "type": "string",
+            "description": "Query parameter observed as {_nsi}"
+          },
+          "_ss": {
+            "type": "string",
+            "description": "Query parameter observed as {_ss}"
+          },
+          "_ee": {
+            "type": "string",
+            "description": "Query parameter observed as {_ee}"
+          },
+          "tfd": {
+            "type": "string",
+            "description": "Query parameter observed as {tfd}"
+          }
+        },
+        "required": []
+      }
+    },
+    "usage": "POST /g/collect. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  },
+  {
+    "id": "POST /g/collect",
+    "url": "https://www.google-analytics.com/g/collect?v=%7Bv%7D&tid=%7Btid%7D&gtm=%7Bgtm%7D&_p=%7B_p%7D&gcd=%7Bgcd%7D&npa=%7Bnpa%7D&dma=%7Bdma%7D&cid=%7Bcid%7D&frm=%7Bfrm%7D&ngs=%7Bngs%7D&pscdl=%7Bpscdl%7D&rcb=%7Brcb%7D&sr=%7Bsr%7D&uaa=%7Buaa%7D&uab=%7Buab%7D&uafvl=%7Buafvl%7D&uam=%7Buam%7D&uamb=%7Buamb%7D&uap=%7Buap%7D&uapv=%7Buapv%7D&uaw=%7Buaw%7D&ul=%7Bul%7D&_s=%7B_s%7D&tag_exp=%7Btag_exp%7D&sid=%7Bsid%7D&sct=%7Bsct%7D&seg=%7Bseg%7D&dl=%7Bdl%7D&dt=%7Bdt%7D&en=%7Ben%7D&_fv=%7B_fv%7D&_ss=%7B_ss%7D&tfd=%7Btfd%7D",
+    "origin": "https://www.google-analytics.com",
+    "path": "/g/collect",
+    "method": "POST",
+    "resourceType": "fetch",
+    "status": 204,
+    "requiresAuth": false,
+    "authSignals": [],
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Windows\"",
+      "referer": "https://daytonabeach.gov/",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "sec-ch-ua": "\"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+      "accept-language": "en-US",
+      "sec-ch-ua-mobile": "?0"
+    },
+    "responseHeaders": {
+      "cache-control": "no-cache, no-store, must-revalidate",
+      "pragma": "no-cache",
+      "cross-origin-resource-policy": "cross-origin",
+      "access-control-allow-credentials": "true",
+      "content-security-policy-report-only": "script-src 'none'; form-action 'none'; frame-src 'none'; report-uri https://csp.withgoogle.com/csp/scaffolding/ascnsrsggc:139:0",
+      "report-to": "{\"group\":\"ascnsrsggc:139:0\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/scaffolding/ascnsrsggc:139:0\"}],}",
+      "expires": "Fri, 01 Jan 1990 00:00:00 GMT",
+      "access-control-allow-origin": "https://daytonabeach.gov",
+      "cross-origin-opener-policy-report-only": "same-origin; report-to=ascnsrsggc:139:0",
+      "content-length": "0",
+      "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+      "date": "Tue, 22 Sep 2026 17:15:02 GMT",
+      "content-type": "text/plain",
+      "server": "Golfe2"
+    },
+    "contentType": "text/plain",
+    "requestBodyExample": null,
+    "queryParameters": [
+      {
+        "name": "v",
+        "example": "{v}"
+      },
+      {
+        "name": "tid",
+        "example": "{tid}"
+      },
+      {
+        "name": "gtm",
+        "example": "{gtm}"
+      },
+      {
+        "name": "_p",
+        "example": "{_p}"
+      },
+      {
+        "name": "gcd",
+        "example": "{gcd}"
+      },
+      {
+        "name": "npa",
+        "example": "{npa}"
+      },
+      {
+        "name": "dma",
+        "example": "{dma}"
+      },
+      {
+        "name": "cid",
+        "example": "{cid}"
+      },
+      {
+        "name": "frm",
+        "example": "{frm}"
+      },
+      {
+        "name": "ngs",
+        "example": "{ngs}"
+      },
+      {
+        "name": "pscdl",
+        "example": "{pscdl}"
+      },
+      {
+        "name": "rcb",
+        "example": "{rcb}"
+      },
+      {
+        "name": "sr",
+        "example": "{sr}"
+      },
+      {
+        "name": "uaa",
+        "example": "{uaa}"
+      },
+      {
+        "name": "uab",
+        "example": "{uab}"
+      },
+      {
+        "name": "uafvl",
+        "example": "{uafvl}"
+      },
+      {
+        "name": "uam",
+        "example": "{uam}"
+      },
+      {
+        "name": "uamb",
+        "example": "{uamb}"
+      },
+      {
+        "name": "uap",
+        "example": "{uap}"
+      },
+      {
+        "name": "uapv",
+        "example": "{uapv}"
+      },
+      {
+        "name": "uaw",
+        "example": "{uaw}"
+      },
+      {
+        "name": "ul",
+        "example": "{ul}"
+      },
+      {
+        "name": "_s",
+        "example": "{_s}"
+      },
+      {
+        "name": "tag_exp",
+        "example": "{tag_exp}"
+      },
+      {
+        "name": "sid",
+        "example": "{sid}"
+      },
+      {
+        "name": "sct",
+        "example": "{sct}"
+      },
+      {
+        "name": "seg",
+        "example": "{seg}"
+      },
+      {
+        "name": "dl",
+        "example": "{dl}"
+      },
+      {
+        "name": "dt",
+        "example": "{dt}"
+      },
+      {
+        "name": "en",
+        "example": "{en}"
+      },
+      {
+        "name": "_fv",
+        "example": "{_fv}"
+      },
+      {
+        "name": "_ss",
+        "example": "{_ss}"
+      },
+      {
+        "name": "tfd",
+        "example": "{tfd}"
+      }
+    ],
+    "mcpTool": {
+      "name": "post_www_google_analytics_com_g_collect",
+      "description": "POST /g/collect",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "string",
+            "description": "Query parameter observed as {v}"
+          },
+          "tid": {
+            "type": "string",
+            "description": "Query parameter observed as {tid}"
+          },
+          "gtm": {
+            "type": "string",
+            "description": "Query parameter observed as {gtm}"
+          },
+          "_p": {
+            "type": "string",
+            "description": "Query parameter observed as {_p}"
+          },
+          "gcd": {
+            "type": "string",
+            "description": "Query parameter observed as {gcd}"
+          },
+          "npa": {
+            "type": "string",
+            "description": "Query parameter observed as {npa}"
+          },
+          "dma": {
+            "type": "string",
+            "description": "Query parameter observed as {dma}"
+          },
+          "cid": {
+            "type": "string",
+            "description": "Query parameter observed as {cid}"
+          },
+          "frm": {
+            "type": "string",
+            "description": "Query parameter observed as {frm}"
+          },
+          "ngs": {
+            "type": "string",
+            "description": "Query parameter observed as {ngs}"
+          },
+          "pscdl": {
+            "type": "string",
+            "description": "Query parameter observed as {pscdl}"
+          },
+          "rcb": {
+            "type": "string",
+            "description": "Query parameter observed as {rcb}"
+          },
+          "sr": {
+            "type": "string",
+            "description": "Query parameter observed as {sr}"
+          },
+          "uaa": {
+            "type": "string",
+            "description": "Query parameter observed as {uaa}"
+          },
+          "uab": {
+            "type": "string",
+            "description": "Query parameter observed as {uab}"
+          },
+          "uafvl": {
+            "type": "string",
+            "description": "Query parameter observed as {uafvl}"
+          },
+          "uam": {
+            "type": "string",
+            "description": "Query parameter observed as {uam}"
+          },
+          "uamb": {
+            "type": "string",
+            "description": "Query parameter observed as {uamb}"
+          },
+          "uap": {
+            "type": "string",
+            "description": "Query parameter observed as {uap}"
+          },
+          "uapv": {
+            "type": "string",
+            "description": "Query parameter observed as {uapv}"
+          },
+          "uaw": {
+            "type": "string",
+            "description": "Query parameter observed as {uaw}"
+          },
+          "ul": {
+            "type": "string",
+            "description": "Query parameter observed as {ul}"
+          },
+          "_s": {
+            "type": "string",
+            "description": "Query parameter observed as {_s}"
+          },
+          "tag_exp": {
+            "type": "string",
+            "description": "Query parameter observed as {tag_exp}"
+          },
+          "sid": {
+            "type": "string",
+            "description": "Query parameter observed as {sid}"
+          },
+          "sct": {
+            "type": "string",
+            "description": "Query parameter observed as {sct}"
+          },
+          "seg": {
+            "type": "string",
+            "description": "Query parameter observed as {seg}"
+          },
+          "dl": {
+            "type": "string",
+            "description": "Query parameter observed as {dl}"
+          },
+          "dt": {
+            "type": "string",
+            "description": "Query parameter observed as {dt}"
+          },
+          "en": {
+            "type": "string",
+            "description": "Query parameter observed as {en}"
+          },
+          "_fv": {
+            "type": "string",
+            "description": "Query parameter observed as {_fv}"
+          },
+          "_ss": {
+            "type": "string",
+            "description": "Query parameter observed as {_ss}"
+          },
+          "tfd": {
+            "type": "string",
+            "description": "Query parameter observed as {tfd}"
+          }
+        },
+        "required": []
+      }
+    },
+    "usage": "POST /g/collect. No authentication signal was observed. Use query parameters listed in queryParameters and requestBodyExample when present."
+  }
+]

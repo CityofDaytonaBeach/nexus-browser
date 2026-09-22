@@ -1,11 +1,12 @@
 {
   "name": "nexus-browser",
   "version": "1.0.0",
-  "description": "The First AI-Native Smart Browser - Cloud-based, AI-powered browser with built-in OpenCode IDE",
+  "description": "A modifiable Chromium browser shell with native Nexus agents, coding, preview, and QA surfaces",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "desktop": "npm run build && node scripts/desktop.js",
+    "desktop:compat": "npm run build && node scripts/desktop.js --compat",
     "desktop:dev": "npm run build && node scripts/desktop-dev.js",
     "package:desktop": "npm run build && electron-builder",
     "package:win": "npm run build && electron-builder --win",

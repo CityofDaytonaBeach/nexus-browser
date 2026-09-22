@@ -13,12 +13,13 @@ import AdmZip from 'adm-zip';
 import { config } from '../core/config';
 import { createLogger } from '../core/logger';
 import { BrowserEngine } from '../browser/engine';
+import { ActionResult, BrowserAction, BrowserController } from '../core/types';
 import { AIAgent } from '../agent/index';
 import { NexusAgentRuntime } from '../agent/nexus-runtime';
 import { AutomationEngine } from '../automation/engine';
 import { getAllIntegrationProfiles } from '../integrations/registry';
 import { getCompetitiveBlueprint } from '../competitive/blueprint';
-import { BuilderPlatform } from '../builder/platform';
+import { BuilderPlatform, BuildStackPlan } from '../builder/platform';
 import { getProjectAgentSwarm } from '../project-agents/registry';
 import { fetchLanguageUpdate, getLanguageExperts } from '../languages/registry';
 import { LLMClient, LLMMessage } from '../ai/llm';
@@ -31,12 +32,16 @@ interface CloudClient {
   sessionId?: string;
   authenticated: boolean;
   lastPing: number;
+  nativeBrowser?: boolean;
 }
 
 interface BuilderMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
+  event?: 'build-progress';
+  buildId?: string;
+  updateId?: string;
 }
 
 interface BuilderChatAction {
@@ -141,6 +146,20 @@ interface ProjectReadiness {
   needsClarification: boolean;
 }
 
+type ChatWorkIntent = 'ask' | 'research' | 'plan' | 'build' | 'update' | 'repair' | 'qa' | 'integration' | 'deploy';
+
+interface ChatOrchestrationPlan {
+  intent: ChatWorkIntent;
+  stack: Pick<BuildStackPlan, 'primaryLanguage' | 'framework' | 'runtime' | 'packageManager'>;
+  agents: Array<{ id: string; name: string; reason: string }>;
+  experts: Array<{ id: string; name: string }>;
+  skills: Array<{ id: string; name: string }>;
+  memory: string[];
+  projectKnowledge: string[];
+  evidence: string[];
+  steps: string[];
+}
+
 export class CloudServer {
   private app: express.Application;
   private httpServer: HttpServer;
@@ -163,12 +182,24 @@ export class CloudServer {
   private providerSettings: Map<string, ProviderSetting> = new Map();
   private chatTitles: Map<string, string> = new Map();
   private pingInterval?: NodeJS.Timeout;
+  private nativeBrowserClientId?: string;
+  private pendingNativeActions: Map<string, { resolve: (result: ActionResult) => void; timer: NodeJS.Timeout }> = new Map();
 
   constructor() {
     this.engine = BrowserEngine.getInstance();
-    this.agent = new AIAgent();
+    const browserController: BrowserController = {
+      executeAction: (sessionId, pageId, action) => this.executeBrowserAction(sessionId, pageId, action),
+      getPageContent: (sessionId, pageId) => this.getBrowserPageContent(sessionId, pageId),
+      getPageScreenshot: (sessionId, pageId) => this.getBrowserPageScreenshot(sessionId, pageId),
+      getInteractiveElements: (sessionId, pageId) => this.getBrowserInteractiveElements(sessionId, pageId),
+    };
+    this.agent = new AIAgent(browserController);
     this.agentRuntime = new NexusAgentRuntime();
-    this.automation = new AutomationEngine();
+    this.automation = new AutomationEngine(
+      browserController,
+      this.agent,
+      () => this.nativeBrowserClientId ? 'electron-native' : undefined,
+    );
     this.llm = new LLMClient();
     this.builderPlatform = new BuilderPlatform();
     this.loadSecureState();
@@ -185,6 +216,66 @@ export class CloudServer {
 
     this.setupRoutes();
     this.setupWebSocket();
+  }
+
+  private isNativeBrowserSession(sessionId?: string): boolean {
+    return sessionId === 'electron-native';
+  }
+
+  private async executeBrowserAction(sessionId: string, pageId: string, action: BrowserAction): Promise<ActionResult> {
+    if (this.isNativeBrowserSession(sessionId)) return await this.dispatchNativeBrowserAction(pageId, action);
+    return await this.engine.executeAction(sessionId, pageId, action);
+  }
+
+  private async getBrowserPageContent(sessionId: string, pageId: string): Promise<string> {
+    if (!this.isNativeBrowserSession(sessionId)) return await this.engine.getPageContent(sessionId, pageId);
+    const result = await this.dispatchNativeBrowserAction(pageId, { type: 'evaluate', script: 'document.documentElement?.outerHTML || ""' });
+    return result.success ? String(result.data || '') : '';
+  }
+
+  private async getBrowserPageScreenshot(sessionId: string, pageId: string): Promise<Buffer | null> {
+    if (!this.isNativeBrowserSession(sessionId)) return await this.engine.getPageScreenshot(sessionId, pageId);
+    const result = await this.dispatchNativeBrowserAction(pageId, { type: 'screenshot' });
+    const encoded = result.data?.screenshot;
+    return result.success && encoded ? Buffer.from(encoded, 'base64') : null;
+  }
+
+  private async getBrowserInteractiveElements(sessionId: string, pageId: string): Promise<any[]> {
+    if (!this.isNativeBrowserSession(sessionId)) return await this.engine.getInteractiveElements(sessionId, pageId);
+    const result = await this.dispatchNativeBrowserAction(pageId, {
+      type: 'evaluate',
+      script: `Array.from(document.querySelectorAll('a,button,input,textarea,select,[role="button"],[role="link"],[onclick]')).map((element) => {
+        const rect = element.getBoundingClientRect();
+        const id = element.id ? '#' + CSS.escape(element.id) : '';
+        const className = typeof element.className === 'string' && element.className.trim() ? '.' + CSS.escape(element.className.trim().split(/\\s+/)[0]) : '';
+        return {
+          selector: element.tagName.toLowerCase() + id + className,
+          type: element.tagName.toLowerCase(),
+          text: (element.textContent || element.getAttribute('aria-label') || '').trim().slice(0, 100),
+          role: element.getAttribute('role') || element.tagName.toLowerCase(),
+          visible: rect.width > 0 && rect.height > 0,
+          rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+        };
+      }).filter((element) => element.visible).slice(0, 120)`,
+    });
+    return result.success && Array.isArray(result.data) ? result.data : [];
+  }
+
+  private dispatchNativeBrowserAction(pageId: string, action: BrowserAction): Promise<ActionResult> {
+    const client = this.nativeBrowserClientId ? this.clients.get(this.nativeBrowserClientId) : undefined;
+    if (!client || client.ws.readyState !== WebSocket.OPEN) {
+      return Promise.resolve({ success: false, error: 'The native Nexus browser is not connected', duration: 0 });
+    }
+    const requestId = uuid();
+    const timeoutMs = Math.max(5000, Math.min(Number(action.options?.timeout || 30000) + 5000, 125000));
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this.pendingNativeActions.delete(requestId);
+        resolve({ success: false, error: `Native browser action timed out after ${timeoutMs}ms`, duration: timeoutMs });
+      }, timeoutMs);
+      this.pendingNativeActions.set(requestId, { resolve, timer });
+      client.ws.send(JSON.stringify({ type: 'native-browser:action', requestId, pageId, action }));
+    });
   }
 
   private setupRoutes(): void {
@@ -959,8 +1050,8 @@ export class CloudServer {
       if (message) messages.push({ role: 'user', content: message, timestamp: Date.now() });
       if (message && !this.chatTitles.has(chatId)) this.chatTitles.set(chatId, this.inferChatTitle(message));
       try {
-        if (this.isAgentBrowserCommand(message)) {
-          const chat = await this.runAgentBrowserChat(message, sessionId);
+        if (this.isAgentBrowserCommand(message) || (this.isNativeBrowserSession(sessionId) && this.isDirectNativeBrowserCommand(message))) {
+          const chat = await this.runAgentBrowserChat(message, sessionId, pageId);
           messages.push({ role: 'assistant', content: chat.response, timestamp: Date.now() });
           this.builderChats.set(chatId, messages.slice(-100));
           this.saveChatState();
@@ -984,18 +1075,31 @@ export class CloudServer {
         const readiness = this.createProjectReadiness(sessionId, message, messages, browserContext);
         this.projectReadiness.set(sessionId, readiness);
         const readinessContext = this.buildProjectReadinessContext(readiness);
+        const orchestration = this.createChatOrchestrationPlan(message, mode, activeBuildId, browserContext);
         if (this.shouldAskProjectReadiness(message, mode, readiness)) {
           const response = this.projectReadinessQuestionResponse(readiness);
           const actions = this.projectReadinessActions(readiness);
           messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
           this.builderChats.set(chatId, messages.slice(-100));
           this.saveChatState();
-          return res.json({ chatId, response, messages: this.builderChats.get(chatId), actions, source: 'fallback', requiresInput: true });
+          return res.json({ chatId, response, messages: this.builderChats.get(chatId), actions, source: 'fallback', requiresInput: true, orchestration });
         }
         const runtimeContext = this.agentRuntime.buildContext(message);
-        const chat = await this.runBuilderConductor(message, mode, uiLook, `${browserContext}\n\n${readinessContext}\n\n${runtimeContext}`, messages, activeBuildId);
+        const conversationContext = this.buildConversationKnowledgeContext(messages);
+        const projectKnowledgeContext = this.buildActiveProjectKnowledgeContext(activeBuildId);
+        const orchestrationContext = this.buildChatOrchestrationContext(orchestration);
+        const sharedContext = this.composeChatExecutionContext([
+          browserContext,
+          readinessContext,
+          conversationContext,
+          projectKnowledgeContext,
+          runtimeContext,
+          orchestrationContext,
+        ]);
+        const chat = await this.runBuilderConductor(message, mode, uiLook, sharedContext, messages, activeBuildId);
         let response = chat.response;
-        response = this.applyAutonomousRuntimeFromChat(message, mode, sessionId, pageId, activeBuildId, `${browserContext}\n\n${readinessContext}`, chat, response);
+        response = this.applyAutonomousRuntimeFromChat(message, mode, sessionId, pageId, activeBuildId, sharedContext, chat, response);
+        response = this.applyOrchestrationSummary(response, orchestration);
         messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
         let build = undefined;
         let update = undefined;
@@ -1011,23 +1115,28 @@ export class CloudServer {
         } else if (activeBuildId && this.shouldUpdateBuild(message, mode)) {
           const targetBuildId = this.builderPlatform.getBuild(activeBuildId)?.id || this.builderPlatform.getBuilds().slice(-1)[0]?.id;
           if (!targetBuildId) throw new Error('No generated build workspace yet. Ask Build Mode to create one first.');
-          update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode, browserContext: `${browserContext}\n\n${readinessContext}`, ...brainOptions });
+          update = this.builderPlatform.updateBuildFromChat(targetBuildId, message, { uiLook, mode, browserContext: sharedContext, ...brainOptions });
           messages.push({
             role: 'assistant',
-            content: `App update ${update.status === 'queued' ? 'queued behind the active build' : 'started'}.\n\nWorkspace: ${update.workspace}\nSession: ${update.session.id}\nLog: ${update.logPath}\nI will restart the preview after the update finishes.`,
+            content: `Nexus app update ${update.status === 'queued' ? 'queued' : 'started'}.\n\nBuild ID: ${update.buildId}\nUpdate ID: ${update.id}\nWorkspace: ${update.workspace}\nThe selected agents will apply the change, run checks, and refresh the browser preview.`,
             timestamp: Date.now(),
+            event: 'build-progress',
+            buildId: update.buildId,
+            updateId: update.id,
           });
         } else if (this.shouldStartBuild(message, mode)) {
-          build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode, browserContext: `${browserContext}\n\n${readinessContext}`, ...brainOptions });
+          build = this.builderPlatform.startBuildFromPrompt(message, { uiLook, mode, browserContext: sharedContext, ...brainOptions });
           messages.push({
             role: 'assistant',
-            content: `Build started.\n\nWorkspace: ${build.root}\nStatus: ${build.status}\nPreview command: ${build.previewCommand}\nOpenCode log: ${build.logPath}`,
+            content: `Nexus build started.\n\nBuild ID: ${build.id}\nStack: ${build.stackPlan?.framework || 'auto-detected'} (${build.stackPlan?.primaryLanguage || 'project language'})\nWorkspace: ${build.root}\nThe selected agents will implement, verify, preview, and run browser QA.`,
             timestamp: Date.now(),
+            event: 'build-progress',
+            buildId: build.id,
           });
         }
         this.builderChats.set(chatId, messages.slice(-100));
         this.saveChatState();
-        res.json({ chatId, response, messages: this.builderChats.get(chatId), build, update, actions: chat.actions, source: chat.source });
+        res.json({ chatId, response, messages: this.builderChats.get(chatId), build, update, actions: chat.actions, source: chat.source, orchestration });
       } catch (error: any) {
         const detail = error?.message || 'Unknown builder chat error';
         log.error(`Builder chat failed for ${chatId}: ${detail}`);
@@ -1072,17 +1181,17 @@ export class CloudServer {
     });
 
     router.post('/api/sessions/:sid/pages/:pid/action', this.authenticate, async (req, res) => {
-      const result = await this.engine.executeAction(req.params.sid, req.params.pid, req.body);
+      const result = await this.executeBrowserAction(req.params.sid, req.params.pid, req.body);
       res.json(result);
     });
 
     router.get('/api/sessions/:sid/pages/:pid/content', this.authenticate, async (req, res) => {
-      const content = await this.engine.getPageContent(req.params.sid, req.params.pid);
+      const content = await this.getBrowserPageContent(req.params.sid, req.params.pid);
       res.json({ content });
     });
 
     router.get('/api/sessions/:sid/pages/:pid/screenshot', this.authenticate, async (req, res) => {
-      const buf = await this.engine.getPageScreenshot(req.params.sid, req.params.pid);
+      const buf = await this.getBrowserPageScreenshot(req.params.sid, req.params.pid);
       if (buf) {
         res.setHeader('Content-Type', 'image/png');
         res.send(buf);
@@ -1092,7 +1201,7 @@ export class CloudServer {
     });
 
     router.get('/api/sessions/:sid/pages/:pid/elements', this.authenticate, async (req, res) => {
-      const elements = await this.engine.getInteractiveElements(req.params.sid, req.params.pid);
+      const elements = await this.getBrowserInteractiveElements(req.params.sid, req.params.pid);
       res.json(elements);
     });
 
@@ -1541,8 +1650,8 @@ export class CloudServer {
     const startedAt = new Date().toISOString();
     const [gatherer, screenshot, content] = await Promise.all([
       this.collectGathererObservation(sessionId, pageId).catch((error: any) => ({ error: error.message })),
-      this.engine.getPageScreenshot(sessionId, pageId).catch(() => null),
-      this.engine.getPageContent(sessionId, pageId).catch(() => ''),
+      this.getBrowserPageScreenshot(sessionId, pageId).catch(() => null),
+      this.getBrowserPageContent(sessionId, pageId).catch(() => ''),
     ]);
     const build = buildId ? this.builderPlatform.getBuild(buildId) : undefined;
     const backend = build ? this.collectBackendObservation(build.id) : undefined;
@@ -1892,9 +2001,11 @@ export class CloudServer {
     const text = message.toLowerCase();
     if (/\bresearch\s+mode\b|\bswitch\s+to\s+research\b/.test(text)) return 'research';
     if (/\bplan\s+mode\b|\bswitch\s+to\s+plan\b/.test(text)) return 'plan';
-    if (/\bbuild\s+mode\b|\bswitch\s+to\s+build\b/.test(text)) return 'build';
-    if (this.isImplicitBuildRequest(message)) return 'build';
-    return fallback;
+    if (/\bask\s+mode\b|\bswitch\s+to\s+ask\b/.test(text)) return 'chat';
+    if (/\bvisual(?:\s+edit|\s+mode)?\b|\bswitch\s+to\s+visual\b/.test(text)) return 'ui-builder';
+    if (/\bbuild\s+mode\b|\bagent\s+mode\b|\bswitch\s+to\s+(?:build|agent)\b/.test(text)) return 'build';
+    if (['build', 'chat', 'plan', 'ui-builder', 'research'].includes(fallback)) return fallback;
+    return this.isImplicitBuildRequest(message) ? 'build' : 'chat';
   }
 
   private isImplicitBuildRequest(message: string): boolean {
@@ -1908,7 +2019,8 @@ export class CloudServer {
   private shouldStartBuild(message: string, mode: string): boolean {
     const text = message.toLowerCase();
     if (!message.trim()) return false;
-    if (mode === 'chat') return false;
+    if (['chat', 'plan', 'research'].includes(mode)) return false;
+    if (this.isConversationalBuildQuestion(message)) return false;
     return mode === 'build'
       || this.isImplicitBuildRequest(message)
       || /\b(build|create|make|generate|code|implement)\b/.test(text) && /\b(app|application|landing page|website|dashboard|saas|ui|page|portal|tracker|game|tool|site)\b/.test(text)
@@ -1918,10 +2030,20 @@ export class CloudServer {
   private shouldUpdateBuild(message: string, mode: string): boolean {
     const text = message.toLowerCase();
     if (!message.trim()) return false;
-    if (mode === 'chat') return false;
+    if (['chat', 'plan', 'research'].includes(mode)) return false;
+    if (this.isConversationalBuildQuestion(message)) return false;
     if (/\b(staging studio|multi-device preview|device wall|preview wall|expert router|route experts|creative mind|project memory|stack experts|build doctor|auto heal|heal loop)\b/.test(text)) return false;
     if (mode === 'build' && !this.shouldStartBuild(message, 'chat')) return true;
     return /\b(change|update|edit|modify|fix|improve|add|remove|replace|move|resize|restyle|make it|make this|turn this|connect|wire|debug|repair)\b/.test(text);
+  }
+
+  private isConversationalBuildQuestion(message: string): boolean {
+    const text = message.trim().toLowerCase();
+    if (!text) return false;
+    const politeAction = /^(?:can|could|would|will)\s+(?:you|we|nexus)\s+(?:please\s+)?(?:build|create|make|generate|implement|change|update|edit|modify|fix|improve|add|remove|replace|move|resize|restyle|connect|wire|debug|repair)\b/.test(text);
+    if (politeAction) return false;
+    return /^(?:what|why|how|when|where|who|which|does|do|did|is|are|was|were|has|have|can|could|would|should|will)\b/.test(text)
+      || /\?\s*$/.test(text);
   }
 
   private shouldRequireBrowserGrounding(message: string, mode: string, gathererContext: string): boolean {
@@ -1951,6 +2073,53 @@ export class CloudServer {
   }
 
   private async collectGathererObservation(sessionId?: string, pageId?: string): Promise<GathererObservation> {
+    if (this.isNativeBrowserSession(sessionId)) {
+      const resolvedPageId = pageId || 'active-tab';
+      const existing = this.getGathererTimeline(sessionId || 'electron-native', resolvedPageId);
+      if (existing.length) return existing[existing.length - 1];
+      const result = await this.executeBrowserAction(sessionId || 'electron-native', resolvedPageId, {
+        type: 'evaluate',
+        script: `(() => {
+          const controls = Array.from(document.querySelectorAll('a,button,input,textarea,select,[role="button"],[role="link"]')).slice(0, 80).map((element) => ({
+            tag: element.tagName.toLowerCase(),
+            text: (element.textContent || element.getAttribute('aria-label') || element.getAttribute('placeholder') || '').trim().slice(0, 120)
+          }));
+          return {
+            title: document.title,
+            url: location.href,
+            text: (document.body?.innerText || '').replace(/\\s+/g, ' ').trim().slice(0, 8000),
+            controls,
+            viewport: { width: innerWidth, height: innerHeight, devicePixelRatio },
+          };
+        })()`,
+      });
+      if (!result.success) throw new Error(result.error || 'Native browser inspection failed');
+      const page = result.data || {};
+      const context = [
+        'Nexus native Chromium tab evidence:',
+        `Rendered page: ${page.title || result.page?.title || 'unknown'} - ${page.url || result.page?.url || 'unknown'}`,
+        `Viewport: ${JSON.stringify(page.viewport || {})}`,
+        `Visible controls: ${JSON.stringify(page.controls || [])}`,
+        `Visible text: ${page.text || ''}`,
+      ].join('\n');
+      const observation: GathererObservation = {
+        id: uuid(),
+        sessionId: sessionId || 'electron-native',
+        pageId: resolvedPageId,
+        url: page.url || result.page?.url || 'unknown',
+        title: page.title || result.page?.title || 'native browser',
+        collectedAt: new Date().toISOString(),
+        context: context.slice(0, 18000),
+        signals: {
+          hasConsoleErrors: false,
+          networkSignalCount: 0,
+          interactiveElementCount: Array.isArray(page.controls) ? page.controls.length : 0,
+          detectedLibraries: [],
+        },
+      };
+      this.storeGathererObservation(observation);
+      return observation;
+    }
     const session = sessionId && sessionId !== 'default' ? this.engine.getSession(sessionId) : undefined;
     if (!session) throw new Error('No active rendered browser session yet. Open a target URL or generated preview so Nexus can collect DOM, network, console, storage, and screenshot evidence.');
 
@@ -2268,16 +2437,191 @@ export class CloudServer {
       `Answered setup signals: ${readiness.answeredSignals.join(', ') || 'none explicit yet'}`,
       `Clarification needed: ${readiness.needsClarification ? 'yes' : 'no'}`,
       readiness.questions.length ? `Questions to ask before build:\n${readiness.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}` : 'Questions to ask before build: none; proceed with stated requirements and sensible defaults.',
+      'Smart-default policy: unresolved low-risk questions are not blockers. Prefer reversible local/mock defaults, document assumptions, and produce the first working product slice quickly.',
       `Recommended setup:\n${readiness.recommendedSetup.map((item) => `- ${item}`).join('\n')}`,
       `Recommended staging devices: ${readiness.stagingDevices.join(', ')}`,
     ].join('\n');
+  }
+
+  private buildConversationKnowledgeContext(history: BuilderMessage[]): string {
+    const relevant = history
+      .slice(-14)
+      .map((item) => `${item.role}: ${item.content.slice(0, 1200)}`)
+      .join('\n\n');
+    return `Recent conversation knowledge (requirements and decisions are cumulative):\n${relevant || '- none'}`;
+  }
+
+  private buildActiveProjectKnowledgeContext(activeBuildId: string): string {
+    if (!activeBuildId) return 'Active project knowledge: no active build yet.';
+    try {
+      const memory = this.builderPlatform.getProjectMemory(activeBuildId);
+      const entries = memory.entries.slice(-12).map((entry) => `- [${entry.type}] ${entry.summary}`).join('\n');
+      return [
+        `Active project knowledge for build ${activeBuildId}:`,
+        entries || '- No durable project decisions recorded yet.',
+        `Known working fixes: ${memory.workingFixes.slice(-6).join(' | ') || 'none'}`,
+        `Known failed fixes: ${memory.failedFixes.slice(-6).join(' | ') || 'none'}`,
+      ].join('\n');
+    } catch {
+      return `Active project knowledge: build ${activeBuildId} is not available yet.`;
+    }
+  }
+
+  private composeChatExecutionContext(sections: string[]): string {
+    return sections
+      .filter(Boolean)
+      .map((section, index) => section.slice(0, index === 0 ? 26000 : 8000))
+      .join('\n\n---\n\n');
+  }
+
+  private createChatOrchestrationPlan(message: string, mode: string, activeBuildId: string, browserContext: string): ChatOrchestrationPlan {
+    const text = message.toLowerCase();
+    const activeBuild = activeBuildId ? this.builderPlatform.getBuild(activeBuildId) : undefined;
+    const stackPlan = this.builderPlatform.planBuildStack(`${activeBuild?.prompt || ''}\n${message}`.trim());
+    const intent = this.detectChatWorkIntent(message, mode, activeBuildId);
+    const agentIds = new Set<string>(['memory-agent']);
+    const addAgents = (...ids: string[]) => ids.forEach((id) => agentIds.add(id));
+
+    if (intent === 'research') addAgents('research-agent', 'browser-ui-agent', 'api-agent');
+    if (intent === 'plan') addAgents('research-agent', 'creative-mind-agent', 'framework-expert-router', 'database-agent', 'integration-agent');
+    if (intent === 'build') addAgents('creative-mind-agent', ...stackPlan.projectAgentIds);
+    if (intent === 'update') addAgents('framework-expert-router', 'opencode-build-agent', 'qa-agent');
+    if (intent === 'repair') addAgents('framework-expert-router', 'build-doctor-agent', 'auto-heal-agent', 'opencode-build-agent', 'qa-agent');
+    if (intent === 'qa') addAgents('browser-ui-agent', 'qa-agent', 'build-doctor-agent');
+    if (intent === 'integration') addAgents('api-agent', 'integration-agent', 'opencode-build-agent', 'qa-agent');
+    if (intent === 'deploy') addAgents('nexus-operator-agent', 'integration-agent', 'build-doctor-agent', 'qa-agent');
+    if (intent === 'ask' && /\b(api|backend|database|auth|network)\b/.test(text)) addAgents('api-agent');
+    if (intent === 'ask' && /\b(ui|layout|responsive|browser|page|screen|visual)\b/.test(text)) addAgents('browser-ui-agent');
+    if (/\b(database|schema|migration|supabase|postgres|mysql|sqlite)\b/.test(text)) addAgents('database-agent');
+    if (/\b(stripe|payment|github|oauth|email|storage|analytics|integration)\b/.test(text)) addAgents('integration-agent');
+    if (/\b(ui|design|landing|mobile|responsive|visual|brand)\b/.test(text) && ['build', 'update', 'plan'].includes(intent)) addAgents('creative-mind-agent', 'browser-ui-agent');
+
+    const swarmAgents = getProjectAgentSwarm().agents;
+    const reasonForAgent: Record<string, string> = {
+      'memory-agent': 'recall requirements and preserve durable decisions',
+      'research-agent': 'collect and rank relevant product evidence',
+      'browser-ui-agent': 'translate rendered browser evidence into UI decisions',
+      'api-agent': 'map APIs, data contracts, and backend behavior',
+      'database-agent': 'shape data models, migrations, and seed behavior',
+      'integration-agent': 'wire external services with safe configuration',
+      'creative-mind-agent': 'create a product-specific visual direction',
+      'framework-expert-router': 'select current stack specialists and checks',
+      'opencode-build-agent': 'implement and verify the requested code',
+      'build-doctor-agent': 'diagnose setup, build, runtime, and preview failures',
+      'auto-heal-agent': 'run a bounded root-cause repair loop',
+      'qa-agent': 'verify browser behavior, accessibility, and regressions',
+      'nexus-operator-agent': 'coordinate release checks and approval boundaries',
+    };
+    const agents = Array.from(agentIds)
+      .map((id) => swarmAgents.find((agent) => agent.id === id))
+      .filter((agent): agent is NonNullable<typeof agent> => Boolean(agent))
+      .slice(0, 9)
+      .map((agent) => ({ id: agent.id, name: agent.name, reason: reasonForAgent[agent.id] || agent.role }));
+
+    const explicitStackSignal = /\b(php|laravel|wordpress|react|vite|next\.?js|vue|svelte|angular|python|django|fastapi|flask|ruby|rails|golang|rust|cargo|asp\.net|c#|java|spring|typescript|javascript)\b/.test(text);
+    const useStackExperts = intent !== 'ask' || Boolean(activeBuildId) || explicitStackSignal;
+    const expertRegistry = getLanguageExperts();
+    const experts = (useStackExperts ? stackPlan.expertIds : [])
+      .map((id) => expertRegistry.find((expert) => expert.id === id))
+      .filter((expert): expert is NonNullable<typeof expert> => Boolean(expert))
+      .slice(0, 12)
+      .map((expert) => ({ id: expert.id, name: expert.name }));
+    const skillQuery = `${message} ${intent} ${stackPlan.framework} ${stackPlan.primaryLanguage}`;
+    const skills = this.agentRuntime.findSkills(skillQuery, 5).map((skill) => ({ id: skill.id, name: skill.name }));
+    const memory = this.agentRuntime.searchMemory(message, 6).map((entry) => entry.content.slice(0, 260));
+    const projectKnowledge = activeBuildId
+      ? (() => {
+        try {
+          return this.builderPlatform.getProjectMemory(activeBuildId).entries.slice(-8).map((entry) => entry.summary);
+        } catch {
+          return [];
+        }
+      })()
+      : [];
+    const evidence = [
+      this.hasBrowserEvidence(browserContext) ? 'live browser and DevTools evidence' : '',
+      /Backend Observer Agent functionality map/i.test(browserContext) ? 'backend workspace observation' : '',
+      /Agent Browser/i.test(browserContext) ? 'Agent Browser observations' : '',
+      activeBuild ? 'active project files and logs' : '',
+      memory.length ? 'runtime memory' : '',
+      projectKnowledge.length ? 'project memory' : '',
+      'recent chat requirements',
+    ].filter(Boolean);
+    return {
+      intent,
+      stack: {
+        primaryLanguage: stackPlan.primaryLanguage,
+        framework: stackPlan.framework,
+        runtime: stackPlan.runtime,
+        packageManager: stackPlan.packageManager,
+      },
+      agents,
+      experts,
+      skills,
+      memory,
+      projectKnowledge,
+      evidence,
+      steps: this.chatExecutionSteps(intent, Boolean(activeBuild), this.hasBrowserEvidence(browserContext)),
+    };
+  }
+
+  private detectChatWorkIntent(message: string, mode: string, activeBuildId: string): ChatWorkIntent {
+    const text = message.toLowerCase();
+    if (mode === 'research' || /\b(research|compare|find sources|competitors?|market scan)\b/.test(text)) return 'research';
+    if (mode === 'plan' || /\b(plan|architecture|spec|roadmap)\b/.test(text)) return 'plan';
+    if (mode === 'chat') return 'ask';
+    if (/\b(staging|visual qa|responsive check|test (?:the )?(?:app|site)|accessibility audit|browser shakedown)\b/.test(text)) return 'qa';
+    if (/\b(fix|repair|debug|broken|failing|error|build doctor|auto heal)\b/.test(text)) return 'repair';
+    if (/\b(deploy|publish|ship|production|vercel|netlify|cloudflare)\b/.test(text)) return 'deploy';
+    if (this.shouldStartBuild(message, 'ui-builder')) return 'build';
+    if (/\b(connect|integrate|integration|stripe|supabase|github|oauth|webhook|email provider)\b/.test(text)) return 'integration';
+    if (activeBuildId && this.shouldUpdateBuild(message, mode)) return 'update';
+    if (this.shouldStartBuild(message, mode)) return 'build';
+    return 'ask';
+  }
+
+  private chatExecutionSteps(intent: ChatWorkIntent, hasActiveBuild: boolean, hasBrowserEvidence: boolean): string[] {
+    const inspect = hasBrowserEvidence ? 'Use the captured browser evidence' : 'Use chat and project evidence; open a browser target only when the request depends on one';
+    if (intent === 'ask') return ['Retrieve relevant knowledge', 'Answer directly with evidence and uncertainty'];
+    if (intent === 'research') return ['Gather focused sources and browser evidence', 'Synthesize product decisions', 'Persist useful findings'];
+    if (intent === 'plan') return ['Recall requirements and constraints', 'Route stack and product specialists', 'Produce an ordered implementation and QA plan'];
+    if (intent === 'qa') return [inspect, 'Run focused browser and device checks', 'Report failures and route repairs'];
+    if (intent === 'repair') return ['Read files, logs, browser evidence, and prior failed fixes', 'Route the failing layer to its expert', 'Apply the smallest complete fix', 'Rerun focused checks'];
+    if (intent === 'deploy') return ['Verify build, env, security, and release configuration', 'Prepare the selected deploy target', 'Run post-deploy browser QA'];
+    if (intent === 'integration') return ['Inspect existing data and API boundaries', 'Select the integration and security experts', 'Implement with env validation', 'Test success and failure paths'];
+    return [inspect, 'Apply selected skills and stack experts', hasActiveBuild ? 'Update the existing workspace without restarting' : 'Build the smallest complete product slice', 'Run build and browser QA', 'Persist verified decisions'];
+  }
+
+  private buildChatOrchestrationContext(plan: ChatOrchestrationPlan): string {
+    return [
+      'Nexus smart chat orchestration plan:',
+      `Intent: ${plan.intent}`,
+      `Stack: ${plan.stack.framework} / ${plan.stack.primaryLanguage} / ${plan.stack.packageManager}`,
+      `Selected agents:\n${plan.agents.map((agent) => `- ${agent.name}: ${agent.reason}`).join('\n') || '- direct answer only'}`,
+      `Selected official-source experts: ${plan.experts.map((expert) => expert.name).join(', ') || 'none required for this prompt'}`,
+      `Applied reusable skills: ${plan.skills.map((skill) => skill.name).join(', ') || 'none matched'}`,
+      `Evidence sources: ${plan.evidence.join(', ')}`,
+      `Relevant runtime memory:\n${plan.memory.map((item) => `- ${item}`).join('\n') || '- none'}`,
+      `Relevant project knowledge:\n${plan.projectKnowledge.map((item) => `- ${item}`).join('\n') || '- none'}`,
+      `Execution path:\n${plan.steps.map((step, index) => `${index + 1}. ${step}`).join('\n')}`,
+      'Execution rule: use this focused team automatically. Do not ask the user to choose agents or restate context that is already known.',
+    ].join('\n');
+  }
+
+  private applyOrchestrationSummary(response: string, plan: ChatOrchestrationPlan): string {
+    const team = plan.agents.slice(0, 4).map((agent) => agent.name.replace(/ Agent$/, '')).join(', ');
+    const specialists = plan.experts.slice(0, 5).map((expert) => expert.id).join(', ');
+    const knowledge = `${plan.skills.length} skill${plan.skills.length === 1 ? '' : 's'}, ${plan.memory.length + plan.projectKnowledge.length} relevant memor${plan.memory.length + plan.projectKnowledge.length === 1 ? 'y' : 'ies'}`;
+    return `${response}\n\nSmart route: ${team || 'direct answer'}${specialists ? ` | experts: ${specialists}` : ''} | knowledge: ${knowledge}.`;
   }
 
   private shouldAskProjectReadiness(message: string, mode: string, readiness: ProjectReadiness): boolean {
     if (!readiness.needsClarification) return false;
     if (!this.shouldStartBuild(message, mode)) return false;
     if (/\b(decide and build|you decide|surprise me|auto decide|agent decide|use defaults|pick for me)\b/i.test(message)) return false;
-    return readiness.questions.some((question) => /payment|login|data|deploy|devices|AI features/i.test(question));
+    const highRiskOrExternal = /\b(production|live (?:users?|customers?|payments?)|charge|real money|migrate|existing database|publish|deploy|custom domain|regulated|hipaa|pci)\b/i.test(message);
+    if (!highRiskOrExternal) return false;
+    return readiness.questions.some((question) => /payment|login|data|deploy|AI features/i.test(question));
   }
 
   private projectReadinessQuestionResponse(readiness: ProjectReadiness): string {
@@ -2641,7 +2985,70 @@ Rules:
     return /^\s*(?:\/agent-browser|\/ab|agent-browser:)\b/i.test(message);
   }
 
-  private async runAgentBrowserChat(message: string, sessionId: string): Promise<BuilderChatResult> {
+  private isDirectNativeBrowserCommand(message: string): boolean {
+    return /^\s*(?:open|go to|navigate to|click|type|fill|press|select|hover|scroll|go back|back|go forward|forward|reload|refresh|take (?:a )?screenshot|screenshot|snapshot|read page|inspect page)\b/i.test(message);
+  }
+
+  private nativeBrowserActionFromCommand(input: string): BrowserAction | null {
+    const parts = this.splitCommandArgs(input);
+    const command = (parts.shift() || '').toLowerCase();
+    if (command === 'go' && parts[0]?.toLowerCase() === 'back') return { type: 'back' };
+    if (command === 'go' && parts[0]?.toLowerCase() === 'forward') return { type: 'forward' };
+    if (command === 'go' && parts[0]?.toLowerCase() === 'to') parts.shift();
+    if (command === 'navigate' && parts[0]?.toLowerCase() === 'to') parts.shift();
+    if (command === 'take') {
+      if (parts[0]?.toLowerCase() === 'a') parts.shift();
+      if (parts[0]?.toLowerCase() === 'screenshot') return { type: 'screenshot' };
+    }
+    const selector = (value = '') => /^(?:text=|[#.\[])/i.test(value)
+      || /^(?:a|button|input|textarea|select|form|label|div|span|nav|main|header|footer)(?:[#.\[:]|$)/i.test(value)
+      ? value
+      : `text=${value}`;
+    switch (command) {
+      case 'open':
+      case 'goto':
+      case 'navigate':
+      case 'go':
+        return parts.length ? { type: 'navigate', url: parts.join(' ') } : null;
+      case 'click':
+        return parts.length ? { type: 'click', selector: selector(parts.join(' ')) } : null;
+      case 'type':
+      case 'fill':
+        return parts.length >= 2 ? { type: 'type', selector: selector(parts.shift()), value: parts.join(' ') } : null;
+      case 'press':
+      case 'key':
+        return parts.length ? { type: 'press', value: parts.join('') } : null;
+      case 'select':
+        return parts.length >= 2 ? { type: 'select', selector: selector(parts.shift()), value: parts.join(' ') } : null;
+      case 'hover':
+        return parts.length ? { type: 'hover', selector: selector(parts.join(' ')) } : null;
+      case 'scroll': {
+        const direction = (parts[0] || 'down').toLowerCase();
+        const amount = Number(parts.find((part) => /^-?\d+$/.test(part)) || 500);
+        if (direction === 'top') return { type: 'evaluate', script: 'window.scrollTo(0, 0); ({ x: scrollX, y: scrollY })' };
+        if (direction === 'bottom') return { type: 'evaluate', script: 'window.scrollTo(0, document.body.scrollHeight); ({ x: scrollX, y: scrollY })' };
+        return { type: 'scroll', coordinates: { x: 0, y: direction === 'up' ? -Math.abs(amount) : Math.abs(amount) } };
+      }
+      case 'back': return { type: 'back' };
+      case 'forward': return { type: 'forward' };
+      case 'reload':
+      case 'refresh': return { type: 'reload' };
+      case 'screenshot': return { type: 'screenshot' };
+      case 'snapshot':
+      case 'read':
+      case 'inspect':
+      case 'state':
+      case 'chat':
+        return {
+          type: 'evaluate',
+          script: `({ title: document.title, url: location.href, text: (document.body?.innerText || '').slice(0, 12000), controls: Array.from(document.querySelectorAll('a,button,input,textarea,select,[role="button"],[role="link"]')).slice(0, 80).map((element) => ({ tag: element.tagName.toLowerCase(), text: (element.textContent || element.getAttribute('aria-label') || element.getAttribute('placeholder') || '').trim().slice(0, 120) })) })`,
+        };
+      default:
+        return null;
+    }
+  }
+
+  private async runAgentBrowserChat(message: string, sessionId: string, pageId = ''): Promise<BuilderChatResult> {
     const input = message
       .replace(/^\s*\/agent-browser\b/i, '')
       .replace(/^\s*\/ab\b/i, '')
@@ -2650,6 +3057,37 @@ Rules:
     if (!input) {
       return {
         response: 'Agent Browser is available in chat. Use `/agent-browser open example.com`, `/agent-browser snapshot`, or `/agent-browser chat "find the pricing page"`.',
+        actions: this.agentBrowserActions(),
+        source: 'agent-browser',
+      };
+    }
+
+    if (this.isNativeBrowserSession(sessionId)) {
+      const action = this.nativeBrowserActionFromCommand(input);
+      if (!action) {
+        return {
+          response: 'The active Nexus Chromium tab is connected. Use commands such as `open example.com`, `click "Sign in"`, `fill "Email" "name@example.com"`, `press Enter`, `scroll down`, or `snapshot`.',
+          actions: this.agentBrowserActions(),
+          source: 'agent-browser',
+        };
+      }
+      const result = await this.executeBrowserAction(sessionId, pageId || 'active-tab', action);
+      const output = result.success
+        ? JSON.stringify(result.data ?? { url: result.page?.url }, null, 2).slice(0, 10000)
+        : result.error || 'Native browser action failed';
+      this.storeAgentBrowserObservation({
+        id: uuid(),
+        sessionId,
+        command: input,
+        args: this.agentBrowserArgs(input),
+        output,
+        ok: result.success,
+        collectedAt: new Date().toISOString(),
+      });
+      return {
+        response: result.success
+          ? `Native browser action completed on the visible Chromium tab.${result.page?.url ? `\n\nActive page: ${result.page.url}` : ''}${action.type === 'evaluate' ? `\n\n\`\`\`json\n${output}\n\`\`\`` : ''}`
+          : `Native browser action failed: ${output}`,
         actions: this.agentBrowserActions(),
         source: 'agent-browser',
       };
@@ -2766,6 +3204,19 @@ Rules:
   private createFallbackBuilderChat(message: string, mode: string, uiLook: string, browserContext: string): BuilderChatResult {
     const browserReady = !/no rendered browser observations|browser intelligence unavailable|no active rendered browser session/i.test(browserContext);
     const backendReady = !/no active generated workspace|backend observer unavailable/i.test(browserContext);
+    if (this.isConversationalBuildQuestion(message)) {
+      const responsiveQuestion = /\b(screen sizes?|responsive|desktop|laptop|tablet|mobile|phone|breakpoints?|viewport)\b/i.test(message);
+      const response = responsiveQuestion
+        ? 'Yes. Nexus builds fluid responsive layouts and verifies desktop, laptop, tablet, and mobile presets. Intermediate widths are handled by responsive constraints and breakpoints, while Staging Studio provides the concrete device checks. Chat stays open so you can inspect or discuss the result after a build. This question is conversational and will not start another code update; explicit requests such as "fix the tablet layout" still will.'
+        : 'This is a question about the current build, so Nexus will answer it without starting another code update. Agent mode keeps the project conversation open, but only explicit requests to build, add, change, fix, or remove something execute code.';
+      return {
+        response,
+        actions: responsiveQuestion ? [
+          { id: 'check-screen-sizes', label: 'Check Screens', description: 'Run the desktop, tablet, and mobile staging checks.', prompt: 'Run Staging Studio and report desktop, tablet, and mobile issues without changing code unless a failure is found.' },
+        ] : [],
+        source: 'fallback',
+      };
+    }
     const next = mode === 'research'
       ? 'I will gather browser evidence and turn it into project context.'
       : mode === 'plan'
@@ -2893,6 +3344,14 @@ Rules:
 
       ws.on('close', () => {
         this.clients.delete(clientId);
+        if (this.nativeBrowserClientId === clientId) {
+          this.nativeBrowserClientId = Array.from(this.clients.values()).find((candidate) => candidate.nativeBrowser)?.id;
+          for (const [requestId, pending] of this.pendingNativeActions) {
+            clearTimeout(pending.timer);
+            pending.resolve({ success: false, error: 'The native Nexus browser disconnected', duration: 0 });
+            this.pendingNativeActions.delete(requestId);
+          }
+        }
         log.info(`Client disconnected: ${clientId}`);
       });
 
@@ -2939,6 +3398,28 @@ Rules:
         break;
       }
 
+      case 'native-browser:register':
+        if (!client.authenticated) {
+          client.ws.send(JSON.stringify({ type: 'error', error: 'Authenticate before registering native browser control' }));
+          return;
+        }
+        client.nativeBrowser = true;
+        client.sessionId = 'electron-native';
+        this.nativeBrowserClientId = client.id;
+        client.ws.send(JSON.stringify({ type: 'native-browser:registered', sessionId: 'electron-native' }));
+        break;
+
+      case 'native-browser:result': {
+        if (!client.nativeBrowser || client.id !== this.nativeBrowserClientId) return;
+        const requestId = String(msg.requestId || '');
+        const pending = this.pendingNativeActions.get(requestId);
+        if (!pending) return;
+        clearTimeout(pending.timer);
+        this.pendingNativeActions.delete(requestId);
+        pending.resolve(msg.result as ActionResult);
+        break;
+      }
+
       case 'session:list':
         client.ws.send(JSON.stringify({ type: 'sessions', sessions: this.engine.getAllSessions() }));
         break;
@@ -2959,7 +3440,7 @@ Rules:
           client.ws.send(JSON.stringify({ type: 'error', error: 'No session' }));
           return;
         }
-        const result = await this.engine.executeAction(client.sessionId, msg.pageId, msg.action);
+        const result = await this.executeBrowserAction(client.sessionId, msg.pageId, msg.action);
         client.ws.send(JSON.stringify({ type: 'action:result', result }));
         this.broadcast({ type: 'session:update', sessions: this.engine.getAllSessions() });
         break;
@@ -2967,14 +3448,14 @@ Rules:
 
       case 'page:content': {
         if (!client.sessionId) return;
-        const content = await this.engine.getPageContent(client.sessionId, msg.pageId);
+        const content = await this.getBrowserPageContent(client.sessionId, msg.pageId);
         client.ws.send(JSON.stringify({ type: 'page:content', content }));
         break;
       }
 
       case 'page:screenshot': {
         if (!client.sessionId) return;
-        const buf = await this.engine.getPageScreenshot(client.sessionId, msg.pageId);
+        const buf = await this.getBrowserPageScreenshot(client.sessionId, msg.pageId);
         if (buf) {
           client.ws.send(JSON.stringify({ type: 'page:screenshot', data: buf.toString('base64') }));
         }
@@ -2983,7 +3464,7 @@ Rules:
 
       case 'page:elements': {
         if (!client.sessionId) return;
-        const elements = await this.engine.getInteractiveElements(client.sessionId, msg.pageId);
+        const elements = await this.getBrowserInteractiveElements(client.sessionId, msg.pageId);
         client.ws.send(JSON.stringify({ type: 'page:elements', elements }));
         break;
       }

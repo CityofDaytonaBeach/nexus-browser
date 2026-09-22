@@ -1,0 +1,153 @@
+{
+  "id": "cffabe2a",
+  "buildId": "43aaa89c",
+  "createdAt": "2026-09-22T16:13:12.141Z",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c",
+  "previewUrl": "http://127.0.0.1:5186/",
+  "previewStatus": "running",
+  "devices": [
+    {
+      "device": {
+        "id": "desktop",
+        "name": "Desktop Studio",
+        "width": 1440,
+        "height": 1024,
+        "userAgentHint": "desktop"
+      },
+      "url": "http://127.0.0.1:5186/",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 1317,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\staging\\cffabe2a\\desktop-screenshot.png",
+      "consoleErrors": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "networkErrors": [],
+      "notes": [
+        "Captured 1440x1024 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/cffabe2a/devices/desktop/screenshot"
+    },
+    {
+      "device": {
+        "id": "laptop",
+        "name": "Laptop Product",
+        "width": 1280,
+        "height": 800,
+        "userAgentHint": "desktop"
+      },
+      "url": "http://127.0.0.1:5186/",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 1199,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\staging\\cffabe2a\\laptop-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [],
+      "notes": [
+        "Captured 1280x800 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/cffabe2a/devices/laptop/screenshot"
+    },
+    {
+      "device": {
+        "id": "tablet",
+        "name": "Tablet Touch",
+        "width": 834,
+        "height": 1112,
+        "userAgentHint": "tablet"
+      },
+      "url": "http://127.0.0.1:5186/",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 978,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\staging\\cffabe2a\\tablet-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [],
+      "notes": [
+        "Captured 834x1112 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/cffabe2a/devices/tablet/screenshot"
+    },
+    {
+      "device": {
+        "id": "mobile",
+        "name": "Mobile App",
+        "width": 390,
+        "height": 844,
+        "userAgentHint": "mobile"
+      },
+      "url": "http://127.0.0.1:5186/",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 1221,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\staging\\cffabe2a\\mobile-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [],
+      "notes": [
+        "Captured 390x844 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/cffabe2a/devices/mobile/screenshot"
+    },
+    {
+      "device": {
+        "id": "game",
+        "name": "Game Viewport",
+        "width": 960,
+        "height": 540,
+        "userAgentHint": "game"
+      },
+      "url": "http://127.0.0.1:5186/",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 969,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\staging\\cffabe2a\\game-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [],
+      "notes": [
+        "Captured 960x540 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/cffabe2a/devices/game/screenshot"
+    },
+    {
+      "device": {
+        "id": "app-store-mobile",
+        "name": "App Store Shot",
+        "width": 1290,
+        "height": 2796,
+        "userAgentHint": "mobile-screenshot"
+      },
+      "url": "http://127.0.0.1:5186/",
+      "status": "ready",
+      "healthCode": 200,
+      "latencyMs": 3450,
+      "screenshotPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\staging\\cffabe2a\\app-store-mobile-screenshot.png",
+      "consoleErrors": [],
+      "networkErrors": [],
+      "notes": [
+        "Captured 1290x2796 rendered screenshot."
+      ],
+      "screenshotUrl": "/api/builder/staging-reports/cffabe2a/devices/app-store-mobile/screenshot"
+    }
+  ],
+  "health": {
+    "status": "ready",
+    "score": 92,
+    "issues": [
+      "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ]
+  },
+  "creativeUniqueness": {
+    "score": 78,
+    "findings": [
+      "Distinctive/system signal found: aria-",
+      "Distinctive/system signal found: brand"
+    ],
+    "antiTemplatePrompt": "You are the NexusBrowser Creative Divergence QA agent.\n\nWorkspace: C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\nPreview: http://127.0.0.1:5186/\nCreative uniqueness score: 78/100\nFindings:\n- Distinctive/system signal found: aria-\n- Distinctive/system signal found: brand\n\nImprove the app until it no longer resembles a stock generated template.\n\nRequired changes:\n- Replace generic hero/card/grid composition with product-specific layout logic.\n- Add a signature visual system: typography, spacing, color, texture, and component states.\n- Add custom loading, empty, error, focus, hover, and mobile states.\n- Ensure desktop, tablet, mobile, game, and app-store screenshot sizes feel intentionally designed.\n- Preserve accessibility and reduced-motion support.\n- Run build and rerun Staging Studio after edits.\n"
+  },
+  "logs": {
+    "previewTail": "Starting preview for build-be-a-bike-week-website\nnpm install && npm run dev -- --host 0.0.0.0 --port 5173\n\n\nup to date, audited 22 packages in 2s\n\n8 packages are looking for funding\n  run `npm fund` for details\n\nfound 0 vulnerabilities\n\n> dev\n> vite --host 0.0.0.0 --host 0.0.0.0 --port 5173\n\nPort 5173 is in use, trying another one...\nPort 5174 is in use, trying another one...\nPort 5175 is in use, trying another one...\nPort 5176 is in use, trying another one...\nPort 5177 is in use, trying another one...\nPort 5178 is in use, trying another one...\nPort 5179 is in use, trying another one...\nPort 5180 is in use, trying another one...\nPort 5181 is in use, trying another one...\nPort 5182 is in use, trying another one...\nPort 5183 is in use, trying another one...\nPort 5184 is in use, trying another one...\nPort 5185 is in use, trying another one...\n\n  VITE v8.3.0  ready in 372 ms\n\n  ➜  Local:   http://localhost:5186/\n  ➜  Network: http://192.168.1.88:5186/  Wi-Fi\n",
+    "errors": []
+  },
+  "outputDir": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\build-be-a-bike-week-website-43aaa89c\\.nexus\\staging\\cffabe2a",
+  "summary": "Staging Studio ready: preview running, 6 devices, health 92/100, creative uniqueness 78/100."
+}
