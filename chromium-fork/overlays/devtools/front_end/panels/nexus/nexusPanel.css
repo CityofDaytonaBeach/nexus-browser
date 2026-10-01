@@ -1,0 +1,156 @@
+.nexus-panel {
+  min-height: 100%;
+  color: var(--sys-color-on-surface);
+  background: var(--sys-color-surface);
+}
+
+.nexus-toolbar,
+.target-band,
+.context-band {
+  padding: 14px 16px;
+  border-bottom: var(--sys-size-1) solid var(--sys-color-divider);
+}
+
+.nexus-toolbar,
+.section-heading,
+.connection-line,
+.actions {
+  display: flex;
+  align-items: center;
+}
+
+.nexus-toolbar,
+.section-heading {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.connection-line {
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: var(--sys-color-neutral-outline);
+}
+
+.status-dot.connected {
+  background: var(--sys-color-green-bright);
+}
+
+.status-dot.offline {
+  background: var(--sys-color-error-bright);
+}
+
+.actions {
+  gap: 6px;
+}
+
+button {
+  min-height: 26px;
+  padding: 4px 10px;
+  border: var(--sys-size-1) solid var(--sys-color-neutral-outline);
+  border-radius: 4px;
+  color: var(--sys-color-on-surface);
+  background: var(--sys-color-surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--sys-color-state-hover-on-subtle);
+}
+
+button.primary {
+  border-color: var(--sys-color-primary);
+  color: var(--sys-color-on-primary);
+  background: var(--sys-color-primary);
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.target-details {
+  display: grid;
+  grid-template-columns: minmax(60px, max-content) minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 12px 0 0;
+}
+
+.target-details dt {
+  color: var(--sys-color-on-surface-subtle);
+}
+
+.target-details dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.context-band {
+  border-bottom: 0;
+}
+
+.context-band pre {
+  max-height: 55vh;
+  margin: 12px 0 0;
+  padding: 12px;
+  overflow: auto;
+  border: var(--sys-size-1) solid var(--sys-color-divider);
+  border-radius: 4px;
+  background: var(--sys-color-neutral-container);
+  white-space: pre-wrap;
+}
+
+.muted,
+.error {
+  margin-top: 10px;
+  color: var(--sys-color-on-surface-subtle);
+}
+
+.connection-line .muted {
+  margin-top: 0;
+}
+
+.error {
+  color: var(--sys-color-error);
+}
+
+@media (max-width: 520px) {
+  .nexus-toolbar,
+  .section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .actions button,
+  .section-heading button {
+    flex: 1;
+  }
+}

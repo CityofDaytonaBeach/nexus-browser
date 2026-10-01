@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "sourceRoot": ".chromium-source",
+  "upstream": {
+    "depotTools": {
+      "url": "https://chromium.googlesource.com/chromium/tools/depot_tools.git",
+      "revision": "66b98b2b6d9d4e4611adb791f42cdc3b4984fa13"
+    },
+    "devtoolsFrontend": {
+      "url": "https://chromium.googlesource.com/devtools/devtools-frontend.git",
+      "revision": "fa086293155b150610cbe569b7c949c7c513294e"
+    },
+    "chromium": {
+      "url": "https://chromium.googlesource.com/chromium/src.git",
+      "revision": null
+    }
+  },
+  "ownedIntegrationPoints": [
+    "front_end/panels/nexus",
+    "front_end/entrypoints/devtools_app/devtools_app.ts",
+    "front_end/entrypoints/devtools_app/BUILD.gn",
+    "config/gni/devtools_grd_files.gni",
+    "chrome/browser/ui/views/side_panel",
+    "content/browser/devtools/protocol"
+  ],
+  "status": {
+    "devtoolsCheckout": "ready",
+    "devtoolsOverlay": "implemented",
+    "chromiumCheckout": "pending-toolchain",
+    "chromiumBinary": "not-built"
+  }
+}

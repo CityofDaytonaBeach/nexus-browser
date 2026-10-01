@@ -1,0 +1,29 @@
+name: Cross-platform checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  application:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - macos-latest
+          - ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test -- --runInBand
+      - run: npm run lint
+      - run: node --check scripts/chromium/cli.mjs

@@ -1,5 +1,7 @@
 node_modules/
 dist/
+.chromium-source/
+.setup/
 *.js.map
 .env
 profiles/
