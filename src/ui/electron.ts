@@ -57,6 +57,16 @@ app.commandLine.appendSwitch('disk-cache-dir', path.join(PROFILE_ROOT, 'cache'))
 if (process.env.NEXUS_REMOTE_DEBUGGING_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.NEXUS_REMOTE_DEBUGGING_PORT);
 if (process.env.NEXUS_DISABLE_GPU === 'true') app.disableHardwareAcceleration();
 
+app.on('child-process-gone', (_event, details) => {
+  if (details.type !== 'GPU' || details.reason === 'clean-exit' || details.reason === 'killed') return;
+  console.error('NEXUS_GPU_FAILURE', JSON.stringify(details));
+});
+app.on('render-process-gone', (_event, _contents, details) => {
+  if (details.reason === 'launch-failed' || details.reason === 'integrity-failure') {
+    console.error('NEXUS_RENDERER_LAUNCH_FAILED', JSON.stringify(details));
+  }
+});
+
 function appAsset(...parts: string[]): string {
   const root = app.isPackaged ? app.getAppPath() : process.cwd();
   return path.join(root, ...parts);
@@ -706,7 +716,7 @@ async function createWindow(): Promise<void> {
   });
   mainWindow.webContents.once('did-finish-load', publishState);
 
-  await waitForServer(`${NEXUS_ORIGIN}/health`).catch(() => undefined);
+  await waitForServer(`${NEXUS_ORIGIN}/health`);
   await mainWindow.loadFile(appAsset('public', 'browser-shell.html'));
   createAgentView();
   createTab(process.env.NEXUS_START_URL || `${NEXUS_ORIGIN}/browser-home.html`);
@@ -730,12 +740,18 @@ ipcMain.handle('nexus-browser:active-action', (event, action: BrowserAction) => 
   return executeActiveAction(action);
 });
 
-app.whenReady().then(() => {
+function startupFailed(error: unknown): void {
+  console.error('Nexus startup failed:', error);
+  if (backendProcess) backendProcess.kill();
+  app.exit(1);
+}
+
+app.whenReady().then(async () => {
   app.setAppUserModelId('ai.nexus.browser');
   Menu.setApplicationMenu(null);
   startBackend();
-  void createWindow();
-});
+  await createWindow();
+}).catch(startupFailed);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
@@ -751,5 +767,5 @@ app.on('before-quit', () => {
 });
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) void createWindow();
+  if (BrowserWindow.getAllWindows().length === 0) void createWindow().catch(startupFailed);
 });

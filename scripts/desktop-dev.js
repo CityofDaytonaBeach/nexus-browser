@@ -1,9 +1,11 @@
-const { spawnSync } = require('child_process');
+const { runElectron } = require('./desktop');
 const path = require('path');
 
-const electronBin = path.join(__dirname, '..', 'node_modules', '.bin', process.platform === 'win32' ? 'electron.cmd' : 'electron');
+const root = path.join(__dirname, '..');
+const electronBin = process.platform === 'win32'
+  ? path.join(root, 'node_modules', 'electron', 'dist', 'electron.exe')
+  : path.join(root, 'node_modules', '.bin', 'electron');
 
-spawnSync(electronBin, [path.join(__dirname, '..', 'dist', 'ui', 'electron.js')], {
-  stdio: 'inherit',
-  env: { ...process.env, NEXUS_EXTERNAL_SERVER: 'true' },
-});
+runElectron(electronBin, { compatibilityMode: process.argv.includes('--compat') })
+  .then((code) => { process.exitCode = code; })
+  .catch((error) => { console.error(error.message); process.exitCode = 1; });
