@@ -32,9 +32,9 @@ function App() {
           <span aria-hidden="true">BW</span> Bike Week
         </a>
         <nav>
-          <a href="#schedule">Schedule</a>
+          <a href="#schedule" aria-label="Schedule">Schedule</a>
           <a href="#passes">Passes</a>
-          <a href="#roadbook">Roadbook</a>
+          <a href="#roadbook" aria-label="Roadbook">Roadbook</a>
           <a href="#register">Register</a>
         </nav>
       </header>
@@ -49,8 +49,8 @@ function App() {
               builder showcases, Main Street nights, and beach concerts in one mobile-ready trip plan.
             </p>
             <div className="hero-actions">
-              <a className="button primary" href="#register">Reserve ride updates</a>
-              <a className="button ghost" href="#schedule">View rally schedule</a>
+              <a className="button primary" href="#register" aria-label="Reserve ride updates">Reserve ride updates</a>
+              <a className="button ghost" href="#schedule" aria-label="View rally schedule">View rally schedule</a>
             </div>
             <div className="hero-stats" aria-label="Bike Week quick stats">
               <span><strong>10</strong> rally days</span>

@@ -32,6 +32,24 @@ function makeBuild(platform: BuilderPlatform, root: string, prompt = 'Build a Re
 }
 
 describe('BuilderPlatform intelligence systems', () => {
+  test('waits for the launched Vite URL instead of probing an occupied requested port', async () => {
+    const platform = new BuilderPlatform();
+    const build = { id: 'port-race', previewUrl: 'http://127.0.0.1:5173', previewStatus: 'starting' } as BuildWorkspace;
+    const health = jest.spyOn(platform as any, 'waitForPreview').mockResolvedValue(undefined);
+    (platform as any).previewReadyUrls.set(build.id, null);
+    const waiting = (platform as any).waitForBuildPreview(build, 1000);
+    expect(health).not.toHaveBeenCalled();
+    (platform as any).previewReadyUrls.set(build.id, 'http://127.0.0.1:5174');
+    await waiting;
+    expect(health).toHaveBeenCalledWith('http://127.0.0.1:5174', expect.any(Number));
+  });
+
+  test('fails when Vite exits without reporting a ready URL', async () => {
+    const platform = new BuilderPlatform();
+    const build = { id: 'port-exit', previewStatus: 'failed' } as BuildWorkspace;
+    (platform as any).previewReadyUrls.set(build.id, null);
+    await expect((platform as any).waitForBuildPreview(build, 1000)).rejects.toThrow('Preview exited');
+  });
   let root: string;
   let platform: BuilderPlatform;
   let build: BuildWorkspace;

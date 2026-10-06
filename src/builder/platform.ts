@@ -297,6 +297,7 @@ export class BuilderPlatform {
   private buildProcesses: Map<string, ChildProcess> = new Map();
   private buildUpdateProcesses: Map<string, ChildProcess> = new Map();
   private previewProcesses: Map<string, ChildProcess> = new Map();
+  private previewReadyUrls = new Map<string, string | null>();
   private doctorReports: Map<string, BuildDoctorReport> = new Map();
   private autoHealLoops: Map<string, AutoHealLoopRun> = new Map();
   private memories: Map<string, ProjectMemory> = new Map();
@@ -339,7 +340,7 @@ export class BuilderPlatform {
         try {
           this.stopPreview(build.id);
           this.startPreview(build.id);
-          await this.waitForPreview(build.previewUrl!, 30000);
+          await this.waitForBuildPreview(build, 30000);
           if (!lockedContract) {
             const candidate = productContractSchema.safeParse(this.safeJson(path.join(build.root, '.nexus', 'product-contract.json')));
             if (candidate.success) {
@@ -1227,6 +1228,9 @@ export class BuilderPlatform {
     build.previewUrl = `http://127.0.0.1:${port}`;
     build.previewStatus = 'starting';
     build.previewCommand = this.previewCommandForBuild(build, port);
+    const pkg = this.safeJson(path.join(build.root, 'package.json'));
+    if (/\bvite\b/.test(String(pkg.scripts?.dev || ''))) this.previewReadyUrls.set(buildId, null);
+    else this.previewReadyUrls.delete(buildId);
 
     fs.writeFileSync(build.previewLogPath, `Starting preview for ${build.name}\n${build.previewCommand}\n\n`, { flag: 'a' });
     const commandParts = process.platform === 'win32'
@@ -1244,12 +1248,14 @@ export class BuilderPlatform {
     child.stdout.on('data', (chunk) => {
       const text = chunk.toString();
       log.write(text);
-      const localUrl = text.match(/local:\s+(https?:\/\/[^\s]+)/i)?.[1];
+      const localUrl = text.replace(/\u001b\[[0-9;]*m/g, '').match(/local:\s+(https?:\/\/[^\s]+)/i)?.[1];
       if (localUrl) {
         const resolvedUrl = localUrl.replace('localhost', '127.0.0.1');
         build.previewUrl = resolvedUrl;
         const actualPort = Number(new URL(resolvedUrl).port);
         if (actualPort) build.previewPort = actualPort;
+        this.previewReadyUrls.set(buildId, resolvedUrl);
+        this.persistBuild(build);
       }
     });
     child.stderr.on('data', (chunk) => log.write(chunk));
@@ -1267,7 +1273,7 @@ export class BuilderPlatform {
     });
 
     this.previewProcesses.set(buildId, child);
-    void this.waitForPreview(build.previewUrl, 30000).then(() => {
+    void this.waitForBuildPreview(build, 30000).then(() => {
       if (this.previewProcesses.get(buildId) === child && build.previewStatus === 'starting') build.previewStatus = 'running';
     }).catch((error) => {
       if (this.previewProcesses.get(buildId) === child) {
@@ -1287,6 +1293,7 @@ export class BuilderPlatform {
       else child.kill('SIGTERM');
     }
     this.previewProcesses.delete(buildId);
+    this.previewReadyUrls.delete(buildId);
     build.previewStatus = 'stopped';
     return build;
   }
@@ -1590,7 +1597,7 @@ export class BuilderPlatform {
     fs.mkdirSync(outputDir, { recursive: true });
     const previewLog = this.readCurrentPreviewLog(build, 20000);
     const errors = this.extractPreviewErrors(previewLog);
-    await this.waitForPreview(build.previewUrl!, 12000);
+    await this.waitForBuildPreview(build, 12000);
     const deviceChecks = await this.captureStagingDevices(build.previewUrl!, devices, outputDir);
     const creativeUniqueness = this.scoreCreativeUniqueness(build);
     const failedDevices = deviceChecks.filter((check) => check.status === 'failed').length;
@@ -1824,6 +1831,18 @@ export class BuilderPlatform {
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  private async waitForBuildPreview(build: BuildWorkspace, timeoutMs: number): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (this.previewReadyUrls.has(build.id) && !this.previewReadyUrls.get(build.id)) {
+      if (build.previewStatus === 'failed' || build.previewStatus === 'stopped') throw new Error('Preview exited before announcing its URL');
+      if (Date.now() >= deadline) throw new Error('Preview did not announce its ready URL');
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    const url = this.previewReadyUrls.get(build.id) || build.previewUrl;
+    if (!url) throw new Error('Preview URL unavailable');
+    await this.waitForPreview(url, Math.max(1, deadline - Date.now()));
   }
 
   private async waitForPreview(url: string, timeoutMs: number): Promise<void> {
