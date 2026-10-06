@@ -5,8 +5,11 @@ import { spawn, ChildProcess } from 'child_process';
 import { v4 as uuid } from 'uuid';
 import { config } from '../core/config';
 import { launchChromium } from '../browser/launch';
+import { BrowserEngine, VisualPageProfile } from '../browser/engine';
 import { getLanguageExperts, LanguageExpertProfile } from '../languages/registry';
 import { getProjectAgentSwarm } from '../project-agents/registry';
+import { Checkpoints, Checkpoint } from './checkpoints';
+import { browserContractInstructions, BrowserVerification, verifyBrowserProduct, productContractSchema, ProductContract, captureRenderedEvidence } from './browser-verification';
 
 export interface AiProviderProfile {
   id: string;
@@ -81,7 +84,9 @@ export interface BuildWorkspace {
   name: string;
   root: string;
   prompt: string;
-  status: 'created' | 'opencode-running' | 'completed' | 'opencode-unavailable' | 'failed';
+  status: 'created' | 'opencode-running' | 'verifying' | 'completed' | 'opencode-unavailable' | 'failed';
+  verification?: { phase: 'pending' | 'build' | 'browser' | 'repair' | 'passed' | 'failed'; pass: number; issues: string[]; artifacts: string[]; checkedAt?: string };
+  reference?: { profilePath: string; screenshotPath: string; matchRequired: boolean };
   previewStatus: 'stopped' | 'starting' | 'running' | 'failed';
   previewUrl?: string;
   previewPort?: number;
@@ -122,7 +127,7 @@ export interface BuildProgress {
   steps: BuildProgressStep[];
   recentOutput: string[];
   failure?: {
-    code: 'executor-connection' | 'executor-auth' | 'executor-missing' | 'executor-failed';
+    code: 'executor-connection' | 'executor-auth' | 'executor-missing' | 'executor-failed' | 'verification-failed';
     title: string;
     detail: string;
     recovery: string;
@@ -229,7 +234,7 @@ export interface BuildUpdateRun {
   createdAt: string;
   workspace: string;
   userMessage: string;
-  status: 'queued' | 'running' | 'completed' | 'failed';
+  status: 'queued' | 'prepared' | 'running' | 'verifying' | 'completed' | 'failed';
   prompt: string;
   logPath: string;
   session: OpenCodeSessionStub;
@@ -270,7 +275,7 @@ export interface StagingReport {
     issues: string[];
   };
   creativeUniqueness: {
-    score: number;
+    score: number | null;
     findings: string[];
     antiTemplatePrompt: string;
   };
@@ -283,6 +288,8 @@ export interface StagingReport {
 }
 
 export class BuilderPlatform {
+  private checkpoints = new Checkpoints();
+  private checkpointRuns = new Map<string, Checkpoint>();
   private snapshots: Map<string, WorkspaceSnapshot> = new Map();
   private locks: Map<string, FileLock> = new Map();
   private sessions: Map<string, OpenCodeSessionStub> = new Map();
@@ -297,6 +304,125 @@ export class BuilderPlatform {
   private creativeDirections: Map<string, CreativeDirection> = new Map();
   private stagingReports: Map<string, StagingReport> = new Map();
   private buildUpdates: Map<string, BuildUpdateRun> = new Map();
+
+  private persistBuild(build: BuildWorkspace): void {
+    const dir = path.join(build.root, '.nexus');
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, 'build-state.json');
+    fs.writeFileSync(`${file}.tmp`, JSON.stringify({ build, updates: this.getBuildUpdates().filter((run) => run.buildId === build.id) }, null, 2));
+    fs.renameSync(`${file}.tmp`, file);
+  }
+
+  private failVerification(build: BuildWorkspace, error: Error): void {
+    build.verification = { phase: 'failed', pass: build.verification?.pass || 1, issues: [error.message], artifacts: build.verification?.artifacts || [], checkedAt: new Date().toISOString() };
+    build.status = 'failed';
+    this.persistBuild(build);
+  }
+
+  private sealUpdate(run: BuildUpdateRun): void {
+    const checkpoint = this.checkpointRuns.get(run.id);
+    if (checkpoint) { this.checkpoints.seal(checkpoint); this.checkpointRuns.delete(run.id); }
+  }
+
+  private async verifyAndRepair(build: BuildWorkspace, request = build.prompt, allowRepair = true): Promise<boolean> {
+    let lockedContract: ProductContract | undefined;
+    const acceptedFile = path.join(build.root, '.nexus', 'accepted-contract.json');
+    for (let pass = 1; pass <= 3; pass++) {
+      build.verification = { phase: 'build', pass, issues: [], artifacts: [] };
+      this.persistBuild(build);
+      const doctor = await this.runBuildDoctor(build.id, { runBuild: true });
+      const issues = doctor.issues.filter((issue) => issue.area !== 'preview' && (issue.area === 'build' || ['critical', 'high'].includes(issue.severity))).map((issue) => `${issue.issue}: ${issue.evidence}`);
+      let browser: BrowserVerification | undefined;
+      if (!issues.length) {
+        build.verification.phase = 'browser';
+        this.persistBuild(build);
+        try {
+          this.stopPreview(build.id);
+          this.startPreview(build.id);
+          await this.waitForPreview(build.previewUrl!, 30000);
+          if (!lockedContract) {
+            const candidate = productContractSchema.safeParse(this.safeJson(path.join(build.root, '.nexus', 'product-contract.json')));
+            if (candidate.success) {
+              const previous = productContractSchema.safeParse(this.safeJson(acceptedFile));
+              const workflows = new Map((previous.success ? previous.data.workflows : []).map((workflow) => [workflow.name, workflow]));
+              candidate.data.workflows.forEach((workflow) => workflows.set(workflow.name, workflow));
+              lockedContract = { product: candidate.data.product, workflows: [...workflows.values()] };
+            }
+          }
+          browser = await verifyBrowserProduct(build.root, build.previewUrl!, path.join(build.root, '.nexus', 'verification', `${Date.now()}-${pass}`), lockedContract);
+          issues.push(...browser.issues);
+          if (build.reference?.matchRequired && browser.status === 'passed') {
+            const reference = { ...this.safeJson(build.reference.profilePath), screenshot: fs.readFileSync(build.reference.screenshotPath) } as VisualPageProfile;
+            const comparison = await BrowserEngine.getInstance().compareCapturedReference(reference, build.previewUrl!, path.join(build.root, '.nexus', 'verification', 'visual-reference'));
+            issues.push(...comparison.findings.filter((finding) => finding.severity === 'high').map((finding) => `${finding.issue} ${finding.repair}`));
+            browser.artifacts.push(comparison.artifacts.targetScreenshot, comparison.artifacts.localScreenshot, comparison.artifacts.diffJson);
+          }
+        } catch (error: any) { issues.push(`Browser verification unavailable: ${error.message}`); }
+      }
+      build.verification.issues = issues;
+      build.verification.artifacts = browser?.artifacts || [];
+      build.verification.checkedAt = new Date().toISOString();
+      if (!issues.length && browser?.status === 'passed') {
+        build.verification.phase = 'passed';
+        if (lockedContract) {
+          fs.writeFileSync(acceptedFile, JSON.stringify(lockedContract, null, 2));
+          fs.writeFileSync(path.join(build.root, '.nexus', 'product-contract.json'), JSON.stringify(lockedContract, null, 2));
+        }
+        this.addProjectMemory(build.id, { type: 'qa', summary: 'Independent build and desktop/mobile user workflows passed', evidence: browser.artifacts, tags: ['browser-verified'] });
+        this.persistBuild(build);
+        return true;
+      }
+      if (!allowRepair || pass === 3 || issues.some((issue) => /verification unavailable.*No usable Chromium/i.test(issue))) break;
+      build.verification.phase = 'repair';
+      this.persistBuild(build);
+      const checkpoint = this.checkpoints.create(build.root, `Before browser repair pass ${pass}`);
+      const repairDir = path.join(build.root, '.nexus', 'verification', `repair-${Date.now()}`);
+      fs.mkdirSync(repairDir, { recursive: true });
+      const prompt = `Repair the existing product from independently collected browser/build evidence.\nOriginal request: ${build.prompt}\nCurrent request: ${request}\nFailures:\n${issues.join('\n')}\nScreenshots and DOM/runtime evidence:\n${(browser?.artifacts || []).join('\n')}\nAcceptance outcomes locked for this repair:\n${JSON.stringify(lockedContract || 'Write the missing product contract')}\nInspect screenshots before UI repairs. Preserve existing working behavior and acceptance outcomes. Fix the cause; do not hide errors or weaken tests.\n${browserContractInstructions}`;
+      const promptFile = path.join(repairDir, 'repair-prompt.md');
+      fs.writeFileSync(promptFile, prompt);
+      const result = await this.runCodeExecutionBlocking(build.root, prompt, 'browser-repair', path.join(repairDir, 'executor.log'), 180000, promptFile);
+      this.checkpoints.seal(checkpoint);
+      if (result.code !== 0 || result.timedOut) {
+        build.verification.issues.push(`Repair executor failed: ${result.stderr || result.stdout || result.code}`);
+        break;
+      }
+    }
+    build.verification!.phase = 'failed';
+    this.persistBuild(build);
+    return false;
+  }
+
+  async verifyBuild(buildId: string, allowRepair = true): Promise<BuildWorkspace> {
+    const build = this.getBuild(buildId);
+    if (!build) throw new Error('Build not found');
+    if (['opencode-running', 'verifying'].includes(build.status)) throw new Error('Project has active work');
+    build.status = 'verifying';
+    this.persistBuild(build);
+    void this.verifyAndRepair(build, build.prompt, allowRepair).then((passed) => {
+      build.status = passed ? 'completed' : 'failed'; this.persistBuild(build);
+      this.startNextQueuedUpdate(build.id);
+    }).catch((error) => this.failVerification(build, error));
+    return build;
+  }
+
+  getBuildCheckpoints(buildId: string): Checkpoint[] {
+    const build = this.getBuild(buildId);
+    if (!build) throw new Error('Build not found');
+    return this.checkpoints.list(build.root);
+  }
+
+  restoreBuildCheckpoint(buildId: string, checkpointId: string): { restored: string[]; backup: Checkpoint; build: BuildWorkspace } {
+    const build = this.getBuild(buildId);
+    if (!build) throw new Error('Build not found');
+    if (['opencode-running', 'verifying'].includes(build.status) || this.hasRunningBuildUpdate(buildId)) throw new Error('Wait for active work before restoring');
+    this.stopPreview(buildId);
+    const result = this.checkpoints.restore(build.root, checkpointId);
+    build.status = 'created';
+    build.verification = { phase: 'pending', pass: 0, issues: [], artifacts: [] };
+    this.persistBuild(build);
+    return { ...result, build };
+  }
 
   planBuildStack(prompt: string): BuildStackPlan {
     const text = prompt.toLowerCase();
@@ -605,7 +731,7 @@ export class BuilderPlatform {
     };
   }
 
-  private async callRemoteCodeExecution(workspace: string, prompt: string, mode: string, logPath: string): Promise<void> {
+  private async callRemoteCodeExecution(workspace: string, prompt: string, mode: string, logPath: string, timeoutMs = 600000): Promise<void> {
     const cfg = config.get().codeExecution;
     if (!cfg.remoteUrl) throw new Error('CODE_EXECUTION_REMOTE_URL is required for remote/custom code execution');
 
@@ -626,17 +752,33 @@ export class BuilderPlatform {
           ollamaModel: cfg.ollamaModel,
         },
       }),
+      signal: AbortSignal.timeout(Math.min(timeoutMs, 30000)),
     });
     const text = await response.text();
     fs.writeFileSync(logPath, `${text}\n`, { flag: 'a' });
     if (!response.ok) throw new Error(`Remote code executor failed: ${response.status} ${text}`);
+    let state: any;
+    try { state = JSON.parse(text); } catch { throw new Error('Remote executor must return structured run status, not an acknowledgement'); }
+    const started = Date.now();
+    while (['queued', 'running'].includes(state.status)) {
+      if (!state.id || Date.now() - started >= timeoutMs) throw new Error('Remote executor did not complete within the job timeout');
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const poll = await fetch(`${cfg.remoteUrl.replace(/\/$/, '')}/runs/${encodeURIComponent(state.id)}`, {
+        headers: cfg.remoteApiKey ? { Authorization: `Bearer ${cfg.remoteApiKey}` } : {},
+        signal: AbortSignal.timeout(Math.min(30000, Math.max(1, timeoutMs - (Date.now() - started)))),
+      });
+      if (!poll.ok) throw new Error(`Remote run status failed: ${poll.status}`);
+      state = await poll.json();
+      fs.writeFileSync(logPath, `${JSON.stringify(state)}\n`, { flag: 'a' });
+    }
+    if (state.status !== 'completed' || state.workspaceSynced !== true) throw new Error('Remote run must complete and synchronize workspace files before local browser verification');
   }
 
   private async runCodeExecutionBlocking(workspace: string, prompt: string, mode: string, logPath: string, timeoutMs: number, promptFile?: string): Promise<{ stdout: string; stderr: string; code: number | null; timedOut: boolean }> {
     const cfg = config.get().codeExecution;
     if (cfg.mode === 'remote' || cfg.mode === 'custom') {
       try {
-        await this.callRemoteCodeExecution(workspace, prompt, mode, logPath);
+        await this.callRemoteCodeExecution(workspace, prompt, mode, logPath, timeoutMs);
         return { stdout: 'Remote code executor completed.', stderr: '', code: 0, timedOut: false };
       } catch (error: any) {
         return { stdout: '', stderr: error.message, code: 1, timedOut: false };
@@ -659,7 +801,7 @@ export class BuilderPlatform {
     return Array.from(this.sessions.values());
   }
 
-  startBuildFromPrompt(prompt: string, options: { workspaceRoot?: string; uiLook?: string; mode?: string; browserContext?: string; brainMode?: BuildBrainMode; aiProvider?: string; aiModel?: string } = {}): BuildWorkspace {
+  startBuildFromPrompt(prompt: string, options: { workspaceRoot?: string; uiLook?: string; mode?: string; browserContext?: string; brainMode?: BuildBrainMode; aiProvider?: string; aiModel?: string; reference?: BuildWorkspace['reference'] } = {}): BuildWorkspace {
     const id = uuid().slice(0, 8);
     const name = this.safeProjectName(prompt) || `nexus-app-${id}`;
     const root = path.join(path.resolve(options.workspaceRoot || path.join(process.cwd(), 'generated-apps')), `${name}-${id}`);
@@ -689,6 +831,7 @@ export class BuilderPlatform {
       previewLogPath,
       previewCommand: stackPlan.devCommand,
       brain,
+      reference: options.reference,
       stackPlan,
       executorSessionId: session.id,
       createdAt: new Date().toISOString(),
@@ -705,16 +848,30 @@ export class BuilderPlatform {
         this.buildProcesses.delete(id);
         build.status = status;
         session.status = sessionStatus;
+        this.persistBuild(build);
         this.startNextQueuedUpdate(id);
       };
       const child = this.launchCodeExecution(root, opencodePrompt, options.mode || 'build', logPath, (code) => {
-        const succeeded = code === 0 || this.executorLogShowsVerifiedBuild(logPath);
-        finish(succeeded ? 'completed' : 'failed', succeeded ? 'completed' : 'failed');
+        if (code !== 0) {
+          finish('failed', 'failed');
+          return;
+        }
+        build.status = 'verifying';
+        this.persistBuild(build);
+        void this.verifyAndRepair(build).then((passed) => {
+          finish(passed ? 'completed' : 'failed', passed ? 'completed' : 'failed');
+          this.persistBuild(build);
+        }).catch((error) => {
+          this.failVerification(build, error);
+          finish('failed', 'failed');
+          this.persistBuild(build);
+        });
       }, () => {
         finish('opencode-unavailable', 'failed');
       }, promptFile);
       if (child) this.buildProcesses.set(id, child);
       build.status = 'opencode-running';
+      this.persistBuild(build);
     } catch (error: any) {
       fs.writeFileSync(logPath, `Code executor could not be launched automatically. Run this manually from ${root}:\n${command}\n\n${error.message}\n`);
       build.status = 'opencode-unavailable';
@@ -740,21 +897,18 @@ export class BuilderPlatform {
       ? this.getBuildUpdates().find((item) => item.buildId === buildId && item.id === updateId) || this.hydrateBuildUpdate(build, updateId)
       : undefined;
     if (updateId && !update) throw new Error('Build update not found');
-    if (update?.status === 'completed') build.status = 'completed';
-    else if (update?.status === 'running') build.status = 'opencode-running';
-    else if (update?.status === 'failed') build.status = 'failed';
     const session = update?.session || (build.executorSessionId ? this.sessions.get(build.executorSessionId) : undefined);
     const logPath = update?.logPath || build.logPath;
     const log = this.cleanExecutorLog(fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').slice(-20000) : '');
     const status = update?.status || build.status;
-    const pendingUpdates = updateId ? 0 : this.getBuildUpdates().filter((item) => item.buildId === buildId && ['queued', 'running'].includes(item.status)).length;
+    const pendingUpdates = this.getBuildUpdates().filter((item) => item.buildId === buildId && item.id !== updateId && ['queued', 'running', 'verifying'].includes(item.status)).length;
     return {
       build,
       update,
       session,
       kind: update ? 'update' : 'build',
       status,
-      terminal: ['completed', 'failed', 'opencode-unavailable'].includes(status) && pendingUpdates === 0,
+      terminal: ['created', 'prepared', 'completed', 'failed', 'opencode-unavailable'].includes(status) && pendingUpdates === 0,
       pendingUpdates,
       log,
       progress: this.buildProgress(build, status, log, update ? 'update' : 'build', pendingUpdates),
@@ -774,13 +928,14 @@ export class BuilderPlatform {
   private buildProgress(build: BuildWorkspace, status: BuildActivity['status'], log: string, kind: BuildActivity['kind'], pendingUpdates: number): BuildProgress {
     const completed = status === 'completed';
     const failed = ['failed', 'opencode-unavailable'].includes(status);
-    const running = ['opencode-running', 'running'].includes(status);
+    const running = ['opencode-running', 'running', 'verifying'].includes(status);
     const queued = status === 'queued';
     const verificationObserved = /(?:^|\n)\$\s+(?:npm run build|npm test|pnpm |yarn |composer |php artisan test|python -m pytest|cargo (?:build|test)|go (?:build|test))/i.test(log);
     const filesChanged = /% Patch|← (?:Write|Edit)|created?\s+\d+\s+files?|implemented with/i.test(log);
-    const implementationStatus: BuildProgressStep['status'] = failed ? 'failed' : completed || verificationObserved ? 'completed' : running ? 'running' : 'pending';
-    const verificationStatus: BuildProgressStep['status'] = failed ? 'pending' : completed ? 'completed' : verificationObserved ? 'running' : 'pending';
-    const previewStatus: BuildProgressStep['status'] = build.previewStatus === 'running'
+    const verified = completed && build.verification?.phase === 'passed';
+    const implementationStatus: BuildProgressStep['status'] = failed ? 'failed' : completed || status === 'verifying' ? 'completed' : running ? 'running' : 'pending';
+    const verificationStatus: BuildProgressStep['status'] = verified ? 'completed' : failed && build.verification?.phase === 'failed' ? 'failed' : status === 'verifying' ? 'running' : 'pending';
+    const previewStatus: BuildProgressStep['status'] = verified
       ? 'completed'
       : build.previewStatus === 'starting'
         ? 'running'
@@ -791,8 +946,8 @@ export class BuilderPlatform {
       { id: 'workspace', label: 'Workspace', status: 'completed', detail: 'Starter files and project brief created' },
       { id: 'routing', label: 'Agent routing', status: 'completed', detail: `${build.stackPlan?.framework || 'Stack'} team and specialists selected` },
       { id: 'implementation', label: kind === 'update' ? 'Apply update' : 'Implementation', status: implementationStatus, detail: queued ? 'Waiting behind the active executor' : failed ? 'Executor stopped before completing the requested work' : completed || verificationObserved ? 'Requested files were implemented' : filesChanged ? 'Build agent is applying the requested product changes' : 'Build agent is inspecting files and implementing the product' },
-      { id: 'verification', label: 'Build checks', status: verificationStatus, detail: completed ? 'Compile and test checks completed' : verificationObserved ? 'Compile and test commands are running' : 'Compile and test checks will run after implementation' },
-      { id: 'preview', label: 'Browser QA', status: previewStatus, detail: previewStatus === 'completed' ? 'Preview is available for browser checks' : previewStatus === 'failed' ? 'Preview could not start' : 'Preview and responsive QA follow a successful build' },
+      { id: 'verification', label: 'Independent checks', status: verificationStatus, detail: build.verification?.phase === 'passed' ? 'Build and product workflows verified independently' : build.verification?.issues.join('; ') || 'Nexus will compile and exercise the requested product' },
+      { id: 'preview', label: 'Browser QA', status: previewStatus, detail: previewStatus === 'completed' ? 'Product outcomes passed on desktop and mobile' : 'Browser workflows, screenshots, console, network, and overflow checks' },
     ];
     const recentOutput = log
       .split(/\n/)
@@ -800,8 +955,10 @@ export class BuilderPlatform {
       .filter(Boolean)
       .filter((line) => !/^(Nexus code execution backend|Workspace:|Mode:|Prompt file:)/i.test(line))
       .slice(-6);
-    const failure = failed ? this.classifyExecutorFailure(log) : undefined;
-    const phase = failed
+    const failure: BuildProgress['failure'] = failed && build.verification?.phase === 'failed'
+      ? { code: 'verification-failed', title: 'Product verification failed', detail: build.verification.issues.join('\n'), recovery: 'Continue from the browser evidence or restore a saved version. The workspace and screenshots are preserved.' }
+      : failed ? this.classifyExecutorFailure(log) : undefined;
+    const phase = status === 'verifying' ? `Nexus ${build.verification?.phase || 'verification'} (pass ${build.verification?.pass || 1})` : failed
       ? failure?.title || 'Build stopped'
       : previewStatus === 'completed'
         ? 'Browser preview ready'
@@ -816,7 +973,7 @@ export class BuilderPlatform {
               : running
                 ? 'Agents implementing'
                 : 'Preparing build';
-    const summary = failed
+    const summary = status === 'verifying' ? 'Nexus is verifying the rendered product and repairing failures from browser evidence.' : failed
       ? failure?.detail || 'The executor stopped before the build completed.'
       : completed
         ? pendingUpdates
@@ -825,7 +982,7 @@ export class BuilderPlatform {
         : queued
           ? 'This request is queued behind the active build.'
           : 'Nexus agents are applying the selected skills and stack expertise to the workspace.';
-    const percent = failed ? 45 : previewStatus === 'completed' ? 100 : previewStatus === 'running' ? 90 : completed ? 82 : verificationObserved ? 70 : filesChanged ? 58 : running ? 45 : queued ? 20 : 12;
+    const percent = verified ? 100 : failed ? 45 : queued ? 20 : status === 'verifying' ? build.verification?.phase === 'browser' ? 90 : build.verification?.phase === 'repair' ? 70 : 80 : filesChanged ? 58 : running ? 45 : 12;
     const agents = Array.from(new Set([
       ...(build.stackPlan?.projectAgentIds || []),
       ...(build.stackPlan?.expertIds || []),
@@ -867,12 +1024,9 @@ export class BuilderPlatform {
     };
   }
 
-  private executorLogShowsVerifiedBuild(logPath: string): boolean {
-    if (!fs.existsSync(logPath)) return false;
-    const log = this.cleanExecutorLog(fs.readFileSync(logPath, 'utf8').slice(-30000));
-    const buildPassed = /✓ built in|build succeeded|build successful|BUILD SUCCESS|compiled successfully/i.test(log);
-    const checksPassed = /No automated tests configured|tests?\s+(?:passed|successful)|\d+\s+passed/i.test(log);
-    return buildPassed && checksPassed;
+  private executorLogShowsVerifiedBuild(_logPath: string): boolean {
+    // An executor's prose is never independent verification.
+    return false;
   }
 
   private hydrateBuildUpdate(build: BuildWorkspace, updateId: string): BuildUpdateRun | undefined {
@@ -885,7 +1039,7 @@ export class BuilderPlatform {
     const verified = this.executorLogShowsVerifiedBuild(logPath);
     const failed = /cannot connect to api|unable to connect|code executor exited with code (?!0\b)\d+|Nexus stopped the executor/i.test(log);
     const status: BuildUpdateRun['status'] = verified ? 'completed' : failed || log ? 'failed' : 'queued';
-    const userMessage = prompt.match(/User follow-up request:\s*\n([^\n]+)/i)?.[1]?.trim() || 'Continue the preserved build';
+    const userMessage = prompt.match(/User follow-up request:\s*([^\n]+)/i)?.[1]?.trim() || 'Continue the preserved build';
     const createdAt = new Date((fs.existsSync(promptFile) ? fs.statSync(promptFile) : fs.statSync(logPath)).birthtimeMs || Date.now()).toISOString();
     const session: OpenCodeSessionStub = {
       id: `restored-${updateId}`,
@@ -917,28 +1071,29 @@ export class BuilderPlatform {
     this.buildUpdates.set(id, run);
     if (options.launch === false) {
       this.prepareBuildUpdate(build, run);
-      run.status = 'completed';
-      session.status = 'completed';
+      run.status = 'prepared';
+      session.status = 'waiting-review';
       fs.writeFileSync(logPath, 'Chat update launch skipped.\n');
       this.addProjectMemory(buildId, { type: 'decision', summary: `Chat update requested: ${message}`, evidence: [outputDir], tags: ['chat-update', options.uiLook || 'modern-saas'] });
+      this.persistBuild(build);
       return run;
     }
-    if (build.status === 'opencode-running' || this.hasRunningBuildUpdate(buildId)) {
+    if (['opencode-running', 'verifying'].includes(build.status) || this.hasRunningBuildUpdate(buildId)) {
       fs.writeFileSync(logPath, `Queued behind the active Nexus executor for build ${buildId}.\n`);
     } else {
       this.launchBuildUpdate(build, run, promptFile);
     }
     this.addProjectMemory(buildId, { type: 'decision', summary: `Chat update requested: ${message}`, evidence: [outputDir], tags: ['chat-update', options.uiLook || 'modern-saas'] });
+    this.persistBuild(build);
     return run;
   }
 
   private prepareBuildUpdate(build: BuildWorkspace, run: BuildUpdateRun): void {
-    this.createSnapshot(build.root, `chat update ${run.id}: ${run.userMessage.slice(0, 120)}`);
-    this.applyDeterministicAppUpdate(build, run.userMessage);
+    this.checkpointRuns.set(run.id, this.checkpoints.create(build.root, `Before update: ${run.userMessage.slice(0, 120)}`));
   }
 
   private hasRunningBuildUpdate(buildId: string): boolean {
-    return this.getBuildUpdates().some((item) => item.buildId === buildId && item.status === 'running');
+    return this.getBuildUpdates().some((item) => item.buildId === buildId && ['running', 'verifying'].includes(item.status));
   }
 
   private startNextQueuedUpdate(buildId: string): boolean {
@@ -950,7 +1105,7 @@ export class BuilderPlatform {
     return true;
   }
 
-  private launchBuildUpdate(build: BuildWorkspace, run: BuildUpdateRun, promptFile: string): void {
+  private async launchBuildUpdate(build: BuildWorkspace, run: BuildUpdateRun, promptFile: string): Promise<void> {
     let finished = false;
     const finish = (status: 'completed' | 'failed') => {
       if (finished) return;
@@ -959,18 +1114,44 @@ export class BuilderPlatform {
       run.status = status;
       run.session.status = status;
       build.status = status;
-      if (!this.startNextQueuedUpdate(build.id)) {
-        this.stopPreview(build.id);
-        this.startPreview(build.id);
-      }
+      this.sealUpdate(run);
+      this.persistBuild(build);
+      this.startNextQueuedUpdate(build.id);
     };
     try {
       this.prepareBuildUpdate(build, run);
       run.status = 'running';
       run.session.status = 'running';
       build.status = 'opencode-running';
+      build.verification = { phase: 'pending', pass: 0, issues: [], artifacts: [] };
+      this.persistBuild(build);
+      if (build.previewUrl && build.previewStatus === 'running') {
+        const evidence = await captureRenderedEvidence(build.previewUrl, path.join(path.dirname(run.logPath), 'before-edit'))
+          .catch((error: Error) => `Current preview inspection failed: ${error.message}. Diagnose this while implementing the requested change.`);
+        run.prompt += `\n\n${evidence}`;
+        fs.writeFileSync(promptFile, run.prompt);
+      }
       const child = this.launchCodeExecution(build.root, run.prompt, run.session.mode, run.logPath, (code) => {
-        finish(code === 0 || this.executorLogShowsVerifiedBuild(run.logPath) ? 'completed' : 'failed');
+        this.buildUpdateProcesses.delete(build.id);
+        if (code !== 0) {
+          this.sealUpdate(run);
+          finish('failed');
+          this.persistBuild(build);
+          return;
+        }
+        run.status = 'verifying';
+        build.status = 'verifying';
+        this.persistBuild(build);
+        void this.verifyAndRepair(build, run.userMessage).then((passed) => {
+          this.sealUpdate(run);
+          finish(passed ? 'completed' : 'failed');
+          this.persistBuild(build);
+        }).catch((error) => {
+          this.failVerification(build, error);
+          this.sealUpdate(run);
+          finish('failed');
+          this.persistBuild(build);
+        });
       }, () => finish('failed'), promptFile);
       if (child) this.buildUpdateProcesses.set(build.id, child);
     } catch (error: any) {
@@ -1018,24 +1199,30 @@ export class BuilderPlatform {
         const actualPort = Number(new URL(resolvedUrl).port);
         if (actualPort) build.previewPort = actualPort;
       }
-      if (localUrl || /ready in|development server|listening on|server running|started server/i.test(text)) build.previewStatus = 'running';
     });
     child.stderr.on('data', (chunk) => log.write(chunk));
     child.on('exit', (code) => {
       log.write(`\nPreview exited with code ${code}\n`);
       log.end();
-      this.previewProcesses.delete(buildId);
-      if (build.previewStatus !== 'stopped') build.previewStatus = code === 0 ? 'stopped' : 'failed';
+      if (this.previewProcesses.get(buildId) === child) {
+        this.previewProcesses.delete(buildId);
+        if (build.previewStatus !== 'stopped') build.previewStatus = code === 0 ? 'stopped' : 'failed';
+      }
     });
     child.on('error', (error) => {
       log.write(`\nPreview failed to start: ${error.message}\n`);
-      build.previewStatus = 'failed';
+      if (this.previewProcesses.get(buildId) === child) build.previewStatus = 'failed';
     });
 
     this.previewProcesses.set(buildId, child);
-    setTimeout(() => {
-      if (build.previewStatus === 'starting') build.previewStatus = 'running';
-    }, 4000);
+    void this.waitForPreview(build.previewUrl, 30000).then(() => {
+      if (this.previewProcesses.get(buildId) === child && build.previewStatus === 'starting') build.previewStatus = 'running';
+    }).catch((error) => {
+      if (this.previewProcesses.get(buildId) === child) {
+        build.previewStatus = 'failed';
+        log.write(`\nPreview health check failed: ${error.message}\n`);
+      }
+    });
     return build;
   }
 
@@ -1357,7 +1544,7 @@ export class BuilderPlatform {
     const failedDevices = deviceChecks.filter((check) => check.status === 'failed').length;
     const runtimeErrors = deviceChecks.flatMap((check) => [...check.consoleErrors, ...check.networkErrors]);
     const healthScore = Math.max(0, 100 - failedDevices * 25 - errors.length * 10 - runtimeErrors.length * 8 - (build.previewStatus === 'running' ? 0 : 10));
-    const status = failedDevices || errors.length ? (healthScore < 60 ? 'failed' : 'degraded') : 'ready';
+    const status = failedDevices || errors.length || runtimeErrors.length ? (healthScore < 60 ? 'failed' : 'degraded') : 'ready';
     const report: StagingReport = {
       id,
       buildId,
@@ -1370,7 +1557,7 @@ export class BuilderPlatform {
       creativeUniqueness,
       logs: { previewTail: previewLog.slice(-5000), errors },
       outputDir,
-      summary: `Staging Studio ${status}: preview ${build.previewStatus}, ${deviceChecks.length} devices, health ${healthScore}/100, creative uniqueness ${creativeUniqueness.score}/100.`,
+      summary: `Staging Studio ${status}: preview ${build.previewStatus}, ${deviceChecks.length} devices, health ${healthScore}/100, visual originality awaiting rendered review.`,
     };
     report.devices.forEach((check) => {
       if (check.screenshotPath) check.screenshotUrl = `/api/builder/staging-reports/${report.id}/devices/${check.device.id}/screenshot`;
@@ -1579,7 +1766,7 @@ export class BuilderPlatform {
     const timer = setTimeout(() => controller.abort(), 3500);
     try {
       const response = await fetch(url, { signal: controller.signal });
-      return { ok: response.status < 500, code: response.status, latencyMs: Date.now() - started };
+      return { ok: response.ok, code: response.status, latencyMs: Date.now() - started };
     } catch (error: any) {
       return { ok: false, latencyMs: Date.now() - started, error: error.message };
     } finally {
@@ -1594,6 +1781,7 @@ export class BuilderPlatform {
       if (health.ok) return;
       await new Promise((resolve) => setTimeout(resolve, 750));
     }
+    throw new Error(`Preview did not return a successful HTTP response within ${timeoutMs}ms: ${url}`);
   }
 
   private async captureStagingDevices(url: string, devices: StagingDevicePreset[], outputDir: string): Promise<StagingDeviceCheck[]> {
@@ -1614,6 +1802,8 @@ export class BuilderPlatform {
         page.on('console', (message) => {
           if (['error', 'warning'].includes(message.type())) consoleErrors.push(`${message.type()}: ${message.text()}`.slice(0, 1000));
         });
+        page.on('pageerror', (error) => consoleErrors.push(error.message));
+        page.on('response', (response) => { if (response.status() >= 400) networkErrors.push(`HTTP ${response.status()} ${response.url()}`); });
         page.on('requestfailed', (request) => networkErrors.push(`${request.method()} ${request.url()} failed: ${request.failure()?.errorText || 'unknown'}`.slice(0, 1000)));
         try {
           const started = Date.now();
@@ -1622,7 +1812,7 @@ export class BuilderPlatform {
           checks.push({
             device,
             url,
-            status: response && response.status() < 500 ? 'ready' : 'failed',
+            status: response?.ok() && !consoleErrors.length && !networkErrors.length ? 'ready' : 'failed',
             healthCode: response?.status(),
             latencyMs: Date.now() - started,
             screenshotPath,
@@ -1659,22 +1849,8 @@ export class BuilderPlatform {
   }
 
   private scoreCreativeUniqueness(build: BuildWorkspace): StagingReport['creativeUniqueness'] {
-    const files = this.listWorkspaceFiles(build.root).filter((file) => /\.(tsx|ts|jsx|js|css|html)$/.test(file.path)).slice(0, 120);
-    const sample = files.map((file) => {
-      const fullPath = path.join(build.root, file.path);
-      return fs.existsSync(fullPath) ? fs.readFileSync(fullPath, 'utf8').slice(0, 4000) : '';
-    }).join('\n').toLowerCase();
-    const genericSignals = ['modern saas', 'hero section', 'feature cards', 'lorem ipsum', 'blue gradient', 'get started', 'learn more', 'trusted by', 'glassmorphism'];
-    const distinctSignals = ['reduced-motion', 'empty state', 'loading state', 'error state', 'focus-visible', 'aria-', 'custom property', 'signature', 'motion', 'brand', 'theme', 'tokens'];
-    const genericHits = genericSignals.filter((signal) => sample.includes(signal));
-    const distinctHits = distinctSignals.filter((signal) => sample.includes(signal));
-    const score = Math.max(0, Math.min(100, 68 + distinctHits.length * 5 - genericHits.length * 7));
-    const findings = [
-      ...distinctHits.map((signal) => `Distinctive/system signal found: ${signal}`),
-      ...genericHits.map((signal) => `Generic-template signal found: ${signal}`),
-    ];
-    if (!findings.length) findings.push('Not enough UI source signal yet; run Creative Mind before the next build pass.');
-    return { score, findings, antiTemplatePrompt: this.buildAntiTemplateStagingPrompt(build, score, findings) };
+    const findings = ['Visual originality requires review of the rendered product; no keyword-based score is assigned.'];
+    return { score: null, findings, antiTemplatePrompt: this.buildAntiTemplateStagingPrompt(build, 0, findings) };
   }
 
   private buildAntiTemplateStagingPrompt(build: BuildWorkspace, score: number, findings: string[]): string {
@@ -1768,20 +1944,14 @@ export class BuilderPlatform {
   }
 
   createSnapshot(root: string, reason = 'manual snapshot'): WorkspaceSnapshot {
-    const resolvedRoot = path.resolve(root || process.cwd());
-    const snapshot: WorkspaceSnapshot = {
-      id: uuid(),
-      createdAt: new Date().toISOString(),
-      root: resolvedRoot,
-      reason,
-      files: this.listWorkspaceFiles(resolvedRoot).slice(0, 2000),
-    };
+    const snapshot = this.checkpoints.create(root || process.cwd(), reason);
     this.snapshots.set(snapshot.id, snapshot);
     return snapshot;
   }
 
   getSnapshots(): WorkspaceSnapshot[] {
-    return Array.from(this.snapshots.values());
+    const persisted = this.getBuilds().flatMap((build) => this.checkpoints.list(build.root));
+    return [...new Map([...this.snapshots.values(), ...persisted].map((item) => [item.id, item])).values()];
   }
 
   lockFile(filePath: string, owner: string, reason: string): FileLock {
@@ -1879,8 +2049,9 @@ export class BuilderPlatform {
     const stackPlan = savedPlan?.primaryLanguage && savedPlan.framework ? savedPlan as BuildStackPlan : this.planBuildStack(`${prompt}\n${fileSignals}`);
     const logPath = path.join(root, 'opencode-build.log');
     const persistedLog = this.cleanExecutorLog(fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').slice(-20000) : '');
+    const savedState = this.safeJson(path.join(root, '.nexus', 'build-state.json'));
     const persistedStatus: BuildWorkspace['status'] = /Code executor exited with code 0\b/i.test(persistedLog)
-      ? 'completed'
+      ? 'created'
       : /Code executor exited with code (?!0\b)\d+|cannot connect to api|unable to connect|code executor failed|could not be launched/i.test(persistedLog)
         ? 'failed'
         : 'created';
@@ -1899,9 +2070,25 @@ export class BuilderPlatform {
       stackPlan,
       createdAt: new Date(fs.statSync(root).birthtimeMs || Date.now()).toISOString(),
     };
+    if (savedState?.build?.id === id) {
+      build.verification = savedState.build.verification;
+      build.reference = savedState.build.reference;
+      build.status = savedState.build.status === 'completed' && build.verification?.phase === 'passed' ? 'completed'
+        : ['opencode-running', 'verifying'].includes(savedState.build.status) ? 'failed' : savedState.build.status === 'failed' ? 'failed' : 'created';
+      if (['opencode-running', 'verifying'].includes(savedState.build.status)) {
+        build.verification = { phase: 'failed', pass: build.verification?.pass || 0, issues: ['Job interrupted by restart. Retry verification or continue the project.'], artifacts: build.verification?.artifacts || [] };
+      }
+      for (const run of savedState.updates || []) {
+        if (run.buildId !== id || !/^[a-f0-9]{8}$/.test(run.id)) continue;
+        run.workspace = root;
+        run.logPath = path.join(root, '.nexus', 'chat-updates', run.id, 'opencode-update.log');
+        run.status = ['queued', 'running', 'verifying'].includes(run.status) ? 'failed' : run.status;
+        this.buildUpdates.set(run.id, run);
+      }
+    }
     this.builds.set(id, build);
     const updatesRoot = path.join(root, '.nexus', 'chat-updates');
-    if (fs.existsSync(updatesRoot)) {
+    if (!savedState?.build && fs.existsSync(updatesRoot)) {
       const latestUpdate = fs.readdirSync(updatesRoot, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())
         .map((entry) => this.hydrateBuildUpdate(build, entry.name))
@@ -1942,19 +2129,13 @@ export class BuilderPlatform {
       fs.writeFileSync(path.join(publicDir, 'index.php'), `<?php\ndeclare(strict_types=1);\n$title = ${JSON.stringify(prompt.slice(0, 120) || name)};\n?>\n<!doctype html>\n<html lang="en">\n<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title><link rel="stylesheet" href="/styles.css"></head>\n<body><main><p class="eyebrow">Nexus PHP workspace</p><h1><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></h1><p>The PHP and Composer experts are preparing this application from the saved Nexus stack plan.</p></main></body>\n</html>\n`);
       fs.writeFileSync(path.join(publicDir, 'styles.css'), `*{box-sizing:border-box}body{margin:0;background:#f5f7f4;color:#17201b;font-family:Inter,system-ui,sans-serif}main{width:min(920px,calc(100% - 36px));margin:0 auto;padding:clamp(72px,12vw,160px) 0}.eyebrow{color:#087f5b;font-weight:800;text-transform:uppercase}h1{max-width:850px;font-size:clamp(42px,8vw,92px);line-height:.95;margin:18px 0}p{font-size:20px;line-height:1.55}`);
     } else if (stackPlan.framework === 'React + Vite') {
-      const data = this.createGeneratedAppData(name, prompt, []);
       fs.mkdirSync(path.join(root, 'src'), { recursive: true });
       fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
-        scripts: { dev: 'vite --host 0.0.0.0', build: 'vite build', preview: 'vite preview', test: 'node scripts/no-tests.mjs' },
-        dependencies: { '@vitejs/plugin-react': 'latest', vite: 'latest', typescript: 'latest', react: 'latest', 'react-dom': 'latest' },
-        devDependencies: {},
+        scripts: { dev: 'vite --host 0.0.0.0', build: 'vite build', preview: 'vite preview' },
+        dependencies: { '@vitejs/plugin-react': '^4.3.4', vite: '^6.1.0', typescript: '^5.7.3', react: '^19.0.0', 'react-dom': '^19.0.0' },
       }, null, 2));
-      fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
-      fs.writeFileSync(path.join(root, 'scripts', 'no-tests.mjs'), "console.log('No automated tests configured; build verification is the primary check.');\n");
-      fs.writeFileSync(path.join(root, 'index.html'), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>\n');
-      fs.writeFileSync(path.join(root, 'src', 'app-data.js'), this.renderGeneratedAppData(data));
-      fs.writeFileSync(path.join(root, 'src', 'main.jsx'), this.renderGeneratedAppMain());
-      fs.writeFileSync(path.join(root, 'src', 'styles.css'), this.renderGeneratedAppCss());
+      fs.writeFileSync(path.join(root, 'index.html'), '<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>');
+      fs.writeFileSync(path.join(root, 'src', 'main.jsx'), "import React from 'react';\nimport {createRoot} from 'react-dom/client';\ncreateRoot(document.getElementById('root')).render(<main><h1>Nexus implementation pending</h1><p>Your requested product is being implemented and will be verified in the browser.</p></main>);\n");
     } else {
       fs.mkdirSync(path.join(root, 'src'), { recursive: true });
       fs.writeFileSync(path.join(root, 'src', '.gitkeep'), '');
@@ -1973,71 +2154,6 @@ export class BuilderPlatform {
     fs.writeFileSync(path.join(agentsDir, 'selected-experts.md'), manifest);
   }
 
-  private applyDeterministicAppUpdate(build: BuildWorkspace, message: string): void {
-    const updateLogPath = path.join(build.root, '.nexus', 'memory', 'chat-updates.json');
-    const updates = fs.existsSync(updateLogPath) ? this.safeJson(updateLogPath) : [];
-    const nextUpdates = Array.isArray(updates) ? [...updates, message].slice(-12) : [message];
-    fs.mkdirSync(path.dirname(updateLogPath), { recursive: true });
-    fs.writeFileSync(updateLogPath, JSON.stringify(nextUpdates, null, 2));
-    if (this.resolveStackPlan(build).framework !== 'React + Vite') return;
-    fs.mkdirSync(path.join(build.root, 'src'), { recursive: true });
-    const appDataPath = path.join(build.root, 'src', 'app-data.js');
-    const mainPath = path.join(build.root, 'src', 'main.jsx');
-    const mainSource = fs.existsSync(mainPath) ? fs.readFileSync(mainPath, 'utf8') : '';
-    const usesGeneratedDataSchema = /data\.pages\b/.test(mainSource) && /data\.workflow\b/.test(mainSource);
-    if (!fs.existsSync(appDataPath) || usesGeneratedDataSchema) {
-      fs.writeFileSync(appDataPath, this.renderGeneratedAppData(this.createGeneratedAppData(build.name, build.prompt, nextUpdates)));
-    }
-    if (!fs.existsSync(mainPath)) fs.writeFileSync(mainPath, this.renderGeneratedAppMain());
-    if (!fs.existsSync(path.join(build.root, 'src', 'styles.css'))) fs.writeFileSync(path.join(build.root, 'src', 'styles.css'), this.renderGeneratedAppCss());
-  }
-
-  private createGeneratedAppData(name: string, prompt: string, updates: string[]): Record<string, any> {
-    const text = `${prompt} ${updates.join(' ')}`.toLowerCase();
-    const category = /game|phaser|three|webgl|unity|godot/.test(text) ? 'Game' : /mobile|ios|android|expo|native/.test(text) ? 'Mobile' : /dashboard|admin|analytics|crm/.test(text) ? 'Dashboard' : /shop|commerce|stripe|payment/.test(text) ? 'Commerce' : /saas|subscription|team/.test(text) ? 'SaaS' : 'Web App';
-    const palette = /game|neon|dark|cyber/.test(text)
-      ? { accent: '#8b5cf6', ink: '#f8fafc', paper: '#09090f' }
-      : /luxury|editorial|premium/.test(text)
-        ? { accent: '#b45309', ink: '#20160f', paper: '#f8f1e7' }
-        : { accent: '#0f8b8d', ink: '#102027', paper: '#f7fbf8' };
-    const nouns = this.extractSignalTerms(prompt).filter((term) => term.length > 4).slice(0, 6);
-    const focus = nouns.length ? nouns.join(', ') : category.toLowerCase();
-    return {
-      name,
-      category,
-      theme: palette,
-      signature: `${category} Command Surface`,
-      metric: String(Math.max(3, nouns.length + updates.length + 4)).padStart(2, '0'),
-      metricLabel: 'live product systems',
-      primaryCta: /shop|commerce|stripe|payment/.test(text) ? 'Launch checkout' : /game/.test(text) ? 'Start mission' : 'Run workflow',
-      pages: [
-        { id: 'overview', label: 'Overview', headline: this.titleFromPrompt(prompt, category), summary: `A working ${category.toLowerCase()} experience generated from your request, focused on ${focus}.`, features: ['Live product shell', 'Responsive command flow', 'Distinct visual system'] },
-        { id: 'builder', label: 'Builder', headline: `Build and iterate ${category.toLowerCase()} screens`, summary: 'Chat changes update the app structure, copy, visual direction, and implementation prompts without starting over.', features: ['Conversation updates', 'Agent handoff', 'Preview-first QA'] },
-        { id: 'launch', label: 'Launch', headline: 'Production readiness board', summary: 'The app includes setup, staging, QA, accessibility, and deployment surfaces for the requested product.', features: ['Health checks', 'Creative QA', 'Deployment checklist'] },
-      ],
-      featureDetails: ['Generated from prompt signals instead of a static template.', 'Designed to change when you continue the conversation.', 'Ready for OpenCode, Expert Router, Build Doctor, and Staging Studio.'],
-      workflow: ['Capture the product intent', 'Generate real app files', 'Preview in browser', 'Update from chat', 'Run staging and repair loops'],
-      updates,
-    };
-  }
-
-  private titleFromPrompt(prompt: string, category: string): string {
-    const cleaned = prompt.replace(/\b(build|create|make|generate|code|app|website|page)\b/gi, '').replace(/\s+/g, ' ').trim();
-    return cleaned ? cleaned.slice(0, 96) : `Custom ${category} builder`;
-  }
-
-  private renderGeneratedAppData(data: Record<string, any>): string {
-    return `export default ${JSON.stringify(data, null, 2)};\n`;
-  }
-
-  private renderGeneratedAppMain(): string {
-    return `import React, { useState } from 'react';\nimport { createRoot } from 'react-dom/client';\nimport data from './app-data.js';\nimport './styles.css';\n\nfunction App() {\n  const [activeId, setActiveId] = useState(data.pages[0].id);\n  const active = data.pages.find((page) => page.id === activeId) || data.pages[0];\n  return <main className=\"app-shell\" style={{ '--accent': data.theme.accent, '--ink': data.theme.ink, '--paper': data.theme.paper }}>\n    <nav className=\"nav\"><strong>{data.name}</strong>{data.pages.map((page) => <button key={page.id} className={page.id === active.id ? 'active' : ''} onClick={() => setActiveId(page.id)}>{page.label}</button>)}</nav>\n    <section className=\"hero\"><div><p className=\"eyebrow\">{data.category} builder</p><h1>{active.headline}</h1><p>{active.summary}</p><div className=\"actions\"><button>{data.primaryCta}</button><button className=\"ghost\">View system</button></div></div><aside className=\"artifact\"><span>{data.signature}</span><b>{data.metric}</b><small>{data.metricLabel}</small></aside></section>\n    <section className=\"feature-grid\">{active.features.map((feature, index) => <article key={feature}><span>{String(index + 1).padStart(2, '0')}</span><h2>{feature}</h2><p>{data.featureDetails[index % data.featureDetails.length]}</p></article>)}</section>\n    <section className=\"workflow\"><h2>Live product workflow</h2>{data.workflow.map((step) => <div key={step}><span></span>{step}</div>)}</section>\n    <section className=\"updates\"><h2>Conversation updates</h2>{data.updates.length ? data.updates.map((update) => <p key={update}>{update}</p>) : <p>Ask Nexus to change layout, content, integrations, mobile states, game feel, or UI direction and this app will update from chat.</p>}</section>\n  </main>;\n}\n\ncreateRoot(document.getElementById('root')).render(<App />);\n`;
-  }
-
-  private renderGeneratedAppCss(): string {
-    return `*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:var(--paper);color:var(--ink)}button{font:inherit}.app-shell{min-height:100vh;overflow:hidden;background:radial-gradient(circle at 12% 10%,color-mix(in srgb,var(--accent),transparent 72%),transparent 30%),linear-gradient(135deg,var(--paper),color-mix(in srgb,var(--accent),white 88%))}.nav{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:14px clamp(16px,4vw,52px);backdrop-filter:blur(18px);background:color-mix(in srgb,var(--paper),transparent 14%);border-bottom:1px solid color-mix(in srgb,var(--ink),transparent 86%)}.nav strong{margin-right:auto;font-size:18px;letter-spacing:-.04em}.nav button{border:1px solid color-mix(in srgb,var(--ink),transparent 82%);border-radius:999px;background:transparent;color:inherit;padding:9px 12px;cursor:pointer}.nav button.active{background:var(--ink);color:var(--paper)}.hero{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:34px;align-items:center;padding:clamp(44px,8vw,118px) clamp(18px,5vw,72px)}.eyebrow{text-transform:uppercase;letter-spacing:.18em;color:var(--accent);font-weight:900}.hero h1{max-width:980px;font-size:clamp(42px,8vw,104px);line-height:.86;letter-spacing:-.08em;margin:10px 0 18px}.hero p{max-width:720px;font-size:clamp(17px,2vw,23px);line-height:1.45;color:color-mix(in srgb,var(--ink),transparent 28%)}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}.actions button{border:0;border-radius:18px;background:var(--accent);color:white;padding:14px 19px;font-weight:900;box-shadow:0 18px 40px color-mix(in srgb,var(--accent),transparent 64%)}.actions .ghost{background:transparent;color:var(--ink);border:1px solid color-mix(in srgb,var(--ink),transparent 78%);box-shadow:none}.artifact{min-height:360px;border:1px solid color-mix(in srgb,var(--ink),transparent 80%);border-radius:34px;padding:24px;display:grid;align-content:end;background:linear-gradient(160deg,color-mix(in srgb,var(--accent),transparent 12%),color-mix(in srgb,var(--ink),transparent 8%));color:white;box-shadow:0 40px 90px color-mix(in srgb,var(--ink),transparent 82%);transform:rotate(2deg)}.artifact span{font-size:13px;text-transform:uppercase;letter-spacing:.2em}.artifact b{font-size:72px;line-height:.9;letter-spacing:-.08em}.artifact small{font-size:15px;opacity:.82}.feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:0 clamp(18px,5vw,72px) 28px}.feature-grid article,.workflow,.updates{border:1px solid color-mix(in srgb,var(--ink),transparent 84%);border-radius:28px;background:color-mix(in srgb,var(--paper),white 55%);padding:24px;box-shadow:0 18px 54px color-mix(in srgb,var(--ink),transparent 92%)}.feature-grid span{color:var(--accent);font-weight:900}.feature-grid h2{font-size:24px;letter-spacing:-.05em}.feature-grid p,.updates p{color:color-mix(in srgb,var(--ink),transparent 35%);line-height:1.55}.workflow,.updates{margin:14px clamp(18px,5vw,72px)}.workflow div{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid color-mix(in srgb,var(--ink),transparent 88%)}.workflow div span{width:11px;height:11px;border-radius:99px;background:var(--accent);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent),transparent 82%)}@media(max-width:880px){.hero{grid-template-columns:1fr}.artifact{min-height:220px;transform:none}.feature-grid{grid-template-columns:1fr}.nav{overflow:auto}.nav strong{position:sticky;left:0;background:var(--paper)}}@media(prefers-reduced-motion:no-preference){.artifact{animation:float 7s ease-in-out infinite}@keyframes float{50%{transform:translateY(-12px) rotate(-1deg)}}}`;
-  }
-
   private buildStackAgentBrief(stackPlan: BuildStackPlan): string {
     const experts = getLanguageExperts().filter((expert) => stackPlan.expertIds.includes(expert.id));
     const projectAgents = getProjectAgentSwarm().agents.filter((agent) => stackPlan.projectAgentIds.includes(agent.id));
@@ -2046,7 +2162,7 @@ export class BuilderPlatform {
 
   private buildOpenCodeAppPrompt(prompt: string, uiLook: string, brain: BuildBrainProfile, stackPlan: BuildStackPlan, browserContext = ''): string {
     const swarm = getProjectAgentSwarm();
-    return `You are the implementation executor for a NexusBrowser multi-agent build.\n\nUser request: ${prompt}\n\nUI look: ${uiLook}\n\nBuild brain:\n- Mode: ${brain.mode}\n- Provider: ${brain.provider}\n- Model: ${brain.model || 'default'}\n- Executor: ${brain.executor}\n${brain.notes.map((note) => `- ${note}`).join('\n')}\n\nPreflight stack plan and assigned agents:\n${this.buildStackAgentBrief(stackPlan)}\n\nThe complete persisted plan is in .nexus/stack-plan.json and the specialist manifest is in .nexus/agents/selected-experts.md. Read both before editing.\n\nAgent orchestration contract:\n1. Framework Expert Router validates the planned stack against the request and current files. Do not silently replace it with a familiar default.\n2. Each selected stack specialist owns framework conventions, dependencies, configuration, and its listed checks. Apply its advice during setup, not only after errors.\n3. OpenCode Build Agent implements the application and runs commands.\n4. Build Doctor classifies failures and sends them back to the relevant specialist.\n5. QA Agent verifies real browser behavior, accessibility, responsive layouts, data flows, console output, and production readiness.\n6. Memory Agent records durable architecture and repair decisions under .nexus/memory.\n\nLive browser intelligence packet:\n${browserContext || 'No live browser packet was available. Build from the request, then verify in the real browser preview.'}\n\nShared Nexus agent knowledge to apply:\n${swarm.sharedKnowledge.map((item) => `- ${item}`).join('\n')}\n\nBuild a real working ${stackPlan.framework} application, not notes or a mock plan. Use the generated files as a starting point, but replace placeholders and incomplete scaffolding. Use production-quality styling, responsive layout, accessible components, and a maintainable project structure appropriate to ${stackPlan.primaryLanguage}.\n\nNexusBrowser advantage to design around:\n- Make the browser the development command center: target page, live preview, DOM, styles, screenshots, console, network, storage, API discovery, and visual QA all inform the code.\n- Show how AI uses DevTools evidence to build smarter than a normal chat-only coding tool.\n- Favor workflows where the user can research, build, inspect, debug, repair, and visually verify without leaving the browser.\n\nRequired work:\n- Inspect the current files, stack plan, and expert manifest first.\n- Set up ${stackPlan.framework} using its normal directory layout, dependency manager, configuration, environment conventions, and security practices.\n- Do not introduce React, Vite, npm, PHP, Composer, or any other stack unless it is in the plan or genuinely required by the request.\n- Implement the complete user-facing and backend behavior implied by the request.\n- Run setup only as needed: ${stackPlan.setupCommands.join('; ')}.\n- Verify with: ${[...stackPlan.buildCommands, ...stackPlan.testCommands].join('; ')}. Fix failures before finishing.\n- Confirm the development command works: ${stackPlan.devCommand}.\n- Add clear README usage instructions for the actual stack.\n- Do not hardcode secrets; create .env.example when configuration is required.\n- Include realistic data/state, responsive mobile behavior, empty/loading/error states, accessible focus paths, and one distinctive interaction or visual system that fits the product.\n- Add a short QA checklist covering desktop, mobile, console/runtime errors, API/data flows, and the stack-specific production check.\n- Avoid generic centered hero plus three cards unless the product specifically calls for it; make layout, typography, color, and component rhythm product-specific.\n`;
+    return `You are the implementation executor for a NexusBrowser multi-agent build.\n\nUser request: ${prompt}\n\n${browserContractInstructions}\n\nUI look: ${uiLook}\n\nBuild brain:\n- Mode: ${brain.mode}\n- Provider: ${brain.provider}\n- Model: ${brain.model || 'default'}\n- Executor: ${brain.executor}\n${brain.notes.map((note) => `- ${note}`).join('\n')}\n\nPreflight stack plan and assigned agents:\n${this.buildStackAgentBrief(stackPlan)}\n\nThe complete persisted plan is in .nexus/stack-plan.json and the specialist manifest is in .nexus/agents/selected-experts.md. Read both before editing.\n\nAgent orchestration contract:\n1. Framework Expert Router validates the planned stack against the request and current files. Do not silently replace it with a familiar default.\n2. Each selected stack specialist owns framework conventions, dependencies, configuration, and its listed checks. Apply its advice during setup, not only after errors.\n3. OpenCode Build Agent implements the application and runs commands.\n4. Build Doctor classifies failures and sends them back to the relevant specialist.\n5. QA Agent verifies real browser behavior, accessibility, responsive layouts, data flows, console output, and production readiness.\n6. Memory Agent records durable architecture and repair decisions under .nexus/memory.\n\nLive browser intelligence packet:\n${browserContext || 'No live browser packet was available. Build from the request, then verify in the real browser preview.'}\n\nShared Nexus agent knowledge to apply:\n${swarm.sharedKnowledge.map((item) => `- ${item}`).join('\n')}\n\nBuild a real working ${stackPlan.framework} application, not notes or a mock plan. Use the generated files as a starting point, but replace placeholders and incomplete scaffolding. Use production-quality styling, responsive layout, accessible components, and a maintainable project structure appropriate to ${stackPlan.primaryLanguage}.\n\nNexusBrowser advantage to design around:\n- Use the browser as evidence: reference page, live preview, DOM, styles, screenshots, console, network, storage, and API discovery inform code changes.\n- Use DevTools evidence internally to improve the requested product. Do not put Nexus development controls or AI marketing into the user product.\n- Implement the end user workflows requested by the user, independently of Nexus development tools.\n\nRequired work:\n- Inspect the current files, stack plan, and expert manifest first.\n- Set up ${stackPlan.framework} using its normal directory layout, dependency manager, configuration, environment conventions, and security practices.\n- Do not introduce React, Vite, npm, PHP, Composer, or any other stack unless it is in the plan or genuinely required by the request.\n- Implement the complete user-facing and backend behavior implied by the request.\n- Run setup only as needed: ${stackPlan.setupCommands.join('; ')}.\n- Verify with: ${[...stackPlan.buildCommands, ...stackPlan.testCommands].join('; ')}. Fix failures before finishing.\n- Confirm the development command works: ${stackPlan.devCommand}.\n- Add clear README usage instructions for the actual stack.\n- Do not hardcode secrets; create .env.example when configuration is required.\n- Include realistic data/state, responsive mobile behavior, empty/loading/error states, accessible focus paths, and one distinctive interaction or visual system that fits the product.\n- Add a short QA checklist covering desktop, mobile, console/runtime errors, API/data flows, and the stack-specific production check.\n- Avoid generic centered hero plus three cards unless the product specifically calls for it; make layout, typography, color, and component rhythm product-specific.\n`;
   }
 
   private escapeHtml(value: string): string {

@@ -332,7 +332,7 @@
           <div class="tool" onclick="runUiIntelligence()"><strong>UI Inspect</strong><span>Tokens, components, layout, Tailwind, React files.</span></div>
           <div class="tool" onclick="runApiCrawl()"><strong>API / MCP</strong><span>Endpoints, SDKs, MCP tools, response samples.</span></div>
           <div class="tool" onclick="createVisualQaPlan()"><strong>QA Plan</strong><span>Target vs local preview checks and repair prompt.</span></div>
-          <div class="tool" onclick="runVisualQaRepair()"><strong>Auto Repair QA</strong><span>Compare target to live app and generate OpenCode repair tasks.</span></div>
+          <div class="tool" onclick="runVisualQaRepair()"><strong>Auto Repair QA</strong><span>Compare the rendered reference, apply repairs, and verify the updated app.</span></div>
           <div class="tool" onclick="runBrowserShakedown()"><strong>Browser Shakedown</strong><span>Smoke test the real browser, preview, backend, SEO, security, and artifacts.</span></div>
           <div class="tool" onclick="runSideBySideVisualDiff()"><strong>Side-by-Side Diff</strong><span>Compare target browser screenshot to generated preview before approval.</span></div>
           <div class="tool" onclick="showConnectorHub()"><strong>Connectors</strong><span>Login-style integrations for GitHub, deploy, database, payments, SEO, and security.</span></div>
@@ -475,7 +475,7 @@
     let overlayTimer = null;
     let pendingAutoBuild = null;
     let pendingNavigateUrl = null;
-    let activeBuildId = localStorage.getItem('nexus-active-build-id') || null;
+    let activeBuildId = null; // Restored from the selected chat, never a global project ID.
     let previewLogTimer = null;
     let buildProgressTimer = null;
     let browserIntelTimer = null;
@@ -612,24 +612,14 @@
         });
         if (result.chatId) {
           const currentTitle = document.getElementById('activeChatTitle')?.textContent || '';
-          setActiveChat(result.chatId, currentTitle && currentTitle !== 'Nexus Chat' ? currentTitle : message);
+          setActiveChat(result.chatId, currentTitle && currentTitle !== 'Nexus Chat' ? currentTitle : message, result.projectId || null);
+          if (result.sessionId) currentSessionId = result.sessionId;
+          if (result.pageId) currentPageId = result.pageId;
         }
         addMessage('assistant', result.response);
         if (result.build) showBuildStarted(result.build);
         if (result.update) showBuildUpdateStarted(result.update);
-        if (!result.build && !result.update) {
-          setLaunchStatus('No build was returned from chat. Forcing OpenCode build start from the loaded URL...');
-          const build = await api('/api/builder/start-build', {
-            chatId: chatApiId(),
-            sessionId: currentSessionId,
-            prompt: message,
-            browserContext: `${lastBrowserIntelligence}\n\n${lastBackendObservation}`.trim(),
-            mode: 'build',
-            uiLook: document.getElementById('uiLook').value,
-            ...buildBrainOptions(),
-          });
-          showBuildStarted(build);
-        }
+        if (result.requiresInput) setLaunchStatus('Waiting for the requested setup information.');
       } catch (error) {
         addMessage('system', `Build handoff failed: ${error.message}`);
       } finally {
@@ -809,7 +799,11 @@
       return activeChatId || currentSessionId || 'default';
     }
 
-    function setActiveChat(id, title) {
+    function setActiveChat(id, title, projectId = null) {
+      if (activeChatId !== id && buildProgressTimer) { clearTimeout(buildProgressTimer); buildProgressTimer = null; }
+      activeBuildId = projectId;
+      lastBackendObservation = '';
+      document.getElementById('outputPath').textContent = '';
       activeChatId = id || '';
       if (activeChatId) localStorage.setItem('nexus-active-chat-id', activeChatId);
       else localStorage.removeItem('nexus-active-chat-id');
@@ -1320,7 +1314,7 @@
         if (activeBuildId) params.set('buildId', activeBuildId);
         const query = `?${params.toString()}`;
         const result = await getApi(`/api/builder/diff${query}`);
-        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Diff Review</span><span class="pill">${escapeHtml(result.root)}</span></div><div class="search-page"><div class="preview-actions"><button class="btn primary" onclick="approveDiff()">Approve Diff</button><button class="btn" onclick="createRollbackPlan()">Rollback Plan</button><button class="btn" onclick="runVisualQaRepair()">Visual QA</button></div><h2>Changed files</h2>${(result.files || []).map(file => `<article class="search-result"><b>${escapeHtml(file.path)}</b><small>+${file.additions} / -${file.deletions}</small></article>`).join('') || '<p>No changed files detected.</p>'}<h2>Browser review package</h2><pre>${escapeHtml(JSON.stringify(result.visual || {}, null, 2))}</pre><h2>Raw diff</h2><pre>${escapeHtml(result.diff)}</pre></div>`;
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Diff Review</span><span class="pill">${escapeHtml(result.root)}</span></div><div class="search-page"><div class="preview-actions"><button class="btn primary" onclick="approveDiff()">Approve Diff</button><button class="btn" onclick="createRollbackPlan()">Restore Version</button><button class="btn" onclick="runVisualQaRepair()">Visual QA</button></div><h2>Changed files</h2>${(result.files || []).map(file => `<article class="search-result"><b>${escapeHtml(file.path)}</b><small>+${file.additions} / -${file.deletions}</small></article>`).join('') || '<p>No changed files detected.</p>'}<h2>Browser review package</h2><pre>${escapeHtml(JSON.stringify(result.visual || {}, null, 2))}</pre><h2>Raw diff</h2><pre>${escapeHtml(result.diff)}</pre></div>`;
         document.getElementById('taskStream').textContent = `${JSON.stringify(result.visual || {}, null, 2)}\n\n${result.diff}`;
         addMessage('assistant', 'Loaded source diff. Pair this with Visual QA before approving changes.');
       } catch (error) {
@@ -1338,13 +1332,19 @@
     }
 
     async function createRollbackPlan() {
+      if (!activeBuildId) return addMessage('system', 'Select a project first.');
       try {
-        const result = await api('/api/builder/diff/rollback-plan', { buildId: activeBuildId });
-        document.getElementById('taskStream').textContent = result.prompt;
-        addMessage('assistant', 'Created safe rollback plan prompt. Review with OpenCode before applying changes.');
-      } catch (error) {
-        addMessage('system', `Rollback plan failed: ${error.message}`);
-      }
+        const checkpoints = await getApi('/api/builder/builds/' + activeBuildId + '/checkpoints');
+        document.getElementById('browserView').innerHTML = '<div class="search-page"><h1>Restore a version</h1>' + checkpoints.map(item => '<article class="search-result"><b>' + escapeHtml(item.reason) + '</b><p>' + escapeHtml(item.createdAt) + '</p><button class="btn" onclick="restoreProjectVersion(\'' + escapeJs(item.id) + '\')">Restore</button></article>').join('') + '</div>';
+      } catch (error) { addMessage('system', 'Could not load versions: ' + error.message); }
+    }
+
+    async function restoreProjectVersion(id) {
+      try {
+        const result = await api('/api/builder/builds/' + activeBuildId + '/checkpoints/' + id + '/restore', {});
+        addMessage('assistant', 'Restored ' + result.restored.length + ' files. Checking the restored product in the browser.');
+        showBuildStarted(result.build);
+      } catch (error) { addMessage('system', 'Restore failed: ' + error.message); }
     }
 
     function startStreamingTimeline() {
@@ -1534,7 +1534,7 @@
       try {
         const title = prompt('Chat title') || 'New Nexus Chat';
         const chat = await api('/api/chats', { title });
-        setActiveChat(chat.id, chat.title);
+        setActiveChat(chat.id, chat.title, chat.projectId || null);
         renderChatMessages(chat.messages || [], chat.title);
         toggleChat(true);
         showChatManager();
@@ -1546,7 +1546,7 @@
     async function openChat(id, options = {}) {
       try {
         const chat = await getApi(`/api/chats/${encodeURIComponent(id)}`);
-        setActiveChat(chat.id, chat.title);
+        setActiveChat(chat.id, chat.title, chat.projectId || null);
         renderChatMessages(chat.messages || [], chat.title);
         toggleChat(true);
         if (options.announce !== false) addMessage('system', `Opened chat: ${chat.title}`);
@@ -1559,7 +1559,7 @@
       const title = prompt('New chat title');
       if (!title) return;
       await fetch(`/api/chats/${encodeURIComponent(id)}`, { method: 'PUT', headers: headers(), body: JSON.stringify({ title }) });
-      if (id === activeChatId) setActiveChat(id, title);
+      if (id === activeChatId) setActiveChat(id, title, activeBuildId);
       showChatManager();
     }
 
@@ -1746,8 +1746,9 @@
     }
 
     async function createWorkspaceSnapshot() {
+      if (!activeBuildId) return addMessage('system', 'Select a project first.');
       try {
-        const snapshot = await api('/api/builder/snapshots', { reason: 'builder UI snapshot before agent build' });
+        const snapshot = await api('/api/builder/snapshots', { buildId: activeBuildId, reason: 'Manual project checkpoint' });
         addMessage('assistant', `Snapshot created: ${snapshot.id} with ${snapshot.files.length} files.`);
         appendStream('qaStream', `Snapshot ${snapshot.id}: ${snapshot.files.length} files tracked.`);
       } catch (error) {
@@ -1774,11 +1775,12 @@
         if (!build?.previewUrl) build = await api(`/api/builder/builds/${activeBuildId}/preview`, {});
         if (!build?.previewUrl) return addMessage('system', 'No live generated preview yet. Start a build preview first.');
         appendStream('qaStream', `Running DOM-Vision Fusion QA against ${build.previewUrl}`);
-        const run = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/visual-qa-repair`, { localUrl: build.previewUrl });
+        const run = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/visual-qa-repair`, { buildId: build.id, localUrl: build.previewUrl });
         document.getElementById('outputPath').textContent = run.outputDir;
         document.getElementById('qaStream').textContent = `DOM-Vision Fusion: ${run.scores.overall}/100\nPixel: ${run.scores.pixel}/100\nLayout: ${run.scores.layout}/100\nText: ${run.scores.text}/100\nColor: ${run.scores.color}/100\n\n${run.findings.map(f => `[${f.severity}] ${f.area}: ${f.repair}`).join('\n\n')}`;
         document.getElementById('taskStream').textContent = `Repair artifacts:\n${run.artifacts.repairTasks}\n${run.artifacts.opencodePrompt}\n\nOpenCode repair prompt:\n${run.repairPrompt}`;
-        addMessage('assistant', `Visual QA repair package created. Score: ${run.scores.overall}/100\nOutput: ${run.outputDir}`);
+        if (run.update) showBuildUpdateStarted(run.update);
+        addMessage('assistant', `Visual repair started. Comparison score: ${run.scores.overall}/100\nOutput: ${run.outputDir}`);
       } catch (error) {
         addMessage('system', `Visual QA repair failed: ${error.message}`);
       }
@@ -1787,7 +1789,7 @@
     async function getActiveBuild() {
       const builds = await getApi('/api/builder/builds');
       let build = activeBuildId ? builds.find(item => item.id === activeBuildId) : null;
-      if (!build) build = builds[builds.length - 1];
+      if (!build) return null;
       if (build?.id) activeBuildId = build.id;
       if (build?.id) localStorage.setItem('nexus-active-build-id', build.id);
       return build;
@@ -1865,8 +1867,8 @@
         showStagingStudio(report);
         document.getElementById('researchStream').textContent = `Staging Studio\n${report.summary}\n\nDevices:\n${report.devices.map(check => `- ${check.device.name}: ${check.status} ${check.device.width}x${check.device.height}, HTTP ${check.healthCode || 'n/a'}, ${check.latencyMs || 0}ms`).join('\n')}`;
         document.getElementById('taskStream').textContent = report.creativeUniqueness.antiTemplatePrompt;
-        document.getElementById('qaStream').textContent = `Health: ${report.health.score}/100 ${report.health.status}\nCreative uniqueness: ${report.creativeUniqueness.score}/100\n\n${report.health.issues.join('\n') || 'No blocking health issues detected.'}`;
-        addMessage('assistant', `Staging Studio ready. Health ${report.health.score}/100, creative uniqueness ${report.creativeUniqueness.score}/100. Output: ${report.outputDir}`);
+        document.getElementById('qaStream').textContent = `Health: ${report.health.score}/100 ${report.health.status}\nVisual originality: awaiting rendered review\n\n${report.health.issues.join('\n') || 'No blocking health issues detected.'}`;
+        addMessage('assistant', `Staging Studio ready. Health ${report.health.score}/100, visual originality awaiting rendered review. Output: ${report.outputDir}`);
       } catch (error) {
         addMessage('system', `Staging Studio failed: ${error.message}`);
       }
@@ -1889,7 +1891,7 @@
         <div class="staging-studio">
           <aside class="staging-panel">
             <div class="label">Health</div><div class="staging-score">${report.health.score}</div>
-            <div class="label">Creative</div><div class="staging-score">${report.creativeUniqueness.score}</div>
+            <div class="label">Creative</div><div class="staging-score">${report.creativeUniqueness.score ?? 'Review'}</div>
             <p>${report.summary}</p>
           </aside>
           <div class="device-wall">${frames}</div>
@@ -2014,14 +2016,16 @@
         pendingMessage = null;
         if (result.chatId) {
           const currentTitle = document.getElementById('activeChatTitle')?.textContent || '';
-          setActiveChat(result.chatId, currentTitle && currentTitle !== 'Nexus Chat' ? currentTitle : message);
+          setActiveChat(result.chatId, currentTitle && currentTitle !== 'Nexus Chat' ? currentTitle : message, result.projectId || null);
+          if (result.sessionId) currentSessionId = result.sessionId;
+          if (result.pageId) currentPageId = result.pageId;
         }
         addMessage('assistant', result.response);
         if (result.actions?.length) addActionMessage(result.actions, result.source);
         if (result.build) showBuildStarted(result.build);
         if (result.update) showBuildUpdateStarted(result.update);
         broadcastChatUpdate();
-        if (!result.requiresInput && !result.build && !result.update && pendingAutoBuild !== message) executeChatIntent(message);
+        // The backend owns intent, verification and repairs. UI refreshes never launch extra work.
       } catch (error) {
         const failure = `Builder chat failed: ${error.message}`;
         if (pendingMessage) pendingMessage.textContent = failure;
@@ -2326,6 +2330,7 @@
       let attempts = 0;
       const progressMessage = existingCard || createBuildProgressMessage(buildId, Boolean(updateId));
       const poll = async () => {
+        if (activeBuildId !== buildId) return;
         attempts += 1;
         try {
           const suffix = updateId ? `?updateId=${encodeURIComponent(updateId)}` : '';
@@ -2338,10 +2343,11 @@
           if (activity.terminal) {
             buildProgressTimer = null;
             if (activity.status === 'completed') {
-              addMessage('assistant', `${label} completed. Starting the live preview and browser checks.`);
-              await startPreviewThenStage();
+              addMessage('assistant', `${label} verified: build and product workflows passed on desktop and mobile.`);
+              if (activity.build.previewUrl) showAppPreview(activity.build);
             } else {
               const failure = activity.progress?.failure;
+              if (activity.build.verification?.issues?.length) addMessage('system', activity.build.verification.issues.join('\n'));
               document.getElementById('qaStream').textContent = `${failure?.title || `${label} did not complete`}\n\n${failure?.detail || 'The executor stopped before completion.'}\n\n${failure?.recovery || 'Run Build Doctor, then retry from the preserved workspace.'}`;
             }
             return;
@@ -2356,10 +2362,6 @@
     }
 
     async function startActiveBuildPreview() {
-      if (!activeBuildId) {
-        const builds = await getApi('/api/builder/builds').catch(() => []);
-        activeBuildId = builds[builds.length - 1]?.id || null;
-      }
       if (!activeBuildId) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
       try {
         const build = await api(`/api/builder/builds/${activeBuildId}/preview`, {});
@@ -2371,6 +2373,12 @@
         setLaunchStatus(`Preview start failed: ${error.message}`);
         addMessage('system', `Preview start failed: ${error.message}`);
       }
+    }
+
+    async function verifyActiveProduct() {
+      if (!activeBuildId) return;
+      try { const build = await api('/api/builder/builds/' + activeBuildId + '/verify', {}); showBuildStarted(build); }
+      catch (error) { addMessage('system', 'Could not start verification: ' + error.message); }
     }
 
     async function openActiveBuildExternal() {
@@ -2394,7 +2402,7 @@
       upsertBrowserTab({ id: `preview-${build.id}`, title: build.name || 'Preview', kind: 'preview', url: build.previewUrl || '' });
       document.getElementById('browserView').innerHTML = `
         <div class="hud"><span class="pill">Live App</span><span class="pill">${build.previewStatus}</span><span class="pill">${build.previewUrl || 'starting'}</span></div>
-        <div class="preview-actions"><button class="btn primary" onclick="openActiveBuildExternal()">Open App</button><button class="btn" onclick="startActiveBuildPreview()">Restart</button><button class="btn amber" onclick="stopActiveBuildPreview()">Stop</button></div>
+        <div class="preview-actions"><button class="btn primary" onclick="openActiveBuildExternal()">Open App</button><button class="btn" onclick="startActiveBuildPreview()">Restart</button><button class="btn amber" onclick="stopActiveBuildPreview()">Stop</button><button class="btn" onclick="createRollbackPlan()">Restore Version</button><button class="btn" onclick="verifyActiveProduct()">Check App</button></div>
         ${build.previewUrl ? `<iframe class="app-frame" src="${build.previewUrl}" title="Generated app preview"></iframe>` : `<div class="preview-card"><div class="preview-card-inner"><h1>Preview starting</h1><p>Nexus is starting the generated app server. Staging will open here when screenshots are ready.</p></div></div>`}`;
       setText('pageStatus', `Generated app preview - ${build.previewUrl || 'starting'}`);
     }
@@ -2742,7 +2750,7 @@
     loadSecurityToken().finally(async () => {
       connect();
       startBrowserIntelligenceLoop();
-      if (popoutChatId) await openChat(popoutChatId, { announce: false });
+      if (popoutChatId || activeChatId) await openChat(popoutChatId || activeChatId, { announce: false });
       startFromQueryParam();
     });
   </script>

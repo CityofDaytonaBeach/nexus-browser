@@ -72,3 +72,41 @@ npm run desktop
 
 On restricted Windows hosts where Chromium's sandbox or GPU helper cannot
 launch, `npm run desktop:compat` is available for local development only.
+
+## Browser-owned product loop
+
+The backend owns implementation, independent compilation, rendered acceptance,
+and up to two evidence-driven repairs. Closing or switching the UI does not stop
+verification. A zero executor exit means implementation ended; `completed`
+requires Nexus's own build and desktop/mobile workflow checks to pass.
+
+- `src/builder/browser-verification.ts` validates `.nexus/product-contract.json`
+  and executes accessible click/fill/select/check/reload/assertion steps. Each
+  workflow must exercise an interaction and assert an outcome. Verification
+  captures screenshots, DOM, runtime failures, HTTP errors, and overflow.
+- Browser repair passes keep their acceptance contract fixed. Existing accepted
+  workflows are retained across updates. Contracts remain executor-authored;
+  passing verifies the declared outcomes, not exhaustive product correctness.
+- Before an update, Nexus inspects the current project's rendered preview and
+  supplies desktop/mobile screenshots, element bounds/styles, console, and
+  network evidence to the executor. Reference requests inspect the real browser
+  tab. Clone requests additionally compare captured reference layouts/images;
+  these similarity measurements are heuristics, not a visual originality score.
+- The native Electron session records bounded console/network history. Network
+  evidence omits URL query strings and request/response credentials. Captured
+  page material is source data, not agent instructions.
+- Chats persist their project association. A client-global build ID cannot
+  change a chat's workspace. Jobs and verification evidence persist under each
+  workspace's `.nexus`; interrupted jobs are reported after restart.
+- Checkpoints persist actual source contents, including dotfiles and acceptance
+  contracts. Restore backs up the current version, removes files introduced by
+  the selected job, and refuses to overwrite later edits. Restoring verifies
+  without automatically changing the restored version through repair.
+
+Remote executors must return JSON `{ id, status }`, support `GET /runs/:id` for
+queued/running jobs, and finish with `status: "completed", workspaceSynced: true`.
+Files must be synchronized to the workspace before local browser verification.
+An HTTP acknowledgement alone cannot complete a build.
+
+Run `npm test -- --runInBand` and `npm run build` to verify the implementation.
+The browser tests use a local fixture and Chromium; they do not call paid models.

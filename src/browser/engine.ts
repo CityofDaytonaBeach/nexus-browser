@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import sharp from 'sharp';
 import { launchChromium } from './launch';
+import { visualProfileScript } from './visual-profile';
 
 const log = createLogger('Browser');
 
@@ -229,10 +230,12 @@ export interface VisualQaRun {
   repairPrompt: string;
 }
 
-type VisualPageProfile = {
+export type VisualPageProfile = {
   url: string;
   title: string;
   screenshot: Buffer;
+  viewport?: { width: number; height: number };
+  fullPage?: boolean;
   text: string;
   words: string[];
   colors: string[];
@@ -906,6 +909,26 @@ ${sections.join('\n') || '      <section className="mx-auto max-w-6xl p-6">No UI
         this.captureVisualPageProfile(targetPage),
         this.captureVisualPageProfile(localPage),
       ]);
+      return await this.compareVisualProfiles(target, local, outputRoot);
+    } finally {
+      await localPage.close().catch(() => {});
+    }
+  }
+
+
+  async compareCapturedReference(target: VisualPageProfile, localUrl: string, outputRoot?: string): Promise<VisualQaRun> {
+    const parsed = new URL(localUrl);
+    if (!['127.0.0.1', 'localhost', '[::1]'].includes(parsed.hostname)) throw new Error('Visual comparison requires a local preview');
+    const browser = await launchChromium({ headless: true });
+    try {
+      const page = await browser.newPage({ viewport: target.viewport || { width: 1440, height: 900 } });
+      const response = await page.goto(localUrl, { waitUntil: 'networkidle', timeout: 30000 });
+      if (!response?.ok()) throw new Error('Visual preview is not healthy');
+      return await this.compareVisualProfiles(target, await this.captureVisualPageProfile(page, target.fullPage !== false), outputRoot);
+    } finally { await browser.close(); }
+  }
+
+  private async compareVisualProfiles(target: VisualPageProfile, local: VisualPageProfile, outputRoot?: string): Promise<VisualQaRun> {
       const scores = await this.scoreVisualQa(target, local);
       const findings = this.buildVisualQaFindings(target, local, scores);
       const id = uuid().slice(0, 8);
@@ -931,47 +954,13 @@ ${sections.join('\n') || '      <section className="mx-auto max-w-6xl p-6">No UI
         },
         repairPrompt,
       };
-    } finally {
-      await localPage.close().catch(() => {});
-    }
   }
 
-  private async captureVisualPageProfile(page: Page): Promise<VisualPageProfile> {
-    const data = await page.evaluate(() => {
-      const visible = Array.from(document.querySelectorAll('body *'))
-        .map((element) => {
-          const rect = element.getBoundingClientRect();
-          const styles = window.getComputedStyle(element);
-          return {
-            tag: element.tagName.toLowerCase(),
-            text: (element.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 160),
-            rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
-            styles: {
-              color: styles.color,
-              backgroundColor: styles.backgroundColor,
-              fontFamily: styles.fontFamily,
-              fontSize: styles.fontSize,
-              fontWeight: styles.fontWeight,
-              borderRadius: styles.borderRadius,
-            },
-          };
-        })
-        .filter((item) => item.rect.width > 0 && item.rect.height > 0)
-        .slice(0, 300);
-      const colors = new Set<string>();
-      visible.forEach((item) => {
-        if (item.styles.color && item.styles.color !== 'rgba(0, 0, 0, 0)') colors.add(item.styles.color);
-        if (item.styles.backgroundColor && item.styles.backgroundColor !== 'rgba(0, 0, 0, 0)') colors.add(item.styles.backgroundColor);
-      });
-      const text = (document.body?.innerText || '').replace(/\s+/g, ' ').trim();
-      const words = text.toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length > 2).slice(0, 2000);
-      return { text, words, colors: Array.from(colors).slice(0, 80), layout: visible };
-    });
+  private async captureVisualPageProfile(page: Page, fullPage = true): Promise<VisualPageProfile> {
+    const data = await page.evaluate(visualProfileScript) as Omit<VisualPageProfile, 'screenshot'>;
 
     return {
-      url: page.url(),
-      title: await page.title(),
-      screenshot: await page.screenshot({ type: 'png', fullPage: true }),
+      screenshot: await page.screenshot({ type: 'png', fullPage }),
       ...data,
     };
   }

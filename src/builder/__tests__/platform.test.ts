@@ -119,7 +119,7 @@ describe('BuilderPlatform intelligence systems', () => {
     expect(update.prompt).toContain('User follow-up request');
     expect(update.prompt).toContain('make the homepage feel more cinematic');
     expect(activity.kind).toBe('update');
-    expect(activity.status).toBe('completed');
+    expect(activity.status).toBe('prepared');
     expect(activity.terminal).toBe(true);
     expect(activity.log).toContain('launch skipped');
     expect(fs.existsSync(path.join(path.dirname(update.logPath), 'opencode-update-prompt.md'))).toBe(true);
@@ -194,9 +194,9 @@ describe('BuilderPlatform intelligence systems', () => {
     const freshPlatform = new BuilderPlatform();
     const hydrated = freshPlatform.getBuild('abcdef12');
     expect(hydrated?.id).toBe('abcdef12');
-    expect(hydrated?.status).toBe('completed');
-    expect(freshPlatform.getBuildActivity('abcdef12').progress.failure).toBeUndefined();
-    expect(freshPlatform.getBuildActivity('abcdef12', '1234abcd').status).toBe('completed');
+    expect(hydrated?.status).toBe('failed');
+    expect(freshPlatform.getBuildActivity('abcdef12').progress.failure).toBeDefined();
+    expect(freshPlatform.getBuildActivity('abcdef12', '1234abcd').status).toBe('failed');
     const update = freshPlatform.updateBuildFromChat('abcdef12', 'add an additional education page about habitats', { launch: false });
     expect(update.prompt).toContain('habitats');
     fs.rmSync(diskBuildRoot, { recursive: true, force: true });

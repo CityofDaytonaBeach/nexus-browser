@@ -27,6 +27,7 @@ export interface ActionResult {
   error?: string;
   page?: BrowserPage;
   duration: number;
+  nativeEvidence?: { console: string[]; network: Array<{ url: string; method: string; status?: number; error?: string }> };
 }
 
 export interface BrowserController {

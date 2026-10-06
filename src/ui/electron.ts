@@ -20,6 +20,7 @@ interface BrowserTab {
   url: string;
   loading: boolean;
   consoleMessages: string[];
+  networkMessages: Array<{ url: string; method: string; status?: number; error?: string }>;
   view: BrowserView;
 }
 
@@ -115,6 +116,17 @@ function configureSession(targetSession: Session): void {
   targetSession.setPermissionRequestHandler((_webContents, permission, callback) => {
     callback(['clipboard-read', 'clipboard-sanitized-write', 'media', 'geolocation', 'notifications'].includes(permission));
   });
+  const record = (details: { webContentsId?: number; url: string; method: string; statusCode?: number; error?: string }) => {
+    const tab = [...tabs.values()].find((item) => item.view.webContents.id === details.webContentsId);
+    if (!tab) return;
+    let safeUrl = details.url;
+    try { const parsed = new URL(details.url); safeUrl = `${parsed.origin}${parsed.pathname}`; } catch {}
+    tab.networkMessages.push({ url: safeUrl, method: details.method, status: details.statusCode, error: details.error });
+    tab.networkMessages = tab.networkMessages.slice(-60);
+    if (tab.id === activeTabId && (details.error || (details.statusCode || 0) >= 400)) scheduleActiveTabContext();
+  };
+  targetSession.webRequest.onCompleted(record);
+  targetSession.webRequest.onErrorOccurred(record);
 }
 
 function normalizeLocalUrl(url: string): string {
@@ -278,6 +290,7 @@ async function pushActiveTabContext(): Promise<void> {
       `Visible controls: ${JSON.stringify(page.controls)}`,
       `Visible links: ${JSON.stringify(page.links)}`,
       `Recent console: ${tab.consoleMessages.join(' | ') || 'none captured'}`,
+      `Recent network: ${JSON.stringify(tab.networkMessages)}`,
       `Visible text: ${page.text || 'none'}`,
     ].join('\n');
     const payload = { type: 'nexus-native-tab-context', tabId: tab.id, title: page.title || tab.title, url: page.url || tab.url, context };
@@ -335,6 +348,9 @@ function wireTab(tab: BrowserTab): void {
     tab.loading = true;
     updateTabFromContents(tab);
   });
+  contents.on('did-start-navigation', (_event, _url, isInPlace, isMainFrame) => {
+    if (isMainFrame && !isInPlace) { tab.consoleMessages = []; tab.networkMessages = []; }
+  });
   contents.on('did-stop-loading', () => {
     tab.loading = false;
     updateTabFromContents(tab);
@@ -369,6 +385,7 @@ function createTab(value = `${NEXUS_ORIGIN}/browser-home.html`): BrowserTab {
     url: resolveAddress(value),
     loading: true,
     consoleMessages: [],
+    networkMessages: [],
     view,
   };
   tabs.set(tab.id, tab);
@@ -449,6 +466,7 @@ async function nativePageResult(tab: BrowserTab, started: number, data: any): Pr
   } catch {}
   return {
     success: true,
+    nativeEvidence: { console: tab.consoleMessages, network: tab.networkMessages },
     data,
     page: {
       id: tab.id,

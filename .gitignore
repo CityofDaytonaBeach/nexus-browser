@@ -12,3 +12,8 @@ automations/*.json
 # Nexus/npm generated cache
 **/.nexus/npm-cache/
 generated-apps/*/.nexus/npm-cache/
+
+# Local recovery contents and browser evidence stay out of source control.
+**/.nexus/checkpoints/
+**/.nexus/verification/
+.nexus/browser-references/
