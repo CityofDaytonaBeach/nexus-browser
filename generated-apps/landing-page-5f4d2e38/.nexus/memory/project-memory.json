@@ -1,7 +1,7 @@
 {
   "buildId": "5f4d2e38",
   "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38",
-  "updatedAt": "2026-10-06T20:29:58.056Z",
+  "updatedAt": "2026-10-06T20:47:44.768Z",
   "entries": [
     {
       "type": "expert-routing",
@@ -59,6 +59,35 @@
       ],
       "id": "4bfec4f4",
       "createdAt": "2026-10-06T20:29:58.056Z"
+    },
+    {
+      "type": "qa",
+      "summary": "Independent build and desktop/mobile user workflows passed",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\desktop-0-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\desktop-0.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\desktop-0-runtime.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\desktop-1-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\desktop-1.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\desktop-1-runtime.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\desktop-2-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\desktop-2.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\desktop-2-runtime.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\mobile-0-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\mobile-0.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\mobile-0-runtime.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\mobile-1-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\mobile-1.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\mobile-1-runtime.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\mobile-2-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\mobile-2.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\verification\\1791319647102-1\\mobile-2-runtime.json"
+      ],
+      "tags": [
+        "browser-verified"
+      ],
+      "id": "99659247",
+      "createdAt": "2026-10-06T20:47:44.768Z"
     }
   ],
   "preferences": {},

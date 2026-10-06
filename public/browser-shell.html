@@ -57,6 +57,18 @@
     .agent-label.active span { background: var(--acid); }
     .load-line { position: absolute; left: 0; top: 90px; width: 0; height: 2px; background: var(--acid); transition: width .18s ease; pointer-events: none; }
     .load-line.active { width: 68%; }
+    .responsive-toggle.active { color: var(--acid); background: #303824; }
+    .responsive-bar { height: 52px; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--chrome); border-bottom: 1px solid var(--line); font-size: 11px; }
+    .responsive-bar[hidden] { display: none; }
+    .responsive-bar select, .responsive-bar input, .responsive-bar button { height: 30px; border: 1px solid var(--line-strong); background: var(--chrome-raised); color: var(--ink); padding: 4px 8px; }
+    .responsive-bar input { width: 68px; }
+    .responsive-bar label { display: flex; gap: 5px; align-items: center; }
+    .responsive-bar button { cursor: pointer; }
+    .responsive-bar button:hover { border-color: var(--acid); }
+    .responsive-bar output { color: var(--acid); margin-left: auto; }
+    .browser-chrome.responsive { height: 144px; }
+    .browser-chrome.responsive .load-line { top: 142px; }
+    @media (max-width: 950px) { .responsive-bar { gap: 5px; } .responsive-bar output { font-size: 10px; } }
   </style>
 </head>
 <body>
@@ -81,8 +93,27 @@
         <span class="site-state" id="siteState">N</span>
         <input id="address" type="text" spellcheck="false" autocomplete="off" aria-label="Address and search" placeholder="Search or enter address">
       </div>
+      <button class="chrome-button responsive-toggle" id="responsiveToggle" title="Responsive screen views" aria-label="Responsive views" aria-expanded="false" aria-controls="responsiveBar">▣</button>
       <button class="chrome-button agent-label active" id="agentLabel" title="Toggle Nexus agent panel"><span></span>Agent live</button>
     </div>
+    <form class="responsive-bar" id="responsiveBar" aria-label="Responsive screen size" hidden>
+      <select id="screenPreset" aria-label="Screen preset">
+        <option value="390x844">Phone · 390 × 844</option>
+        <option value="360x800">Small phone · 360 × 800</option>
+        <option value="768x1024">Tablet · 768 × 1024</option>
+        <option value="1024x768">Tablet landscape · 1024 × 768</option>
+        <option value="1440x900">Laptop · 1440 × 900</option>
+        <option value="1920x1080">Desktop · 1920 × 1080</option>
+        <option value="custom">Custom size</option>
+      </select>
+      <label>W <input id="screenWidth" aria-label="Screen width" type="number" min="240" max="3840" step="1" value="390" required></label>
+      <label>H <input id="screenHeight" aria-label="Screen height" type="number" min="240" max="3840" step="1" value="844" required></label>
+      <button type="submit">Apply</button>
+      <button type="button" id="saveScreen">Save custom</button>
+      <button type="button" id="rotateScreen" aria-label="Rotate screen">↔ Rotate</button>
+      <output id="screenScale" aria-live="polite"></output>
+      <button type="button" id="exitResponsive">Exit</button>
+    </form>
     <div class="load-line" id="loadLine"></div>
   </header>
   <script src="browser-shell.js"></script>

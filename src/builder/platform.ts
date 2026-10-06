@@ -1248,7 +1248,7 @@ export class BuilderPlatform {
     child.stdout.on('data', (chunk) => {
       const text = chunk.toString();
       log.write(text);
-      const localUrl = text.replace(/\u001b\[[0-9;]*m/g, '').match(/local:\s+(https?:\/\/[^\s]+)/i)?.[1];
+      const localUrl = this.cleanExecutorLog(text).match(/local:\s+(https?:\/\/[^\s]+)/i)?.[1];
       if (localUrl) {
         const resolvedUrl = localUrl.replace('localhost', '127.0.0.1');
         build.previewUrl = resolvedUrl;

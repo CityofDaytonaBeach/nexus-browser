@@ -25,9 +25,11 @@ interface BrowserTab {
 }
 
 interface BrowserCommand {
-  type: 'navigate' | 'new-tab' | 'activate-tab' | 'close-tab' | 'back' | 'forward' | 'reload' | 'stop' | 'home' | 'toggle-agent' | 'open-devtools' | 'window-minimize' | 'window-maximize' | 'window-close';
+  type: 'navigate' | 'new-tab' | 'activate-tab' | 'close-tab' | 'back' | 'forward' | 'reload' | 'stop' | 'home' | 'toggle-agent' | 'open-devtools' | 'window-minimize' | 'window-maximize' | 'window-close' | 'responsive-toggle' | 'responsive-size';
   tabId?: string;
   value?: string;
+  width?: number;
+  height?: number;
 }
 
 let mainWindow: BrowserWindow | null = null;
@@ -35,6 +37,7 @@ let backendProcess: ChildProcess | null = null;
 let agentView: BrowserView | null = null;
 let activeTabId = '';
 let agentVisible = true;
+let responsive = { enabled: false, width: 390, height: 844, scale: 1 };
 let contextTimer: NodeJS.Timeout | undefined;
 
 const tabs = new Map<string, BrowserTab>();
@@ -222,6 +225,7 @@ function publishState(): void {
     tabs: Array.from(tabs.values()).map(tabState),
     activeTabId,
     agentVisible,
+    responsive,
     maximized: mainWindow.isMaximized(),
   });
 }
@@ -231,16 +235,26 @@ function layoutViews(): void {
   const [width, height] = mainWindow.getContentSize();
   const panelWidth = agentVisible ? Math.min(AGENT_PANEL_WIDTH, Math.max(360, width - 360)) : 0;
   const pageWidth = Math.max(0, width - panelWidth);
-  const pageHeight = Math.max(0, height - CHROME_HEIGHT);
+  const chromeHeight = CHROME_HEIGHT + (responsive.enabled ? 52 : 0);
+  const pageHeight = Math.max(0, height - chromeHeight);
   const tab = activeTab();
 
   if (tab && !tab.view.webContents.isDestroyed()) {
-    tab.view.setBounds({ x: 0, y: CHROME_HEIGHT, width: pageWidth, height: pageHeight });
-    tab.view.setAutoResize({ width: true, height: true });
+    tab.view.setAutoResize({ width: false, height: false });
+    if (responsive.enabled) {
+      responsive.scale = Math.min(1, Math.max(1, pageWidth - 32) / responsive.width, Math.max(1, pageHeight - 24) / responsive.height);
+      const fittedWidth = Math.max(1, Math.floor(responsive.width * responsive.scale));
+      const fittedHeight = Math.max(1, Math.floor(responsive.height * responsive.scale));
+      tab.view.setBounds({ x: Math.max(0, Math.floor((pageWidth - fittedWidth) / 2)), y: chromeHeight + 12, width: fittedWidth, height: fittedHeight });
+      tab.view.webContents.enableDeviceEmulation({ screenPosition: 'desktop', screenSize: { width: responsive.width, height: responsive.height }, viewPosition: { x: 0, y: 0 }, deviceScaleFactor: 1, viewSize: { width: responsive.width, height: responsive.height }, scale: responsive.scale });
+    } else {
+      tab.view.webContents.disableDeviceEmulation();
+      tab.view.setBounds({ x: 0, y: chromeHeight, width: pageWidth, height: pageHeight });
+    }
   }
   if (agentView && agentVisible && !agentView.webContents.isDestroyed()) {
-    agentView.setBounds({ x: pageWidth, y: CHROME_HEIGHT, width: panelWidth, height: pageHeight });
-    agentView.setAutoResize({ width: true, height: true });
+    agentView.setBounds({ x: pageWidth, y: chromeHeight, width: panelWidth, height: pageHeight });
+    agentView.setAutoResize({ width: false, height: false });
   }
 }
 
@@ -673,6 +687,19 @@ function createAgentView(): void {
 async function executeCommand(command: BrowserCommand): Promise<void> {
   const tab = command.tabId ? tabs.get(command.tabId) : activeTab();
   switch (command.type) {
+    case 'responsive-toggle':
+      responsive.enabled = !responsive.enabled;
+      layoutViews();
+      scheduleActiveTabContext();
+      break;
+    case 'responsive-size': {
+      const width = Number(command.width), height = Number(command.height);
+      if (!Number.isInteger(width) || !Number.isInteger(height) || width < 240 || width > 3840 || height < 240 || height > 3840) throw new Error('Screen dimensions must be whole numbers between 240 and 3840');
+      responsive = { ...responsive, enabled: true, width, height };
+      layoutViews();
+      scheduleActiveTabContext();
+      break;
+    }
     case 'navigate': navigateActive(command.value || ''); break;
     case 'new-tab': createTab(command.value); break;
     case 'activate-tab': if (command.tabId) activateTab(command.tabId); break;
@@ -712,7 +739,7 @@ async function createWindow(): Promise<void> {
 
   configureSession(mainWindow.webContents.session);
   wireKeyboardShortcuts(mainWindow.webContents);
-  mainWindow.on('resize', layoutViews);
+  mainWindow.on('resize', () => { layoutViews(); publishState(); });
   mainWindow.on('maximize', publishState);
   mainWindow.on('unmaximize', publishState);
   mainWindow.on('closed', () => {
@@ -731,6 +758,7 @@ ipcMain.handle('nexus-browser:get-state', () => ({
   tabs: Array.from(tabs.values()).map(tabState),
   activeTabId,
   agentVisible,
+  responsive,
   maximized: mainWindow?.isMaximized() || false,
 }));
 ipcMain.handle('nexus-browser:command', (_event, command: BrowserCommand) => executeCommand(command));
