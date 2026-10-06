@@ -53,6 +53,7 @@ Optional mobileSteps can exercise an equivalent outcome through mobile-specific 
 Cover the core request, not incidental menu clicks; updates must extend these checks while preserving earlier outcomes.
 Use local test data. Do not charge money, send messages, or touch production records during verification.
 Nexus independently compiles and exercises these workflows on desktop and mobile, captures DOM/screenshots/console/network/overflow evidence, and returns failures to you for repair.
+Nexus owns the preview server lifecycle. Do not run npm run dev, npm start, pnpm dev, yarn dev, or another long-running server in an executor tool. Validate the dev script configuration, finish implementation, and exit so Nexus can start the preview and browser QA. This applies to every implementation and repair specialist.
 Do not weaken or remove assertions to hide a failure. Screenshot paths in repair evidence are real files: inspect them when making visual fixes.
 `;
 

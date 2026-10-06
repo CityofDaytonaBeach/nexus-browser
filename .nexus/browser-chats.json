@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "savedAt": "2026-09-22T19:03:46.511Z",
+  "savedAt": "2026-10-06T20:29:58.064Z",
   "builderChats": {
     "chat-1790020147009": [
       {
@@ -293,6 +293,255 @@
         "buildId": "43aaa89c",
         "updateId": "a4e141bc"
       }
+    ],
+    "electron-native": [
+      {
+        "role": "user",
+        "content": "give me apis",
+        "timestamp": 1791316228553
+      },
+      {
+        "role": "assistant",
+        "content": "Nexus received: give me apis\n\nMode: build | UI: faithful-clone\nBrowser evidence: ready | Backend workspace: not started yet\n\nI will route this to OpenCode, then bring up the preview and browser QA.\n\nCloud AI is not configured, so Nexus is using built-in planning plus OpenCode as the code executor. Builds will still create an OpenCode prompt/workspace and run `opencode run` when available.\n\nAutonomous runtime: Applied runtime skills: Stack Expert Routing, Autonomous Vibe Coding Browser Loop, Intent To Product Sprint.\n\nSmart route: Memory And Skills | knowledge: 5 skills, 2 relevant memories.",
+        "timestamp": 1791316228588
+      },
+      {
+        "role": "user",
+        "content": "build bike week landing page",
+        "timestamp": 1791317841564
+      },
+      {
+        "role": "assistant",
+        "content": "Building your product. Nexus will independently check its build and exercise its desktop/mobile workflows before reporting success.",
+        "timestamp": 1791317841597
+      },
+      {
+        "role": "assistant",
+        "content": "Nexus build started.\n\nBuild ID: 5f4d2e38\nStack: React + Vite (TypeScript)\nWorkspace: C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\nThe selected agents will implement, verify, preview, and run browser QA.",
+        "timestamp": 1791317841676,
+        "event": "build-progress",
+        "buildId": "5f4d2e38"
+      },
+      {
+        "role": "user",
+        "content": "build bikeweek landing page",
+        "timestamp": 1791318597936
+      },
+      {
+        "role": "assistant",
+        "content": "Applying your change using the current rendered app, then checking the updated product in the browser.",
+        "timestamp": 1791318597961
+      },
+      {
+        "role": "assistant",
+        "content": "Nexus app update started.\n\nBuild ID: 5f4d2e38\nUpdate ID: a77202b1\nWorkspace: C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\nThe selected agents will apply the change, run checks, and refresh the browser preview.",
+        "timestamp": 1791318598064,
+        "event": "build-progress",
+        "buildId": "5f4d2e38",
+        "updateId": "a77202b1"
+      }
+    ],
+    "nexus-action-validation": [
+      {
+        "role": "user",
+        "content": "Search the web for candy shop websites",
+        "timestamp": 1791317377174
+      },
+      {
+        "role": "assistant",
+        "content": "Browser work stopped: ERR_NETWORK_ACCESS_DENIED (-138) loading 'https://www.google.com/search?q=candy%20shop%20websites'",
+        "timestamp": 1791317383478
+      },
+      {
+        "role": "user",
+        "content": "Search the web for candy shop websites",
+        "timestamp": 1791317660036
+      },
+      {
+        "role": "assistant",
+        "content": "Searched the web for **candy shop websites**.\n\n- CandyStore.com - The Largest Online Candy Store: https://www.candystore.com/\n\n- Candy Warehouse | Bulk Candy Online - Verified Reviews: https://www.candywarehouse.com/\n\n- Poppin Candy | Pick and Mix Sweets | Custom Candy Platter: https://poppin-candy.com/\n\n- All Candy | Candy Warehouse - Candy Warehouse: https://www.candywarehouse.com/collections/all-candy\n\n- Candy Nation | Candy Store | Candy: https://www.candynation.com/",
+        "timestamp": 1791317663863
+      },
+      {
+        "role": "user",
+        "content": "Open https://example.com",
+        "timestamp": 1791317663874
+      },
+      {
+        "role": "assistant",
+        "content": "Opened https://example.com.",
+        "timestamp": 1791317664467
+      },
+      {
+        "role": "user",
+        "content": "Read this page",
+        "timestamp": 1791317664476
+      },
+      {
+        "role": "assistant",
+        "content": "Read Example Domain: https://example.com/\n\nThis domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.\n\nهذا النطاق مُخصص للاستخدام في أمثلة التوثيق دون الحاجة إلى إذن. هذه ليست خدمة، يُرجى تجنب الاعتماد عليها لأغراض الاختبار والمراقبة.\n\n该域名仅用于文档示例，无需获得许可。这并非一项服务，请勿将其用于测试和监控目的。\n\nL’usage de ce domaine est réservé à des exemples de documentation, sans autorisation préalable. Il ne s’agit pas d’un service ; son utilisation à des fins de test ou de surveillance est à éviter.\n\nДанный домен предназначен для использования в примерах документации без необходимости получения предварительного разрешения. Это не сервис; не рекомендуется его использование для тестирования и мониторинга.\n\nEste dominio está destinado al uso en ejemplos de documentación sin necesidad de permiso. Esto no es un servicio; evitar utilizarlo para realizar pruebas o monitoreos.\n\nLearn more",
+        "timestamp": 1791317664492
+      },
+      {
+        "role": "user",
+        "content": "give me apis",
+        "timestamp": 1791317664500
+      },
+      {
+        "role": "assistant",
+        "content": "API observations for https://example.com/:\n\nNo fetch/XHR endpoints were observed on this page. Interact with the page to reveal its data calls.\n\nForms: []",
+        "timestamp": 1791317664519
+      },
+      {
+        "role": "user",
+        "content": "Search the web for candy shop websites",
+        "timestamp": 1791318150316
+      },
+      {
+        "role": "assistant",
+        "content": "Browser work stopped: ERR_NETWORK_ACCESS_DENIED (-138) loading 'https://www.google.com/search?q=candy%20shop%20websites'",
+        "timestamp": 1791318156428
+      },
+      {
+        "role": "user",
+        "content": "Search the web for candy shop websites",
+        "timestamp": 1791318188319
+      },
+      {
+        "role": "assistant",
+        "content": "Browser work stopped: ERR_NETWORK_ACCESS_DENIED (-138) loading 'https://www.google.com/search?q=candy%20shop%20websites'",
+        "timestamp": 1791318188346
+      },
+      {
+        "role": "user",
+        "content": "Search the web for candy shop websites",
+        "timestamp": 1791318229206
+      },
+      {
+        "role": "assistant",
+        "content": "Searched the web for **candy shop websites**.\n\n- CandyStore.com - The Largest Online Candy Store: https://www.candystore.com/\n\n- Poppin Candy | Pick and Mix Sweets | Custom Candy Platter: https://poppin-candy.com/\n\n- Candy Warehouse | Bulk Candy Online - Verified Reviews: https://www.candywarehouse.com/\n\n- Candy Nation | Candy Store | Candy: https://www.candynation.com/\n\n- All Candy | Candy Warehouse - Candy Warehouse: https://www.candywarehouse.com/collections/all-candy",
+        "timestamp": 1791318232934
+      },
+      {
+        "role": "user",
+        "content": "Open https://example.com",
+        "timestamp": 1791318232944
+      },
+      {
+        "role": "assistant",
+        "content": "Opened https://example.com.",
+        "timestamp": 1791318233290
+      },
+      {
+        "role": "user",
+        "content": "Read this page",
+        "timestamp": 1791318233296
+      },
+      {
+        "role": "assistant",
+        "content": "Read Example Domain: https://example.com/\n\nThis domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.\n\nهذا النطاق مُخصص للاستخدام في أمثلة التوثيق دون الحاجة إلى إذن. هذه ليست خدمة، يُرجى تجنب الاعتماد عليها لأغراض الاختبار والمراقبة.\n\n该域名仅用于文档示例，无需获得许可。这并非一项服务，请勿将其用于测试和监控目的。\n\nL’usage de ce domaine est réservé à des exemples de documentation, sans autorisation préalable. Il ne s’agit pas d’un service ; son utilisation à des fins de test ou de surveillance est à éviter.\n\nДанный домен предназначен для использования в примерах документации без необходимости получения предварительного разрешения. Это не сервис; не рекомендуется его использование для тестирования и мониторинга.\n\nEste dominio está destinado al uso en ejemplos de documentación sin necesidad de permiso. Esto no es un servicio; evitar utilizarlo para realizar pruebas o monitoreos.\n\nLearn more",
+        "timestamp": 1791318233305
+      },
+      {
+        "role": "user",
+        "content": "give me apis",
+        "timestamp": 1791318233311
+      },
+      {
+        "role": "assistant",
+        "content": "API observations for https://example.com/:\n\nNo fetch/XHR endpoints were observed on this page. Interact with the page to reveal its data calls.\n\nForms: []\n\nNexus native Chromium tab evidence:\nRendered page: Example Domain - https://example.com/\nViewport: {\"width\":1080,\"height\":848,\"devicePixelRatio\":2}\nVisible controls: [{\"tag\":\"a\",\"text\":\"Learn more\"}]\nVisible text: This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes. هذا النطاق مُخصص للاستخدام في أمثلة التوثيق دون الحاجة إلى إذن. هذه ليست خدمة، يُرجى تجنب الاعتماد عليها لأغراض الاختبار والمراقبة. 该域名仅用于文档示例，无需获得许可。这并非一项服务，请勿将其用于测试和监控目的。 L’usage de ce domaine est réservé à des exemples de documentation, sans autorisation préalable. Il ne s’agit pas d’un service ; son utilisation à des fins de test ou de surveillance est à éviter. Данный домен предназначен для использования в примерах документации без необходимости получения предварительного разрешения. Это не сервис; не рекомендуется его использование для тестирования и мониторинга. Este dominio está destinado al uso en ejemplos de documentación sin necesidad de permiso. Esto no es un servicio; evitar utilizarlo para realizar pruebas o monitoreos. Learn more\nRecent console: []\nRecent network: [{\"url\":\"https://www.google.com/gen_204\",\"method\":\"POST\",\"status\":204,\"error\":\"net::OK\"},{\"url\":\"https://example.com/\",\"method\":\"GET\",\"status\":200,\"error\":\"net::OK\"},{\"url\":\"https://ep1.adtrafficquality.google/pagead/sodar\",\"method\":\"GET\",\"error\":\"net::ERR_ABORTED\"},{\"url\":\"https://example.com/s.js\",\"method\":\"GET\",\"status\":200,\"error\":\"net::OK\"}]",
+        "timestamp": 1791318233320
+      },
+      {
+        "role": "user",
+        "content": "Run research project and create a project brain from the current target.",
+        "timestamp": 1791318289467
+      },
+      {
+        "role": "assistant",
+        "content": "Research captured from Example Domain: https://example.com/\n\nScreenshot: C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\.nexus\\browser-references\\da224cec-b727-46a9-bbcd-03dfb60de88f\\reference.png\n\nThis domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.\n\nهذا النطاق مُخصص للاستخدام في أمثلة التوثيق دون الحاجة إلى إذن. هذه ليست خدمة، يُرجى تجنب الاعتماد عليها لأغراض الاختبار والمراقبة.\n\n该域名仅用于文档示例，无需获得许可。这并非一项服务，请勿将其用于测试和监控目的。\n\nL’usage de ce domaine est réservé à des exemples de documentation, sans autorisation préalable. Il ne s’agit pas d’un service ; son utilisation à des fins de test ou de surveillance est à éviter.\n\nДанный домен предназначен для использования в примерах документации без необходимости получения предварительного разрешения. Это не сервис; не рекомендуется его использование для тестирования и мониторинга.\n\nEste dominio está destinado al uso en ejemplos de documentación sin necesidad de permiso. Esto no es un servicio; evitar utilizarlo para realizar pruebas o monitoreos.\n\nLearn more",
+        "timestamp": 1791318289727
+      },
+      {
+        "role": "user",
+        "content": "Search the web for candy shop websites",
+        "timestamp": 1791318360599
+      },
+      {
+        "role": "assistant",
+        "content": "Searched the web for **candy shop websites**.\n\n- Shop Assorted Candy - Find Your Favorite Candy: https://duckduckgo.com/y.js?ad_domain=savannahcandy.com&ad_provider=bingv7aa&ad_type=txad&click_metadata=KnDBWyNKN4ps8ZSmYt2%2DpvXpEbl%2DWuWGWGBql3FA6x0dPPlcGYW3M07nvdtTcStgDwG0uXxn2HaZatEO%2DRjLE9QYuIvG3UwOf7LMGrdESmcrsx4xybouESVohq143dG_zo7k867oUifd6HmQlrfBTPWDwYf2c_cjRVhgIJcldWA.alA6W3JCBwb5Pt%2Dm5ubD4w&rut=416cda44cdfb01bc71244ace7195cfd51188f9df8675a0616c3589dacdd29d10&u3=https%3A%2F%2Fwww.bing.com%2Faclick%3Fld%3De8LcO2AlkBsufr0OMERerFQDVUCUyD0a5iCtXoVl6HFC0G4VTOVN4SzyiNilVTBmNeW62t86rZ2tE3BhghJkW96_N6osjxMKsN_BtHlUPqWsQiYClYO9XFlxQ_3DK0%2DnuOixduC5eQoDKdcgb1F8EIOaJz3wZYytXPeIF2cstk11fvk4fVuJYxyjC04NF5Xp4MGrAMQo8v3XJakz%2Dg19rHjdTxxlw%26u%3DaHR0cHMlM2ElMmYlMmZzYXZhbm5haGNhbmR5LmNvbSUyZmNvbGxlY3Rpb25zJTJmNTAtcGllY2UtYm94ZXMlM2Z1dG1fbWVkaXVtJTNkY3BjJTI2dXRtX3NvdXJjZSUzZGJpbmclMjZ1dG1fY2FtcGFpZ24lM2REYXR1cmVfUGVyZm9ybWFuY2VfTWF4XzhwY19Db2xsZWN0aW9uJTI2dXRtX3Rlcm0lM2RzYXZhbm5haGNhbmR5LmNvbSUyNm1zY2xraWQlM2QyNzZhNDJhYzM5MzQxNTVjYTU5ZjI4Njk2MDZmYTQzNCUyNnV0bV9jb250ZW50JTNkQXNzZXQlMjUyMEdyb3VwJTI1MjAx%26rlid%3D276a42ac3934155ca59f2869606fa434&vqd=4-318023205488085330455776359401561600448&iurl=%7B1%7DIG%3DADEC3548BF114E76A9E7C1F2B55508FE%26CID%3D22284EEF744E61430FC9590575C560CA%26ID%3DDevEx%2C5037.1\n\n- Shop candy and treats - Amazon.com Official Site: https://duckduckgo.com/y.js?ad_domain=amazon.com&ad_provider=bingv7aa&ad_type=txad&click_metadata=FmqNnXX5xJ8sQxriRM3EC8I0OyFogPIpWwbfzKUp6vB0vihq2DmVh%2Dxf6sZiAnml8QKe6JKsUfEzVZ4_9T%2DeXrjQb42nD5w%2DPiWshmbHeFWm02r6NnmOODYZdbhIJuGkZ7HzQmCiz3RmdGmA3Zstawc0BuqQE2W5bCgtS8gY4nA.7NySW4YlbTpqT2JoA0VwUQ&rut=4d15c52d1f246bd7d66597508c69450bf0442208507a8710f3810caf91e8d8a7&u3=https%3A%2F%2Fwww.bing.com%2Faclick%3Fld%3De8_znNLrrMi5yiqtLrxWce7zVUCUxYx8bd32gJJ%2DqSEhkxK5Fb_dgApls2tzIidP_4hBhKCUkg8BOYsD4eYjyHJHoPx7rR9hwOIwlAz%2Da6J1bCgQt1siEBvwvf18eKVNY5oBIXCfWy4IiHyJJ8XzLFUUtYIYa0kqTpelxPuYZ8SzHAT3z%2DDGRFD5sgCt4yZ7CCHFgRIzKe8iOf_cUlaBz9mdWDXXk%26u%3DaHR0cHMlM2ElMmYlMmZ3d3cuYW1hem9uLmNvbSUyZnMlMmYlM2ZpZSUzZFVURjglMjZrZXl3b3JkcyUzZGNhbmR5JTJiYW5kJTJidHJlYXRzJTI2aW5kZXglM2RhcHMlMjZ0YWclM2R0eHRzdGRiZ2R0LTIwJTI2cmVmJTNkcGRfc2xfNDNmOWp1ajdua19wJTI2YWRncnBpZCUzZDEyMjkyNTQzMzg2ODQ1MzIlMjZodmFkaWQlM2Q3NjgyODU2MzM1ODIxNiUyNmh2bmV0dyUzZHMlMjZodnFtdCUzZHAlMjZodmJtdCUzZGJwJTI2aHZkZXYlM2RjJTI2aHZsb2NpbnQlM2QlMjZodmxvY3BoeSUzZDcyODkxJTI2aHZ0YXJnaWQlM2Rrd2QtNzY4Mjg2NTg2NDM1MDQlM2Fsb2MtMTkwJTI2aHlkYWRjciUzZDI5OTY1XzE0NjkyNjAyJTI2bWNpZCUzZGJmNmQ2ZmQzNjQxYTMyNTRhYjVmMWE0ZmNiMDRhMGIwJTI2bGFuZ3VhZ2UlM2Rlbl9VUyUyNm1zY2xraWQlM2RkM2NiMzE3MTQ3NDIxZDJlNzY3YzViYjQxZTE5NzJlYw%26rlid%3Dd3cb317147421d2e767c5bb41e1972ec&vqd=4-83888976876690245474426557963099397046&iurl=%7B1%7DIG%3DADEC3548BF114E76A9E7C1F2B55508FE%26CID%3D22284EEF744E61430FC9590575C560CA%26ID%3DDevEx%2C5041.1\n\n- CandyStore.com - The Largest Online Candy Store: https://www.candystore.com/\n\n- Candy Warehouse | Bulk Candy Online - Verified Reviews: https://www.candywarehouse.com/\n\n- Candy Nation | Candy Store | Candy: https://www.candynation.com/",
+        "timestamp": 1791318364038
+      },
+      {
+        "role": "user",
+        "content": "Open https://example.com",
+        "timestamp": 1791318364047
+      },
+      {
+        "role": "assistant",
+        "content": "Opened https://example.com.",
+        "timestamp": 1791318364418
+      },
+      {
+        "role": "user",
+        "content": "Read this page",
+        "timestamp": 1791318364427
+      },
+      {
+        "role": "assistant",
+        "content": "Read Example Domain: https://example.com/\n\nThis domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.\n\nهذا النطاق مُخصص للاستخدام في أمثلة التوثيق دون الحاجة إلى إذن. هذه ليست خدمة، يُرجى تجنب الاعتماد عليها لأغراض الاختبار والمراقبة.\n\n该域名仅用于文档示例，无需获得许可。这并非一项服务，请勿将其用于测试和监控目的。\n\nL’usage de ce domaine est réservé à des exemples de documentation, sans autorisation préalable. Il ne s’agit pas d’un service ; son utilisation à des fins de test ou de surveillance est à éviter.\n\nДанный домен предназначен для использования в примерах документации без необходимости получения предварительного разрешения. Это не сервис; не рекомендуется его использование для тестирования и мониторинга.\n\nEste dominio está destinado al uso en ejemplos de documentación sin necesidad de permiso. Esto no es un servicio; evitar utilizarlo para realizar pruebas o monitoreos.\n\nLearn more",
+        "timestamp": 1791318364434
+      },
+      {
+        "role": "user",
+        "content": "give me apis",
+        "timestamp": 1791318364442
+      },
+      {
+        "role": "assistant",
+        "content": "API observations for https://example.com/:\n\nNo fetch/XHR endpoints were observed on this page. Interact with the page to reveal its data calls.\n\nForms: []\n\nNexus native Chromium tab evidence:\nRendered page: Example Domain - https://example.com/\nViewport: {\"width\":1080,\"height\":848,\"devicePixelRatio\":2}\nVisible controls: [{\"tag\":\"a\",\"text\":\"Learn more\"}]\nVisible text: This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes. هذا النطاق مُخصص للاستخدام في أمثلة التوثيق دون الحاجة إلى إذن. هذه ليست خدمة، يُرجى تجنب الاعتماد عليها لأغراض الاختبار والمراقبة. 该域名仅用于文档示例，无需获得许可。这并非一项服务，请勿将其用于测试和监控目的。 L’usage de ce domaine est réservé à des exemples de documentation, sans autorisation préalable. Il ne s’agit pas d’un service ; son utilisation à des fins de test ou de surveillance est à éviter. Данный домен предназначен для использования в примерах документации без необходимости получения предварительного разрешения. Это не сервис; не рекомендуется его использование для тестирования и мониторинга. Este dominio está destinado al uso en ejemplos de documentación sin necesidad de permiso. Esto no es un servicio; evitar utilizarlo para realizar pruebas o monitoreos. Learn more\nRecent console: []\nRecent network: [{\"url\":\"https://example.com/\",\"method\":\"GET\",\"status\":200,\"error\":\"net::OK\"},{\"url\":\"https://ep1.adtrafficquality.google/pagead/sodar\",\"method\":\"GET\",\"status\":204,\"error\":\"net::OK\"},{\"url\":\"https://example.com/s.js\",\"method\":\"GET\",\"status\":200,\"error\":\"net::OK\"}]",
+        "timestamp": 1791318364450
+      },
+      {
+        "role": "user",
+        "content": "Search the web for candy shop websites",
+        "timestamp": 1791318447838
+      },
+      {
+        "role": "assistant",
+        "content": "Searched the web for **candy shop websites**.\n\n- CandyStore.com - The Largest Online Candy Store: https://www.candystore.com/\n\n- Candy Warehouse | Bulk Candy Online - Verified Reviews: https://www.candywarehouse.com/\n\n- Poppin Candy | Pick and Mix Sweets | Custom Candy Platter: https://poppin-candy.com/\n\n- All Candy | Candy Warehouse - Candy Warehouse: https://www.candywarehouse.com/collections/all-candy\n\n- Candy Nation | Candy Store | Candy: https://www.candynation.com/",
+        "timestamp": 1791318451158
+      },
+      {
+        "role": "user",
+        "content": "Open https://example.com",
+        "timestamp": 1791318451168
+      },
+      {
+        "role": "assistant",
+        "content": "Opened https://example.com.",
+        "timestamp": 1791318451508
+      },
+      {
+        "role": "user",
+        "content": "Read this page",
+        "timestamp": 1791318451517
+      },
+      {
+        "role": "assistant",
+        "content": "Read Example Domain: https://example.com/\n\nThis domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.\n\nهذا النطاق مُخصص للاستخدام في أمثلة التوثيق دون الحاجة إلى إذن. هذه ليست خدمة، يُرجى تجنب الاعتماد عليها لأغراض الاختبار والمراقبة.\n\n该域名仅用于文档示例，无需获得许可。这并非一项服务，请勿将其用于测试和监控目的。\n\nL’usage de ce domaine est réservé à des exemples de documentation, sans autorisation préalable. Il ne s’agit pas d’un service ; son utilisation à des fins de test ou de surveillance est à éviter.\n\nДанный домен предназначен для использования в примерах документации без необходимости получения предварительного разрешения. Это не сервис; не рекомендуется его использование для тестирования и мониторинга.\n\nEste dominio está destinado al uso en ejemplos de documentación sin necesidad de permiso. Esto no es un servicio; evitar utilizarlo para realizar pruebas o monitoreos.\n\nLearn more",
+        "timestamp": 1791318451530
+      },
+      {
+        "role": "user",
+        "content": "give me apis",
+        "timestamp": 1791318451537
+      },
+      {
+        "role": "assistant",
+        "content": "API observations for https://example.com/:\n\nNo fetch/XHR endpoints were observed on this page. Interact with the page to reveal its data calls.\n\nForms: []\n\nNexus native Chromium tab evidence:\nRendered page: Example Domain - https://example.com/\nViewport: {\"width\":1080,\"height\":848,\"devicePixelRatio\":2}\nVisible controls: [{\"tag\":\"a\",\"text\":\"Learn more\"}]\nVisible text: This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes. هذا النطاق مُخصص للاستخدام في أمثلة التوثيق دون الحاجة إلى إذن. هذه ليست خدمة، يُرجى تجنب الاعتماد عليها لأغراض الاختبار والمراقبة. 该域名仅用于文档示例，无需获得许可。这并非一项服务，请勿将其用于测试和监控目的。 L’usage de ce domaine est réservé à des exemples de documentation, sans autorisation préalable. Il ne s’agit pas d’un service ; son utilisation à des fins de test ou de surveillance est à éviter. Данный домен предназначен для использования в примерах документации без необходимости получения предварительного разрешения. Это не сервис; не рекомендуется его использование для тестирования и мониторинга. Este dominio está destinado al uso en ejemplos de documentación sin necesidad de permiso. Esto no es un servicio; evitar utilizarlo para realizar pruebas o monitoreos. Learn more\nRecent console: []\nRecent network: [{\"url\":\"https://example.com/\",\"method\":\"GET\",\"status\":200},{\"url\":\"https://ep2.adtrafficquality.google/generate_204\",\"method\":\"GET\",\"status\":204},{\"url\":\"https://example.com/s.js\",\"method\":\"GET\",\"status\":200}]",
+        "timestamp": 1791318451554
+      }
     ]
   },
   "chatTitles": {
@@ -310,6 +559,11 @@
     "chat-d24fb477": "New Nexus Chat",
     "chat-1790088299189": "dogs",
     "chat-1790089347392": "Plan a React task dashboard with filters and responsive views. Do not...",
-    "chat-1790090783412": "build be a bike week website"
+    "chat-1790090783412": "build be a bike week website",
+    "electron-native": "give me apis",
+    "nexus-action-validation": "Search the web for candy shop websites"
+  },
+  "chatProjects": {
+    "electron-native": "5f4d2e38"
   }
 }

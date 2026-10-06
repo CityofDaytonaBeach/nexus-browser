@@ -1,0 +1,67 @@
+{
+  "buildId": "5f4d2e38",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38",
+  "updatedAt": "2026-10-06T20:29:58.056Z",
+  "entries": [
+    {
+      "type": "expert-routing",
+      "summary": "Routed to vite, typescript, node, react, npm, playwright, owasp, accessibility, r, soc2, boilerplates, create-t3-app",
+      "evidence": [
+        "Selected during React + Vite preflight",
+        "Dependency signal: vite",
+        "Selected during React + Vite preflight",
+        "Dependency signal: typescript",
+        "Selected during React + Vite preflight",
+        "File signal: package.json",
+        "Selected during React + Vite preflight",
+        "Dependency signal: react",
+        "Selected during React + Vite preflight",
+        "File signal: package.json",
+        "Selected during React + Vite preflight",
+        "Selected during React + Vite preflight",
+        "File signal: src/**/*",
+        "Selected during React + Vite preflight",
+        "File signal: src/**/*.{tsx,jsx,html}",
+        "Dependency signal: r",
+        "File signal: README.md",
+        "File signal: src/**/*",
+        "File signal: package.json",
+        "File signal: src/**",
+        "File signal: package.json",
+        "File signal: src/**"
+      ],
+      "tags": [
+        "vite",
+        "typescript",
+        "node",
+        "react",
+        "npm",
+        "playwright",
+        "owasp",
+        "accessibility",
+        "r",
+        "soc2",
+        "boilerplates",
+        "create-t3-app"
+      ],
+      "id": "f80aa2e9",
+      "createdAt": "2026-10-06T20:17:21.640Z"
+    },
+    {
+      "type": "decision",
+      "summary": "Chat update requested: build bikeweek landing page",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\landing-page-5f4d2e38\\.nexus\\chat-updates\\a77202b1"
+      ],
+      "tags": [
+        "chat-update",
+        "faithful-clone"
+      ],
+      "id": "4bfec4f4",
+      "createdAt": "2026-10-06T20:29:58.056Z"
+    }
+  ],
+  "preferences": {},
+  "workingFixes": [],
+  "failedFixes": []
+}

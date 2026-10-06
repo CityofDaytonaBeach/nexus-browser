@@ -978,7 +978,7 @@
     async function handleNativeBrowserRequest(msg) {
       const action = msg.action || {};
       try {
-        const result = await executeNativeBrowserAction(action, { announce: true });
+        const result = await executeNativeBrowserAction(action, { announce: !['evaluate', 'screenshot', 'wait'].includes(action.type) });
         sendWs('native-browser:result', { requestId: msg.requestId, result });
       } catch (error) {
         sendWs('native-browser:result', {
@@ -2441,13 +2441,14 @@
 
     function smartCommand(kind) {
       const prompts = {
-        diagnose: 'Act as the senior DevTools debugger. Use the Gatherer Agent and Backend Observer context to diagnose what is rendered, what APIs are called, what console/network errors exist, what libraries are used, and what code should change first.',
-        mobile: 'Run mobile and kiosk QA thinking. Check desktop, tablet, mobile touch, fullscreen kiosk, app-store screenshot, accessibility, responsive overflow, touch targets, and visual regression risks for this app.',
-        backend: 'Map the backend and API functionality. Identify package scripts, dependencies, server routes, data models, env keys, auth/session behavior, API request shapes, storage, logs, and what must be duplicated.',
+        diagnose: 'Diagnose this page using its observed content, APIs, console errors, and network failures.',
+        mobile: 'Test the app on desktop and mobile.',
+        backend: 'Map the observed APIs on the current page.',
         employee: 'Use the Twin-inspired developer employee model. Assign Browser Gatherer, Backend Observer, Full-Stack Architect, OpenCode Implementer, Mobile/Kiosk QA, Integration Builder, and Release Operator to this project with triggers and outputs.',
-        agentBrowser: '/agent-browser chat "inspect the current page, summarize what is interactive, and suggest the next browser action"',
+        agentBrowser: 'Inspect this page',
         setup: 'Plan smart project setup before building. Infer the project type and stack, ask only missing critical questions, then connect chat, project setup, staging, Build Doctor, Agent Browser, Backend Observer, OpenCode, QA, and deploy into one workflow.',
       };
+      if (kind === 'setup') document.getElementById('builderMode').value = 'plan';
       document.getElementById('chatInput').value = prompts[kind] || prompts.diagnose;
       toggleChat(true);
       sendChat();
@@ -2492,7 +2493,7 @@
     function startBrowserIntelligenceLoop() {
       if (browserIntelTimer) clearInterval(browserIntelTimer);
       browserIntelTimer = setInterval(() => {
-        refreshBrowserIntelligence(true);
+        if (!nativeBrowserAvailable()) refreshBrowserIntelligence(true);
         refreshBackendObserver(true);
       }, 10000);
     }

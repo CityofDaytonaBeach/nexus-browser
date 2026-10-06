@@ -1,5 +1,5 @@
-export type ProductIntent = 'ask' | 'research' | 'plan' | 'build' | 'update' | 'repair' | 'qa' | 'integration' | 'deploy' | 'undo';
-const intents: ProductIntent[] = ['ask', 'research', 'plan', 'build', 'update', 'repair', 'qa', 'integration', 'deploy', 'undo'];
+export type ProductIntent = 'ask' | 'research' | 'plan' | 'build' | 'update' | 'repair' | 'qa' | 'integration' | 'deploy' | 'undo' | 'browser';
+const intents: ProductIntent[] = ['ask', 'research', 'plan', 'build', 'update', 'repair', 'qa', 'integration', 'deploy', 'undo', 'browser'];
 export function parseProductIntent(value: unknown): ProductIntent | undefined {
   return intents.includes(value as ProductIntent) ? value as ProductIntent : undefined;
 }
@@ -9,8 +9,8 @@ export function routeProductIntent(message: string, mode: string, hasProject: bo
   if (mode === 'plan') return 'plan';
   if (semantic) return semantic === 'update' && !hasProject ? 'build' : semantic === 'build' && hasProject ? 'update' : semantic;
   const text = message.trim().toLowerCase();
-  const action = /^(?:please\s+)?(?:can|could|would|will)\s+(?:you|we|nexus)\s+(?:please\s+)?(?:build|create|make|add|change|fix|remove|update|improve|connect|test|undo|restore)\b/.test(text)
-    || /^(?:please\s+)?(?:build|create|make|add|change|fix|remove|update|improve|connect|test|undo|restore|replace|move|redesign|clone|implement)\b/.test(text)
+  const action = /^(?:please\s+)?(?:can|could|would|will)\s+(?:you|we|nexus)\s+(?:please\s+)?(?:build|create|make|add|change|fix|remove|update|improve|connect|test|undo|restore|copy|clone|recreate|replicate|generate|implement)\b/.test(text)
+    || /^(?:please\s+)?(?:build|create|make|add|change|fix|remove|update|improve|connect|test|undo|restore|replace|move|redesign|clone|copy|recreate|replicate|generate|implement)\b/.test(text)
     || /^(?:i (?:want|need)|i'd like|let'?s)\b/.test(text);
   if (!action && /^(?:what|why|how|when|where|who|which|does|do|did|is|are|has|have|can|could|would|should|will|explain|tell me)\b/.test(text)) return 'ask';
   if (/^(?:thanks|thank you|ok|okay|great|hello|hi|looks good)[.!]*$/.test(text)) return 'ask';

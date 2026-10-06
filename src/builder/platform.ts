@@ -623,6 +623,20 @@ export class BuilderPlatform {
     return `${cfg.remoteKind} server ${cfg.remoteUrl || '(CODE_EXECUTION_REMOTE_URL not set)'}`;
   }
 
+  private localExecutorCommand(args: string[]): { command: string; args: string[] } {
+    const cli = config.get().codeExecution.localCli;
+    if (process.platform !== 'win32') return { command: cli, args };
+    if (/\.exe$/i.test(cli)) return { command: cli, args };
+    if (this.isOpenCodeLocalCli()) {
+      const locations = path.isAbsolute(cli) ? [path.dirname(cli)] : (process.env.PATH || '').split(path.delimiter);
+      for (const location of locations) {
+        const binary = path.join(location, 'node_modules', 'opencode-ai', 'bin', 'opencode.exe');
+        if (fs.existsSync(binary)) return { command: binary, args };
+      }
+    }
+    return { command: 'cmd.exe', args: ['/c', cli, ...args] };
+  }
+
   private launchCodeExecution(workspace: string, prompt: string, mode: string, logPath: string, onExit?: (code: number | null) => void, onError?: (error: Error) => void, promptFile?: string): ChildProcess | undefined {
     const cfg = config.get().codeExecution;
     fs.writeFileSync(logPath, `Nexus code execution backend: ${cfg.mode} (${cfg.remoteKind})\nWorkspace: ${workspace}\nMode: ${mode}\nPrompt file: ${promptFile || 'inline'}\n\n`, { flag: 'a' });
@@ -635,9 +649,7 @@ export class BuilderPlatform {
     }
 
     const localArgs = this.localCodeExecutionArgs(prompt, mode, promptFile);
-    const commandParts = process.platform === 'win32'
-      ? { command: 'cmd.exe', args: ['/c', cfg.localCli, ...localArgs] }
-      : { command: cfg.localCli, args: localArgs };
+    const commandParts = this.localExecutorCommand(localArgs);
     const runtime = this.prepareCodeExecutionEnvironment(workspace);
     const child = spawn(commandParts.command, commandParts.args, {
       cwd: workspace,
@@ -647,6 +659,12 @@ export class BuilderPlatform {
       windowsHide: true,
     });
     const log = fs.createWriteStream(logPath, { flags: 'a' });
+    let reported = false;
+    const reportExit = (code: number | null) => {
+      if (reported) return;
+      reported = true;
+      onExit?.(code);
+    };
     const safeLogWrite = (message: string) => {
       if (!log.destroyed && log.writable) log.write(message);
     };
@@ -659,8 +677,14 @@ export class BuilderPlatform {
       stopIdleTimer();
       idleTimer = setTimeout(() => {
         safeLogWrite(`\nNexus stopped the executor after ${Math.round(idleTimeoutMs / 1000)} seconds without output. Verified files and logs are preserved.\n`);
-        if (process.platform === 'win32' && child.pid) spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
-        else child.kill('SIGTERM');
+        if (process.platform === 'win32' && child.pid) {
+          const killer = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
+          killer.once('error', () => child.kill());
+          killer.once('close', (code) => { if (code !== 0) child.kill(); });
+        } else child.kill('SIGTERM');
+        // Descendants may hold stdout open after termination. Do not leave the job permanently running.
+        reportExit(1);
+        child.stdout.destroy(); child.stderr.destroy();
       }, idleTimeoutMs);
     };
     log.on('error', () => undefined);
@@ -677,13 +701,13 @@ export class BuilderPlatform {
       stopIdleTimer();
       safeLogWrite(`\nCode executor exited with code ${code}\n`);
       if (!log.destroyed) log.end();
-      onExit?.(code);
+      reportExit(code);
       runtime.cleanup();
     });
     child.on('error', (error) => {
       stopIdleTimer();
       safeLogWrite(`\nCode executor failed to start: ${error.message}\n`);
-      onError?.(error);
+      if (!reported) { reported = true; onError?.(error); }
       runtime.cleanup();
     });
     return child;
@@ -698,19 +722,24 @@ export class BuilderPlatform {
       npm_config_cache: path.join(workspace, '.nexus', 'npm-cache'),
     };
     if (!this.isOpenCodeLocalCli()) return { env, cleanup: () => undefined };
+    let overrides: any = {};
+    try { overrides = JSON.parse(env.OPENCODE_CONFIG_CONTENT || '{}'); } catch {}
+    const buildAgent = overrides.agent?.build || {};
+    const permissions = typeof buildAgent.permission === 'object' ? buildAgent.permission : typeof buildAgent.permission === 'string' ? { '*': buildAgent.permission } : {};
+    env.OPENCODE_CONFIG_CONTENT = JSON.stringify({ ...overrides, agent: { ...overrides.agent, build: { ...buildAgent,
+      permission: { ...permissions, bash: { ...(typeof permissions.bash === 'object' ? permissions.bash : typeof permissions.bash === 'string' ? { '*': permissions.bash } : {}),
+        'npm run dev*': 'deny', 'npm start*': 'deny', 'pnpm dev*': 'deny', 'pnpm run dev*': 'deny', 'yarn dev*': 'deny', 'yarn run dev*': 'deny' } },
+    } } });
 
     const authSource = path.join(os.homedir(), '.local', 'share', 'opencode', 'auth.json');
-    if (!fs.existsSync(authSource)) return { env, cleanup: () => undefined };
-
     const runtimeRoot = path.join(os.tmpdir(), 'nexus-browser-opencode', uuid());
     const dataHome = path.join(runtimeRoot, 'data');
     const isolatedOpenCode = path.join(dataHome, 'opencode');
     try {
       fs.mkdirSync(isolatedOpenCode, { recursive: true });
-      const isolatedAuth = path.join(isolatedOpenCode, 'auth.json');
-      try {
-        fs.linkSync(authSource, isolatedAuth);
-      } catch {
+      if (fs.existsSync(authSource)) {
+        const isolatedAuth = path.join(isolatedOpenCode, 'auth.json');
+        // Keep token refreshes isolated too: a hard link would modify the user's login.
         fs.copyFileSync(authSource, isolatedAuth);
         fs.chmodSync(isolatedAuth, 0o600);
       }
@@ -729,6 +758,31 @@ export class BuilderPlatform {
         }
       },
     };
+  }
+
+  async reasonAboutChat(prompt: string): Promise<string> {
+    if (!this.isOpenCodeLocalCli() || config.get().codeExecution.mode !== 'local') throw new Error('No chat provider or local OpenCode reasoning configured');
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-chat-reasoning-'));
+    const runtime = this.prepareCodeExecutionEnvironment(root);
+    try {
+      const brief = path.join(root, 'request.txt');
+      fs.writeFileSync(brief, prompt);
+      let overrides: any = {};
+      try { overrides = JSON.parse(runtime.env.OPENCODE_CONFIG_CONTENT || '{}'); } catch {}
+      runtime.env.OPENCODE_CONFIG_CONTENT = JSON.stringify({ ...overrides, agent: { ...overrides.agent, 'nexus-router': { description: 'Nexus intent router; returns JSON without tools', mode: 'primary', permission: { '*': 'deny' } } } });
+      const args = [...config.get().codeExecution.localArgs, 'Return only the requested JSON from the attached brief. Do not use tools.', '--file', brief, '--format', 'json', '--agent', 'nexus-router'];
+      const commandParts = this.localExecutorCommand(args);
+      const result = await this.runCommand(root, commandParts.command, commandParts.args, 75000, runtime.env);
+      if (result.code !== 0 || result.timedOut) throw new Error('OpenCode chat reasoning failed: ' + this.cleanExecutorLog(result.stderr).slice(-400));
+      const text = result.stdout.split(/\r?\n/).flatMap((line) => {
+        try { const event = JSON.parse(line); return event.type === 'text' && event.part?.text ? [event.part.text] : []; } catch { return []; }
+      }).join('\n');
+      if (!text) throw new Error('OpenCode returned no chat reasoning');
+      return text;
+    } finally {
+      runtime.cleanup();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   }
 
   private async callRemoteCodeExecution(workspace: string, prompt: string, mode: string, logPath: string, timeoutMs = 600000): Promise<void> {
@@ -786,9 +840,7 @@ export class BuilderPlatform {
     }
 
     const localArgs = this.localCodeExecutionArgs(prompt, mode, promptFile);
-    const commandParts = process.platform === 'win32'
-      ? { command: 'cmd.exe', args: ['/c', cfg.localCli, ...localArgs] }
-      : { command: cfg.localCli, args: localArgs };
+    const commandParts = this.localExecutorCommand(localArgs);
     const runtime = this.prepareCodeExecutionEnvironment(workspace);
     try {
       return await this.runCommand(workspace, commandParts.command, commandParts.args, timeoutMs, runtime.env);
@@ -1062,7 +1114,7 @@ export class BuilderPlatform {
     fs.mkdirSync(outputDir, { recursive: true });
     const brain = this.createBuildBrain(options.brainMode || build.brain?.mode || 'hybrid', options.aiProvider || build.brain?.provider || 'openai', options.aiModel || build.brain?.model);
     build.brain = brain;
-    const prompt = this.buildChatUpdatePrompt(build, message, options.uiLook || 'modern-saas', brain, options.browserContext);
+    const prompt = this.buildChatUpdatePrompt(build, message, options.uiLook || 'modern-saas', brain, options.browserContext) + '\n\n' + browserContractInstructions;
     const logPath = path.join(outputDir, 'opencode-update.log');
     const promptFile = path.join(outputDir, 'opencode-update-prompt.md');
     fs.writeFileSync(promptFile, prompt);

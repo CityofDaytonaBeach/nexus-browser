@@ -1,0 +1,42 @@
+{
+  "product": "Daytona Bike Week landing page",
+  "workflows": [
+    {
+      "name": "Explore the rally schedule from the hero",
+      "path": "/",
+      "steps": [
+        { "action": "click", "target": { "role": "link", "name": "View rally schedule" } },
+        { "action": "expectText", "text": "Make every day a different kind of ride." },
+        { "action": "expectText", "text": "Beachside Sunrise Ride" }
+      ],
+      "mobileSteps": [
+        { "action": "click", "target": { "role": "link", "name": "Schedule" } },
+        { "action": "expectText", "text": "Main Street Thunder Roll-In" }
+      ]
+    },
+    {
+      "name": "Join the local ride alert list",
+      "path": "/",
+      "steps": [
+        { "action": "click", "target": { "role": "link", "name": "Reserve ride updates" } },
+        { "action": "fill", "target": { "role": "textbox", "name": "Rider name" }, "value": "Browser QA Rider" },
+        { "action": "select", "target": { "role": "combobox", "name": "Ride style" }, "value": "Cruiser" },
+        { "action": "click", "target": { "role": "button", "name": "Join ride alert list" } },
+        { "action": "expectText", "text": "Ride alert reserved. Check-in opens on Main Street." }
+      ]
+    },
+    {
+      "name": "Read practical rider roadbook guidance",
+      "path": "/",
+      "steps": [
+        { "action": "click", "target": { "role": "link", "name": "Roadbook" } },
+        { "action": "expectText", "text": "Built for riders before they hit town." },
+        { "action": "expectText", "text": "Beachside lots fill before late morning on concert nights." }
+      ],
+      "mobileSteps": [
+        { "action": "click", "target": { "role": "link", "name": "Roadbook" } },
+        { "action": "expectText", "text": "Use Ormond Loop for a calm first mile before Main Street traffic." }
+      ]
+    }
+  ]
+}

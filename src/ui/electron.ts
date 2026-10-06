@@ -93,7 +93,7 @@ function waitForServer(url: string, timeoutMs = 30000): Promise<void> {
 function startBackend(): void {
   if (process.env.NEXUS_EXTERNAL_SERVER === 'true') return;
   const backendEntry = app.isPackaged
-    ? path.join(process.resourcesPath, 'app.asar', 'dist', 'index.js')
+    ? process.env.NEXUS_BACKEND_ENTRY || path.join(app.getAppPath(), 'dist', 'index.js')
     : path.join(__dirname, '..', 'index.js');
 
   backendProcess = spawn(process.execPath, [backendEntry, '--api-only', `--port=${NEXUS_PORT}`], {
@@ -127,13 +127,17 @@ function configureSession(targetSession: Session): void {
     callback(['clipboard-read', 'clipboard-sanitized-write', 'media', 'geolocation', 'notifications'].includes(permission));
   });
   const record = (details: { webContentsId?: number; url: string; method: string; statusCode?: number; error?: string }) => {
-    const tab = [...tabs.values()].find((item) => item.view.webContents.id === details.webContentsId);
+    const tab = [...tabs.values()].find((item) => {
+      const contents = item.view.webContents;
+      return contents && !contents.isDestroyed() && contents.id === details.webContentsId;
+    });
     if (!tab) return;
     let safeUrl = details.url;
     try { const parsed = new URL(details.url); safeUrl = `${parsed.origin}${parsed.pathname}`; } catch {}
-    tab.networkMessages.push({ url: safeUrl, method: details.method, status: details.statusCode, error: details.error });
+    const error = details.error === 'net::OK' ? undefined : details.error;
+    tab.networkMessages.push({ url: safeUrl, method: details.method, status: details.statusCode, error });
     tab.networkMessages = tab.networkMessages.slice(-60);
-    if (tab.id === activeTabId && (details.error || (details.statusCode || 0) >= 400)) scheduleActiveTabContext();
+    if (tab.id === activeTabId && (error || (details.statusCode || 0) >= 400)) scheduleActiveTabContext();
   };
   targetSession.webRequest.onCompleted(record);
   targetSession.webRequest.onErrorOccurred(record);
@@ -630,7 +634,7 @@ async function executeActiveAction(action: BrowserAction): Promise<ActionResult>
         return { success: false, error: `Unknown native action: ${(action as BrowserAction).type}`, duration: Date.now() - started };
     }
     updateTabFromContents(tab);
-    scheduleActiveTabContext();
+    if (!['evaluate', 'screenshot', 'wait'].includes(action.type)) scheduleActiveTabContext();
     return await nativePageResult(tab, started, data);
   } catch (error: any) {
     return { success: false, error: error?.message || String(error), duration: Date.now() - started };
@@ -758,8 +762,11 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  for (const tab of tabs.values()) {
-    if (!tab.view.webContents.isDestroyed()) tab.view.webContents.close();
+  const closingTabs = [...tabs.values()];
+  tabs.clear();
+  for (const tab of closingTabs) {
+    const contents = tab.view.webContents;
+    if (contents && !contents.isDestroyed()) contents.close();
   }
   if (agentView && !agentView.webContents.isDestroyed()) agentView.webContents.close();
   for (const win of childWindows) win.destroy();

@@ -110,3 +110,18 @@ An HTTP acknowledgement alone cannot complete a build.
 
 Run `npm test -- --runInBand` and `npm run build` to verify the implementation.
 The browser tests use a local fixture and Chromium; they do not call paid models.
+
+Chat now executes plain-language searches, navigation, page/API inspection,
+research captures, and visible-link discovery directly. Search-and-copy requests
+open an observed search result, capture its DOM and screenshot, and pass that
+reference to implementation. Suggested buttons are optional follow-ups, not a
+substitute for executing the current request. Model-generated browser tasks are
+validated and limited to eight supported actions; page evidence is untrusted data.
+
+Without a separate cloud chat key, OpenCode can supply semantic routing through
+a tool-denied router. Unambiguous build requests launch immediately. Each job
+uses isolated OpenCode data, copying existing auth when available. On Windows,
+Nexus invokes the installed native executor directly when possible, and watchdog
+timeouts settle jobs even when descendant pipes remain open. Implementation and
+repair agents do not own long-running preview servers: Nexus starts previews
+after implementation exits, then independently verifies desktop/mobile outcomes.
