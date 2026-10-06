@@ -1,0 +1,2758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NexusBrowser Builder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      color-scheme: light;
+      --bg: #f6f6f4;
+      --canvas: #ffffff;
+      --panel: rgba(255,255,255,.86);
+      --panel-2: #ffffff;
+      --line: #deded8;
+      --text: #171717;
+      --muted: #73736d;
+      --blue: #111827;
+      --blue-soft: rgba(17,24,39,.07);
+      --violet: #6d5efc;
+      --green: #16a34a;
+      --amber: #b7791f;
+      --red: #dc2626;
+      --shadow: 0 18px 45px rgba(0,0,0,.08);
+      --preview-grid-a: #fafafa;
+      --preview-grid-b: #f1f1ee;
+    }
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0f0f0f;
+      --canvas: #050505;
+      --panel: rgba(18,18,18,.9);
+      --panel-2: #171717;
+      --line: #2a2a2a;
+      --text: #f5f5f0;
+      --muted: #9a9a91;
+      --blue: #f5f5f0;
+      --blue-soft: rgba(245,245,240,.08);
+      --shadow: 0 20px 70px rgba(0,0,0,.42);
+      --preview-grid-a: #111;
+      --preview-grid-b: #171717;
+    }
+    body { height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, Segoe UI, sans-serif; }
+    button, input, select, textarea { font: inherit; }
+    .shell { display: grid; grid-template-rows: 48px 1fr 24px; height: 100vh; }
+    .topbar { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(18px); }
+    body.chat-first { color-scheme: light; --bg: #f6f6f4; --canvas: #ffffff; --panel: rgba(255,255,255,.88); --panel-2: rgba(255,255,255,.94); --line: rgba(17,24,39,.12); --text: #171717; --muted: #73736d; --blue: #111827; --blue-soft: rgba(17,24,39,.07); --shadow: 0 28px 90px rgba(17,24,39,.12); }
+    body.chat-first .topbar, body.chat-first #toolsPanel, body.chat-first .statusbar { display: none; }
+    body.chat-first .shell { grid-template-rows: 1fr; }
+    body.chat-first .workspace { grid-template-columns: 1fr; }
+    body.chat-first .mode-tabs, body.chat-first .build-stream { display: none; }
+    body.chat-first .hud { display: none; }
+    body.chat-first .center { grid-template-rows: 1fr; }
+    body.chat-first #chatPanel:not(.open) { display: flex; }
+    body.chat-first #chatPanel.open, body.chat-first #chatPanel { inset: 50% auto auto 50%; width: min(760px, calc(100vw - 28px)); height: min(760px, calc(100vh - 28px)); border-radius: 28px; transform: translate(-50%, -50%); opacity: 1; pointer-events: auto; box-shadow: var(--shadow), 0 0 80px rgba(99,102,241,.09); }
+    body.chat-first .chat-briefing, body.chat-first .chat-actions { display: none; }
+    body.chat-first .panel-title { padding: 14px 16px; color: var(--muted); border-bottom-color: rgba(17,24,39,.1); }
+    body.chat-first .panel-title button { display: none; }
+    body.landing-first { color-scheme: light; --bg: #f6f6f4; --canvas: #ffffff; --panel: rgba(255,255,255,.88); --panel-2: rgba(255,255,255,.94); --line: rgba(17,24,39,.12); --text: #171717; --muted: #73736d; --blue: #111827; --blue-soft: rgba(17,24,39,.07); --shadow: 0 28px 90px rgba(17,24,39,.12); }
+    body.landing-first .topbar, body.landing-first #toolsPanel, body.landing-first .statusbar, body.landing-first .mode-tabs, body.landing-first .build-stream, body.landing-first #chatPanel { display: none; }
+    body.landing-first .shell { grid-template-rows: 1fr; }
+    body.landing-first .center { grid-template-rows: 1fr; }
+    body.landing-first .workspace { grid-template-columns: 1fr; }
+    body.project-live { color-scheme: light; --bg: #f6f6f4; --canvas: #ffffff; --panel: rgba(255,255,255,.9); --panel-2: rgba(255,255,255,.96); --line: rgba(17,24,39,.12); --text: #171717; --muted: #73736d; --blue: #111827; --blue-soft: rgba(17,24,39,.07); --shadow: 0 24px 70px rgba(17,24,39,.12); }
+    body.project-live .topbar, body.project-live #toolsPanel, body.project-live .statusbar, body.project-live .mode-tabs, body.project-live .build-stream { display: none; }
+    body.project-live .shell { grid-template-rows: 1fr; }
+    body.project-live .center { grid-template-rows: 1fr; }
+    body.project-live .workspace { grid-template-columns: 1fr; }
+    body.project-live #chatPanel { right: 18px; bottom: 18px; top: auto; left: auto; width: min(430px, calc(100vw - 28px)); height: min(640px, calc(100vh - 36px)); border-radius: 24px; transform: none; opacity: 1; pointer-events: auto; box-shadow: var(--shadow); }
+    body.project-live .chat-briefing, body.project-live .chat-actions { display: none; }
+    body.project-live .panel-title button { display: none; }
+    .brand { width: 132px; font-size: 12px; font-weight: 760; letter-spacing: .08em; color: var(--text); }
+    .browser-tabs { display: flex; align-items: center; gap: 6px; max-width: 34vw; overflow: auto; }
+    .browser-tab { display: inline-flex; align-items: center; gap: 6px; max-width: 180px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    .browser-tab.active { background: var(--panel-2); color: var(--text); border-color: var(--text); }
+    .browser-tab span { overflow: hidden; text-overflow: ellipsis; }
+    .url { flex: 1; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel-2); border-radius: 12px; padding: 4px 6px; box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
+    .url input { flex: 1; border: 0; outline: 0; color: var(--text); background: transparent; }
+    .btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 6px 9px; cursor: pointer; transition: .14s ease; font-size: 12px; white-space: nowrap; }
+    .btn:hover { border-color: var(--text); background: var(--blue-soft); }
+    .btn.primary { border-color: var(--text); background: var(--text); color: var(--bg); font-weight: 760; }
+    .btn.green { border-color: rgba(34,197,94,.55); color: var(--green); }
+    .btn.amber { border-color: rgba(245,158,11,.55); color: var(--amber); }
+    .workspace { position: relative; display: grid; grid-template-columns: 1fr; min-height: 0; overflow: hidden; }
+    .panel { position: absolute; top: 10px; bottom: 10px; left: 10px; z-index: 20; width: 260px; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); backdrop-filter: blur(18px); box-shadow: var(--shadow); transform: translateX(calc(-100% - 18px)); opacity: 0; pointer-events: none; transition: .16s ease; }
+    .panel.open { transform: translateX(0); opacity: 1; pointer-events: auto; }
+    .panel.right { left: auto; right: 12px; top: auto; bottom: 34px; width: min(420px, calc(100vw - 24px)); height: min(640px, calc(100vh - 96px)); border: 1px solid var(--line); transform: translateY(16px) scale(.98); transform-origin: bottom right; }
+    .panel.right.open { transform: translateY(0) scale(1); }
+    body.chat-popout .shell { display: block; height: 100vh; }
+    body.chat-popout .topbar, body.chat-popout .center, body.chat-popout .statusbar, body.chat-popout #toolsPanel { display: none; }
+    body.chat-popout .workspace { height: 100vh; display: block; }
+    body.chat-popout #chatPanel { inset: 0; width: 100vw; height: 100vh; display: flex; border: 0; border-radius: 0; transform: none; opacity: 1; pointer-events: auto; }
+    .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px; border-bottom: 1px solid var(--line); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .section { padding: 8px; border-bottom: 1px solid var(--line); }
+    .label { margin-bottom: 5px; color: var(--muted); font-size: 11px; }
+    .select, .input { width: 100%; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 7px 8px; outline: none; font-size: 12px; }
+    .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; overflow: auto; }
+    .tool { min-height: 36px; display: flex; align-items: center; padding: 8px 9px; border: 1px solid var(--line); border-radius: 11px; background: transparent; cursor: pointer; }
+    .tool:hover { border-color: var(--text); background: var(--blue-soft); }
+    .tool strong { font-size: 12px; font-weight: 650; }
+    .tool span { display: none; }
+    .center { min-width: 0; min-height: 0; display: grid; grid-template-rows: 40px 1fr 104px; background: var(--canvas); }
+    .mode-tabs { display: flex; gap: 6px; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(18px); }
+    .tab { border: 1px solid transparent; color: var(--muted); border-radius: 999px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+    .tab.active { color: var(--text); border-color: var(--line); background: var(--panel-2); }
+    .preview { position: relative; min-height: 0; overflow: hidden; background: radial-gradient(circle at 20% 15%, rgba(109,94,252,.16), transparent 28%), radial-gradient(circle at 82% 28%, rgba(34,211,238,.18), transparent 30%), linear-gradient(180deg,#fbfbfa,#f6f6f4 58%,#ededeb); }
+    body.chat-first .preview::before, body.landing-first .preview::before, body.project-live .preview::before { content: '010101  NEXUS  BUILD  ROUTE  AGENT  STAGE  VERIFY  SHIP\A function build(){ return evidence.map(code).test(); }\A 101101  BROWSER  DOM  NETWORK  API  QA  MOBILE  DEPLOY\A const agents = [gatherer, browser, backend, opencode, staging];\A 011010  SNAPSHOT  REACT  VITALS  MCP  SUPABASE  STRIPE\A while(goal){ research(); implement(); preview(); heal(); }\A 110011  TYPESCRIPT  TAILWIND  NODE  GITHUB  VERCEL\A export default async function awesome(){ await nexus.run(); }'; position: absolute; inset: -40% -10% 0; z-index: 0; white-space: pre; color: rgba(17,24,39,.08); font: 700 18px/1.8 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .18em; transform: rotate(-8deg); animation: matrixRain 18s linear infinite; pointer-events: none; }
+    body.chat-first .preview::after, body.landing-first .preview::after, body.project-live .preview::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, transparent 0 48%, rgba(109,94,252,.08) 49%, transparent 51% 100%), radial-gradient(circle at 50% 52%, rgba(34,211,238,.12), transparent 24%), repeating-linear-gradient(180deg, rgba(17,24,39,.025) 0 1px, transparent 1px 5px); animation: codePulse 5s ease-in-out infinite; }
+    .preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .app-frame { width: 100%; height: 100%; border: 0; background: white; display: block; }
+    .search-page { position: relative; z-index: 2; height: 100%; overflow: auto; padding: 72px min(7vw,72px) 40px; color: var(--text); }
+    .search-page h1 { font-size: clamp(26px,4vw,52px); letter-spacing: -.06em; margin-bottom: 18px; }
+    .search-result { display: grid; gap: 7px; border: 1px solid rgba(17,24,39,.12); border-radius: 18px; background: rgba(255,255,255,.78); padding: 16px; margin-bottom: 10px; cursor: pointer; backdrop-filter: blur(20px); box-shadow: 0 16px 50px rgba(17,24,39,.08); }
+    .search-result:hover { border-color: rgba(17,24,39,.42); background: rgba(255,255,255,.95); }
+    .search-result b { font-size: 17px; }
+    .search-result small { color: var(--muted); overflow-wrap: anywhere; }
+    .search-result p { color: var(--muted); line-height: 1.45; }
+    .preview-actions { position: absolute; right: 14px; top: 14px; display: flex; gap: 6px; z-index: 4; padding: 4px; border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb,var(--panel),transparent 8%); backdrop-filter: blur(18px); }
+    .staging-studio { height: 100%; display: grid; grid-template-columns: 220px 1fr; gap: 10px; padding: 56px 12px 12px; color: var(--text); }
+    .staging-panel { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 10px; overflow: auto; box-shadow: var(--shadow); }
+    .staging-score { font-size: 34px; line-height: 1; color: var(--blue); margin: 6px 0; }
+    .device-wall { min-width: 0; overflow: auto; display: flex; align-items: flex-start; gap: 12px; padding-bottom: 8px; }
+    .device-frame { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 16px; background: #0f172a; padding: 8px; box-shadow: var(--shadow); }
+    .device-frame header { color: #e2e8f0; font-size: 11px; display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .device-shot { width: 100%; max-height: 560px; object-fit: contain; border-radius: 10px; background: white; display: block; }
+    .preview-card { height: 100%; display: grid; place-items: center; padding: 48px; }
+    .preview-card-inner { width: min(720px, 92vw); border: 1px solid var(--line); border-radius: 24px; background: var(--panel); box-shadow: var(--shadow); padding: 24px; }
+    .preview-card-inner h1 { font-size: clamp(28px, 5vw, 56px); letter-spacing: -.07em; margin-bottom: 10px; }
+    .preview-card-inner p { color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
+    .live-build-card { height: 100%; display: grid; place-items: center; padding: min(9vw,96px); position: relative; z-index: 2; }
+    .live-build-inner { width: min(880px, calc(100vw - 48px)); border: 1px solid rgba(17,24,39,.12); border-radius: 34px; background: rgba(255,255,255,.82); box-shadow: var(--shadow); backdrop-filter: blur(24px); padding: clamp(22px,4vw,44px); }
+    .live-build-inner h1 { font-size: clamp(34px,7vw,82px); letter-spacing: -.08em; line-height: .92; margin-bottom: 14px; }
+    .live-build-inner p { color: var(--muted); font-size: clamp(14px,2vw,18px); line-height: 1.55; max-width: 680px; }
+    .launch-status { margin-top: 18px; border: 1px solid rgba(17,24,39,.1); border-radius: 18px; background: rgba(255,255,255,.72); padding: 12px 14px; color: var(--text); font-size: 13px; line-height: 1.45; white-space: pre-wrap; }
+    .build-pipeline { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 24px; }
+    .build-pipeline span { border: 1px solid rgba(17,24,39,.1); border-radius: 999px; background: rgba(255,255,255,.9); padding: 9px 10px; color: var(--muted); font-size: 12px; text-align: center; }
+    .build-pipeline span:first-child { color: var(--text); border-color: rgba(17,24,39,.28); }
+    .overlay-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .build-block { position: absolute; border: 2px solid rgba(56,189,248,.95); background: rgba(56,189,248,.16); border-radius: 8px; box-shadow: 0 0 0 1px rgba(15,23,42,.28), 0 14px 40px rgba(56,189,248,.25); opacity: 0; transform: scale(.96); transition: opacity .22s ease, transform .22s ease; }
+    .build-block.live { opacity: 1; transform: scale(1); }
+    .build-block.done { border-color: rgba(34,197,94,.9); background: rgba(34,197,94,.12); box-shadow: 0 0 0 1px rgba(15,23,42,.2); }
+    .block-label { position: absolute; left: 0; top: -24px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 999px; background: rgba(3,7,18,.88); color: white; padding: 4px 8px; font-size: 11px; }
+    .empty { position: relative; z-index: 2; height: 100%; display: grid; place-items: center; color: var(--text); text-align: center; padding: 30px; }
+    .empty::before { content: '<Nexus />\A chat -> plan -> build -> stage -> ship'; position: absolute; top: 12%; left: 50%; transform: translateX(-50%); color: rgba(17,24,39,.16); white-space: pre; font: 700 clamp(18px,3vw,42px)/1.35 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: -.04em; text-shadow: 0 0 40px rgba(109,94,252,.18); animation: floatCode 6s ease-in-out infinite; }
+    .empty h1 { font-size: clamp(24px, 4vw, 48px); line-height: .95; margin-bottom: 10px; }
+    .landing-builder { width: min(720px, 94vw); border: 1px solid rgba(17,24,39,.12); border-radius: 24px; background: rgba(255,255,255,.82); box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.8); padding: 22px; backdrop-filter: blur(22px); color: var(--text); text-align: left; }
+    .landing-minimal { width: min(760px, 100%); padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
+    .landing-intro { margin: 0 auto 18px; text-align: center; }
+    .landing-intro h1 { margin: 0; color: var(--text); font-size: 34px; line-height: 1; letter-spacing: 0; }
+    .landing-intro p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+    .landing-builder p { color: var(--muted); margin-bottom: 14px; font-size: 14px; }
+    .landing-chat { display: grid; gap: 8px; padding: 10px; border: 1px solid rgba(17,24,39,.1); border-radius: 16px; background: rgba(255,255,255,.92); }
+    .landing-chat textarea { width: 100%; min-height: 88px; resize: none; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 16px; line-height: 1.45; padding: 8px; font-family: inherit; }
+    .landing-chat textarea::placeholder { color: color-mix(in srgb,var(--muted),transparent 14%); }
+    .landing-composer-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .landing-mode { min-width: 116px; max-width: 52%; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); color: var(--text); padding: 8px 30px 8px 10px; outline: none; font-size: 12px; font-weight: 650; cursor: pointer; }
+    .landing-chat button { min-width: 88px; }
+    .landing-status { min-height: 20px; margin: 10px 8px 0; color: var(--muted); font-size: 12px; }
+    .landing-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .landing-chats { border: 0; background: transparent; color: var(--muted); padding: 8px; cursor: pointer; font-size: 12px; font-weight: 700; }
+    .landing-chats:hover { color: var(--text); }
+    .quick-prompts { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
+    .quick-prompts button { border: 1px solid var(--line); border-radius: 999px; background: var(--panel-2); color: var(--text); padding: 5px 8px; cursor: pointer; font-size: 11px; }
+    .quick-prompts button:hover { border-color: var(--blue); color: var(--blue); }
+    .hud { position: absolute; top: 14px; left: 14px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 4; }
+    .pill { border: 1px solid var(--line); background: color-mix(in srgb,var(--panel),transparent 8%); color: var(--text); border-radius: 999px; padding: 6px 9px; font-size: 11px; backdrop-filter: blur(12px); }
+    .build-stream { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; border-top: 1px solid var(--line); background: var(--panel); overflow: hidden; }
+    .stream-card { border-right: 1px solid var(--line); background: transparent; padding: 8px; min-height: 90px; overflow: auto; }
+    .stream-card:last-child { border-right: 0; }
+    .stream-card h3 { font-size: 11px; margin-bottom: 5px; color: var(--muted); font-weight: 650; }
+    .stream-card pre { white-space: pre-wrap; color: var(--muted); font-size: 10px; line-height: 1.35; }
+    .chat { min-height: 0; display: flex; flex-direction: column; }
+    .chat-briefing { border-bottom: 1px solid var(--line); padding: 10px; display: grid; gap: 8px; background: linear-gradient(180deg,var(--panel-2),transparent); }
+    .agent-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .agent-chip { border: 1px solid var(--line); border-radius: 12px; padding: 7px; background: var(--panel-2); font-size: 11px; line-height: 1.25; }
+    .agent-chip b { display: block; font-size: 12px; color: var(--text); }
+    .agent-chip span { color: var(--muted); }
+    .command-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .command-grid button { border: 1px solid var(--line); border-radius: 11px; background: transparent; color: var(--text); padding: 7px 8px; cursor: pointer; font-size: 11px; text-align: left; }
+    .command-grid button:hover { border-color: var(--text); background: var(--blue-soft); }
+    .messages { flex: 1; overflow: auto; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+    .msg { max-width: 94%; border: 1px solid var(--line); border-radius: 16px; padding: 11px 12px; white-space: pre-wrap; font-size: 13px; line-height: 1.45; }
+    .msg.user { align-self: flex-end; background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 650; }
+    .msg.assistant { align-self: flex-start; background: rgba(255,255,255,.9); }
+    .msg.system { align-self: center; color: var(--muted); background: transparent; border: 0; font-size: 12px; }
+    .msg.build-progress { width: 94%; max-width: 94%; padding: 12px; border-radius: 8px; white-space: normal; display: grid; gap: 10px; }
+    .build-progress-head { display: flex; align-items: center; gap: 8px; }
+    .build-progress-head strong { min-width: 0; flex: 1; font-size: 13px; }
+    .build-progress-state { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--muted); font-size: 10px; font-weight: 750; text-transform: uppercase; }
+    .build-progress[data-state="failed"] .build-progress-state { border-color: rgba(239,68,68,.28); color: #b91c1c; background: rgba(254,226,226,.64); }
+    .build-progress[data-state="completed"] .build-progress-state { border-color: rgba(22,163,74,.25); color: #166534; background: rgba(220,252,231,.68); }
+    .build-progress-summary { color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .build-progress-track { height: 6px; overflow: hidden; border-radius: 999px; background: rgba(17,24,39,.09); }
+    .build-progress-track span { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--text); transition: width .3s ease; }
+    .build-progress[data-state="failed"] .build-progress-track span { background: #dc2626; }
+    .build-progress-steps { display: grid; gap: 6px; }
+    .build-step { display: grid; grid-template-columns: 10px minmax(0,1fr); gap: 7px; align-items: start; }
+    .build-step-dot { width: 8px; height: 8px; margin-top: 4px; border: 1px solid rgba(17,24,39,.2); border-radius: 50%; background: transparent; }
+    .build-step.completed .build-step-dot { border-color: #16a34a; background: #16a34a; }
+    .build-step.running .build-step-dot { border-color: var(--text); background: var(--text); box-shadow: 0 0 0 3px rgba(17,24,39,.1); }
+    .build-step.failed .build-step-dot { border-color: #dc2626; background: #dc2626; }
+    .build-step b { display: block; font-size: 11px; }
+    .build-step small { display: block; margin-top: 1px; color: var(--muted); font-size: 10px; line-height: 1.3; }
+    .build-agent-list { display: flex; flex-wrap: wrap; gap: 4px; }
+    .build-agent { border: 1px solid var(--line); border-radius: 999px; padding: 3px 6px; background: var(--panel-2); color: var(--muted); font-size: 9px; }
+    .build-output { max-height: 94px; overflow: auto; margin: 0; border-left: 2px solid var(--line); padding: 5px 0 5px 8px; color: var(--muted); white-space: pre-wrap; font: 10px/1.35 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .build-failure { display: grid; gap: 4px; border: 1px solid rgba(239,68,68,.22); border-radius: 7px; background: rgba(254,242,242,.72); padding: 9px; color: #7f1d1d; }
+    .build-failure b { font-size: 11px; }
+    .build-failure span { font-size: 10px; line-height: 1.35; }
+    .build-progress-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .build-progress-actions button { border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); color: var(--text); padding: 6px 8px; cursor: pointer; font-size: 10px; font-weight: 700; }
+    .chat-actions { align-self: flex-start; display: grid; gap: 6px; width: 94%; }
+    .chat-action { border: 1px solid var(--line); border-radius: 13px; padding: 8px 10px; background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
+    .chat-action:hover { border-color: var(--text); background: var(--blue-soft); }
+    .chat-action b { display: block; font-size: 12px; margin-bottom: 2px; }
+    .chat-action span { display: block; color: var(--muted); font-size: 11px; line-height: 1.35; }
+    .chat-source { color: var(--muted); font-size: 10px; padding-left: 2px; }
+    #activeChatTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .panel-title-actions { flex: 0 0 auto; margin-left: auto; display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; }
+    .panel-title-actions .btn { padding: 4px 7px; border-radius: 8px; font-size: 10px; }
+    body.chat-first .panel-title .panel-title-actions button, body.project-live .panel-title .panel-title-actions button { display: inline-flex; }
+    .chat-window-button { width: 28px; height: 28px; align-items: center; justify-content: center; padding: 0 !important; font-size: 15px !important; line-height: 1; }
+    #chatReturnButton { display: none; width: auto; padding: 0 8px !important; font-size: 10px !important; }
+    body:not(.chat-popout) #chatPanel.minimized { inset: auto 18px 18px auto; width: min(320px, calc(100vw - 28px)); height: 48px; min-height: 48px; border-radius: 14px; transform: none; opacity: 1; pointer-events: auto; overflow: hidden; }
+    #chatPanel.minimized .chat { display: none; }
+    #chatPanel.minimized .panel-title { flex: 1; min-height: 46px; padding: 8px 9px 8px 12px; border-bottom: 0; }
+    #chatPanel.minimized .chat-secondary-action, #chatPanel.minimized #wsBadge { display: none !important; }
+    body.chat-popout #chatMinimizeButton, body.chat-popout #chatPopoutButton { display: none !important; }
+    body.chat-popout #chatReturnButton { display: inline-flex; }
+    .card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .card-actions .btn { padding: 5px 8px; border-radius: 8px; }
+    .manager-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; align-items: start; }
+    .agent-console { display: grid; grid-template-columns: minmax(240px, 320px) 1fr; gap: 12px; align-items: start; }
+    .runtime-panel { border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.78); padding: 12px; display: grid; gap: 8px; }
+    .runtime-panel h2 { font-size: 15px; letter-spacing: 0; margin: 0; }
+    .runtime-stat { display: grid; grid-template-columns: 1fr auto; gap: 6px; color: var(--muted); font-size: 12px; }
+    .agent-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+    .agent-card { border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.78); padding: 12px; display: grid; gap: 7px; }
+    .agent-card b { font-size: 14px; }
+    .agent-card small, .runtime-panel small { color: var(--muted); line-height: 1.35; }
+    @media (max-width: 920px) { .agent-console { grid-template-columns: 1fr; } }
+    .composer { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; gap: 10px; padding: 14px; border-top: 1px solid rgba(17,24,39,.1); }
+    .composer-main { min-width: 0; display: grid; gap: 8px; }
+    .composer textarea { width: 100%; min-height: 72px; resize: none; border: 1px solid rgba(17,24,39,.12); border-radius: 16px; padding: 12px; color: var(--text); background: rgba(255,255,255,.95); outline: none; font-size: 14px; box-shadow: inset 0 0 28px rgba(17,24,39,.03); }
+    .composer textarea:focus { border-color: rgba(17,24,39,.48); box-shadow: 0 0 0 3px rgba(109,94,252,.1), inset 0 0 28px rgba(17,24,39,.04); }
+    .composer-mode { width: fit-content; max-width: 100%; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); color: var(--text); padding: 6px 28px 6px 9px; outline: none; font-size: 12px; font-weight: 650; cursor: pointer; }
+    .composer > .btn { min-width: 58px; height: 36px; }
+    .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .metric { border: 1px solid var(--line); border-radius: 9px; padding: 7px; background: var(--panel-2); }
+    .metric b { display: block; font-size: 16px; }
+    .metric span { color: var(--muted); font-size: 11px; }
+    .statusbar { display: flex; gap: 12px; align-items: center; padding: 4px 10px; border-top: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 10px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 6px; }
+    .dot.bad { background: var(--red); }
+    @keyframes matrixRain { from { transform: translateY(-18%) rotate(-8deg); } to { transform: translateY(18%) rotate(-8deg); } }
+    @keyframes codePulse { 0%,100% { opacity: .45; filter: hue-rotate(0deg); } 50% { opacity: .85; filter: hue-rotate(45deg); } }
+    @keyframes floatCode { 0%,100% { transform: translate(-50%, 0); opacity: .4; } 50% { transform: translate(-50%, -16px); opacity: .75; } }
+    @media (max-width: 720px) { .browser-tabs { max-width: 28vw; } .panel { width: calc(100vw - 24px); } .build-stream { display: none; } .center { grid-template-rows: 40px 1fr; } body.chat-first #chatPanel.open, body.chat-first #chatPanel { width: calc(100vw - 18px); height: calc(100vh - 18px); border-radius: 22px; } body.chat-first .preview::before { font-size: 13px; } .landing-minimal { width: 100%; } .landing-chat textarea { min-height: 112px; } .landing-mode { max-width: 60%; } }
+  </style>
+</head>
+<body class="landing-first">
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">NEXUS</div>
+      <div class="browser-tabs" id="browserTabs"></div>
+      <div class="url">
+        <input id="urlInput" placeholder="Search, open a site, or build from the browser" value="">
+        <button class="btn primary" onclick="navigate()">Go</button>
+      </div>
+      <button class="btn" onclick="toggleTools()">Tools</button>
+      <button class="btn primary" onclick="toggleChat()">Chat</button>
+      <button class="btn green" onclick="runResearchProject()">Research</button>
+      <button class="btn" id="themeToggle" onclick="toggleTheme()">Dark Mode</button>
+      <button class="btn" onclick="openIDE()">Code</button>
+    </header>
+
+    <main class="workspace">
+      <aside class="panel" id="toolsPanel">
+        <div class="panel-title"><span>Tools</span><button class="btn" onclick="toggleTools(false)">Close</button></div>
+        <div class="section">
+          <div class="label">Change UI Look</div>
+          <select id="uiLook" class="select">
+            <option value="faithful-clone">Faithful Clone</option>
+            <option value="modern-saas">Modern SaaS</option>
+            <option value="government-clean">Government Clean</option>
+            <option value="dashboard-pro">Dashboard Pro</option>
+            <option value="mobile-first">Mobile First</option>
+            <option value="luxury-editorial">Luxury Editorial</option>
+            <option value="dark-neon">Dark Neon</option>
+            <option value="minimal">Minimal</option>
+          </select>
+        </div>
+        <div class="section">
+          <div class="label">Build Brain</div>
+          <select id="brainMode" class="select">
+            <option value="hybrid" selected>Hybrid</option>
+            <option value="opencode">OpenCode Only</option>
+            <option value="ollama">Ollama Local</option>
+            <option value="cloud">Cloud AI</option>
+          </select>
+        </div>
+        <div class="section">
+          <div class="label">AI Provider</div>
+          <select id="aiProvider" class="select">
+            <option value="openai" selected>OpenAI</option>
+            <option value="anthropic">Claude</option>
+            <option value="gemini">Gemini</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="ollama">Ollama</option>
+            <option value="lmstudio">LM Studio</option>
+          </select>
+        </div>
+        <div class="section">
+          <div class="label">Model Override</div>
+          <input id="aiModel" class="input" placeholder="optional model name">
+        </div>
+        <details class="section">
+          <summary class="label">Advanced tools</summary>
+          <div class="tools">
+          <div class="tool" onclick="runResearchProject()"><strong>Research + Plan</strong><span>Crawl, extract UI/API, create project brain and OpenCode tasks.</span></div>
+          <div class="tool" onclick="runBuildOverlay()"><strong>Build Overlay</strong><span>Watch the UI reconstruction plan block by block.</span></div>
+          <div class="tool" onclick="startActiveBuildPreview()"><strong>Live App Preview</strong><span>Start the generated app runtime and render it in Nexus.</span></div>
+          <div class="tool" onclick="runStagingStudio()"><strong>Staging Studio</strong><span>Multi-device preview wall, health checks, logs, and creative uniqueness scoring.</span></div>
+          <div class="tool" onclick="runBuildDoctor(false)"><strong>Build Doctor</strong><span>Diagnose scripts, deps, API/env setup, build, preview, and quality gaps.</span></div>
+          <div class="tool" onclick="runBuildDoctor(true)"><strong>Auto Heal</strong><span>Snapshot the app and launch OpenCode repair for detected failures.</span></div>
+          <div class="tool" onclick="runAutoHealLoop()"><strong>Heal Loop</strong><span>Doctor, repair, rebuild, restart preview, and optional visual QA until healthy.</span></div>
+          <div class="tool" onclick="runExpertRouter()"><strong>Expert Router</strong><span>Auto-select official-source experts from deps, files, prompt, and logs.</span></div>
+          <div class="tool" onclick="createCreativeDirection()"><strong>Creative Mind</strong><span>Generate anti-template visual DNA so every app feels custom-built.</span></div>
+          <div class="tool" onclick="showProjectMemory()"><strong>Project Memory</strong><span>Review decisions, fixes, preferences, routing, and creative history.</span></div>
+          <div class="tool" onclick="showLanguageExpert('typescript')"><strong>TypeScript Expert</strong><span>Pull official GitHub signals and generate current compiler repair guidance.</span></div>
+          <div class="tool" onclick="showAllLanguageExperts()"><strong>Stack Experts</strong><span>Languages, DBs, package tools, DevOps, cloud, auth, payments, and AI SDK agents.</span></div>
+          <div class="tool" onclick="runUiIntelligence()"><strong>UI Inspect</strong><span>Tokens, components, layout, Tailwind, React files.</span></div>
+          <div class="tool" onclick="runApiCrawl()"><strong>API / MCP</strong><span>Endpoints, SDKs, MCP tools, response samples.</span></div>
+          <div class="tool" onclick="createVisualQaPlan()"><strong>QA Plan</strong><span>Target vs local preview checks and repair prompt.</span></div>
+          <div class="tool" onclick="runVisualQaRepair()"><strong>Auto Repair QA</strong><span>Compare the rendered reference, apply repairs, and verify the updated app.</span></div>
+          <div class="tool" onclick="runBrowserShakedown()"><strong>Browser Shakedown</strong><span>Smoke test the real browser, preview, backend, SEO, security, and artifacts.</span></div>
+          <div class="tool" onclick="runSideBySideVisualDiff()"><strong>Side-by-Side Diff</strong><span>Compare target browser screenshot to generated preview before approval.</span></div>
+          <div class="tool" onclick="showConnectorHub()"><strong>Connectors</strong><span>Login-style integrations for GitHub, deploy, database, payments, SEO, and security.</span></div>
+          <div class="tool" onclick="showGitHubProjectManager()"><strong>GitHub Projects</strong><span>Connect repo/project, create issues, and sync build tasks.</span></div>
+          <div class="tool" onclick="runSeoSecurityAudit()"><strong>SEO / Security</strong><span>Launch audit for metadata, social cards, headers, secrets, and risks.</span></div>
+          <div class="tool" onclick="showBoltParity()"><strong>Bolt Parity</strong><span>Track bolt.diy features and convert gaps into browser-first Nexus workflows.</span></div>
+          <div class="tool" onclick="showDiffReview()"><strong>Diff Review</strong><span>Review source changes beside browser QA evidence.</span></div>
+          <div class="tool" onclick="startStreamingTimeline()"><strong>Live Timeline</strong><span>Stream build status, OpenCode log tail, and QA phases into chat.</span></div>
+          <div class="tool" onclick="exportActiveProject()"><strong>Export ZIP</strong><span>Download source, Nexus brain, screenshots, QA, and artifacts.</span></div>
+          <div class="tool" onclick="showProviderSettings()"><strong>Provider Settings</strong><span>Enable models, inspect keys, and select task-specific providers.</span></div>
+          <div class="tool" onclick="showDeployPanel()"><strong>Deploy</strong><span>Vercel, Netlify, GitHub Pages plans plus browser QA after deploy.</span></div>
+          <div class="tool" onclick="showImportMobilePanel()"><strong>Git / Expo</strong><span>Clone repos, import projects, and create Expo mobile apps.</span></div>
+          <div class="tool" onclick="showSupabaseCockpit()"><strong>Supabase</strong><span>Schema plan and REST query runner from browser evidence.</span></div>
+          <div class="tool" onclick="startVoicePrompt()"><strong>Voice Prompt</strong><span>Use browser speech input for grounded chat commands.</span></div>
+          <div class="tool" onclick="attachScreenshotPrompt()"><strong>Image Prompt</strong><span>Attach the current browser screenshot as prompt context.</span></div>
+          <div class="tool" onclick="showChatManager()"><strong>Chats</strong><span>List, rename, delete, and bulk-clear build chats.</span></div>
+          <div class="tool" onclick="showBuilderPlatform()"><strong>Platform</strong><span>Providers, deploys, snapshots, locks, sessions.</span></div>
+          <div class="tool" onclick="showAgentSwarm()"><strong>Agents</strong><span>Project/app agents, skills, memory, routing, automations.</span></div>
+          <div class="tool" onclick="showCompetitiveBlueprint()"><strong>Roadmap</strong><span>Palot/Bolt-inspired priorities for Nexus.</span></div>
+          <div class="tool" onclick="createWorkspaceSnapshot()"><strong>Snapshot</strong><span>Capture workspace manifest before edits.</span></div>
+          </div>
+        </details>
+        <div class="section metric-grid">
+          <div class="metric"><b id="endpointCount">0</b><span>endpoints</span></div>
+          <div class="metric"><b id="componentCount">0</b><span>components</span></div>
+          <div class="metric"><b id="pageCount">0</b><span>pages</span></div>
+          <div class="metric"><b id="outputCount">0</b><span>outputs</span></div>
+        </div>
+      </aside>
+
+      <section class="center">
+        <nav class="mode-tabs">
+          <div class="tab active" onclick="setViewMode(this, 'preview')">Live Preview</div>
+          <div class="tab" onclick="setViewMode(this, 'ui')">UI Mode</div>
+          <div class="tab" onclick="setViewMode(this, 'code')">Code Mode</div>
+          <div class="tab" onclick="setViewMode(this, 'qa')">QA Mode</div>
+        </nav>
+        <div class="preview" id="browserView">
+          <div class="hud">
+            <span class="pill" id="sessionPill">No session</span>
+            <span class="pill" id="viewPill">Live Preview</span>
+            <span class="pill" id="lookPill">Faithful Clone</span>
+          </div>
+          <div class="empty">
+            <div class="landing-builder landing-minimal">
+              <div class="landing-intro">
+                <h1>Nexus</h1>
+                <p>What do you want to make?</p>
+              </div>
+              <form class="landing-chat" id="landingForm" action="/" method="get">
+                <textarea id="landingChatInput" name="start" rows="3" placeholder="Describe what you want Nexus to build, or enter a URL" autocomplete="off" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLandingChat();}"></textarea>
+                <div class="landing-composer-footer">
+                  <select id="landingMode" class="landing-mode" aria-label="Start mode" title="Choose how Nexus handles this prompt">
+                    <option value="build" selected>Agent</option>
+                    <option value="chat">Ask</option>
+                    <option value="plan">Plan</option>
+                    <option value="ui-builder">Visual edit</option>
+                    <option value="research">Research</option>
+                  </select>
+                  <button class="btn primary" id="landingSubmit" type="submit">Build</button>
+                </div>
+              </form>
+              <div class="landing-footer">
+                <div class="landing-status" id="landingStatus">Agent mode</div>
+                <button class="landing-chats" type="button" onclick="resumeRecentChat()">Chats</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="build-stream">
+          <div class="stream-card"><h3>Research Stream</h3><pre id="researchStream">Waiting for target site...</pre></div>
+          <div class="stream-card"><h3>OpenCode Tasks</h3><pre id="taskStream">No build plan generated yet.</pre></div>
+          <div class="stream-card"><h3>Live QA</h3><pre id="qaStream">Visual checks will appear here.</pre></div>
+        </div>
+      </section>
+
+      <aside class="panel right open" id="chatPanel">
+        <div class="panel-title">
+          <span id="activeChatTitle">Nexus Chat</span>
+          <span class="panel-title-actions">
+            <button class="btn chat-secondary-action" onclick="createNewChat()">New</button>
+            <button class="btn chat-secondary-action" onclick="showChatManager()">Chats</button>
+            <button class="btn chat-window-button" id="chatMinimizeButton" onclick="minimizeChat()" aria-label="Minimize chat" title="Minimize chat"><span id="chatMinimizeIcon" aria-hidden="true">&minus;</span></button>
+            <button class="btn chat-window-button" id="chatPopoutButton" onclick="popoutChat()" aria-label="Pop out chat" title="Pop out chat"><span aria-hidden="true">&#8599;</span></button>
+            <button class="btn" id="chatReturnButton" onclick="returnChatToWorkspace()" aria-label="Return chat to workspace" title="Return chat to workspace">Return</button>
+            <span id="wsBadge"><span class="dot bad"></span>offline</span>
+          </span>
+        </div>
+        <div class="chat">
+          <div class="chat-briefing">
+            <div class="label">Unified Nexus Brain</div>
+            <div class="agent-strip">
+              <div class="agent-chip"><b>Gatherer</b><span id="gathererStatus">waiting for page</span></div>
+              <div class="agent-chip"><b>Backend Observer</b><span id="backendStatus">waiting for build</span></div>
+              <div class="agent-chip"><b>Mobile/Kiosk QA</b><span>desktop · tablet · phone</span></div>
+              <div class="agent-chip"><b>Agent Browser</b><span>saved evidence · web actions</span></div>
+            </div>
+            <div class="command-grid">
+              <button onclick="smartCommand('diagnose')">Diagnose like DevTools</button>
+              <button onclick="smartCommand('mobile')">Test mobile/kiosk</button>
+              <button onclick="smartCommand('backend')">Map backend/API</button>
+              <button onclick="smartCommand('agentBrowser')">Run Agent Browser</button>
+              <button onclick="smartCommand('setup')">Smart Setup</button>
+            </div>
+          </div>
+          <div class="messages" id="messages">
+            <div class="msg system">Nexus Command Chat shares evidence across Gatherer, Agent Browser, Backend Observer, OpenCode builds, connectors, and QA before it answers or builds.</div>
+          </div>
+          <div class="composer">
+            <div class="composer-main">
+              <textarea id="chatInput" placeholder="Ask Nexus to build, plan, research, or fix something" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+              <select id="builderMode" class="composer-mode" aria-label="Chat mode" title="Choose how Nexus handles the next prompt">
+                <option value="build" selected>Agent</option>
+                <option value="chat">Ask</option>
+                <option value="plan">Plan</option>
+                <option value="ui-builder">Visual edit</option>
+                <option value="research">Research</option>
+              </select>
+            </div>
+            <button class="btn primary" id="chatSendButton" onclick="sendChat()">Send</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="statusbar">
+      <span><span class="dot" id="apiDot"></span><span id="statusText">Starting</span></span>
+      <span id="pageStatus">No page loaded</span>
+      <span id="outputPath"></span>
+    </footer>
+  </div>
+
+  <script>
+    const apiKey = 'nexus-dev-key';
+    let ws = null;
+    let currentSessionId = null;
+    let currentPageId = null;
+    let viewMode = 'preview';
+    let lastScreenshot = null;
+    let overlayTimer = null;
+    let pendingAutoBuild = null;
+    let pendingNavigateUrl = null;
+    let activeBuildId = null; // Restored from the selected chat, never a global project ID.
+    let previewLogTimer = null;
+    let buildProgressTimer = null;
+    let browserIntelTimer = null;
+    let pendingResearchAfterLoad = false;
+    let lastBrowserIntelligence = '';
+    let lastGathererObservationCount = 0;
+    let lastBackendObservation = '';
+    let lastBackendObservationCount = 0;
+    let activeTabId = 'home';
+    let landingStartInProgress = false;
+    let chatRequestInProgress = false;
+    let csrfToken = '';
+    let activeChatId = localStorage.getItem('nexus-active-chat-id') || '';
+    let popoutChatId = '';
+    let chatPopoutWindow = null;
+    const chatWindowId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const chatSyncChannel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('nexus-chat-sync') : null;
+    const nexusStatusLog = [];
+    const browserTabs = [{ id: 'home', title: 'Home', kind: 'home', url: '' }];
+
+    function upsertBrowserTab(tab) {
+      const existing = browserTabs.find(item => item.id === tab.id);
+      if (existing) Object.assign(existing, tab);
+      else browserTabs.push(tab);
+      activeTabId = tab.id;
+      renderBrowserTabs();
+    }
+
+    function renderBrowserTabs() {
+      const el = document.getElementById('browserTabs');
+      if (!el) return;
+      el.innerHTML = browserTabs.map(tab => `<button class="browser-tab ${tab.id === activeTabId ? 'active' : ''}" onclick="activateBrowserTab('${tab.id}')"><span>${tab.title}</span></button>`).join('');
+    }
+
+    function activateBrowserTab(id) {
+      const tab = browserTabs.find(item => item.id === id);
+      if (!tab) return;
+      activeTabId = id;
+      renderBrowserTabs();
+      if (tab.kind === 'ide') return showBrowserFrame('IDE', tab.url, 'Traditional file/folder coding workspace');
+      if (tab.kind === 'page') return showBrowserFrame('Browser', tab.url, tab.title);
+      if (tab.kind === 'preview') return openActiveBuildExternal();
+    }
+
+    function showBrowserFrame(label, url, title) {
+      document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">${label}</span><span class="pill">${title}</span></div><div class="preview-actions"><button class="btn" onclick="window.open('${url}', '_blank', 'noopener,noreferrer')">Open</button></div><iframe class="app-frame" src="${url}" title="${title}"></iframe>`;
+      setText('pageStatus', `${label} - ${url}`);
+      document.getElementById('urlInput').value = url;
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function setLaunchStatus(value) {
+      setText('launchStatus', value);
+      appendStream('qaStream', value);
+    }
+
+    function setLandingStatus(value) {
+      setText('landingStatus', value);
+    }
+
+    const modePresentation = {
+      build: { label: 'Agent', action: 'Build', placeholder: 'Describe what you want Nexus to build, or enter a URL' },
+      chat: { label: 'Ask', action: 'Ask', placeholder: 'Ask about a project, codebase, or technical decision' },
+      plan: { label: 'Plan', action: 'Plan', placeholder: 'Describe the product or change you want planned' },
+      'ui-builder': { label: 'Visual edit', action: 'Edit', placeholder: 'Describe the visual change, or enter a page URL' },
+      research: { label: 'Research', action: 'Research', placeholder: 'Enter a topic, product question, or URL to research' },
+    };
+
+    function syncBuilderMode(mode, { persist = true, announce = true } = {}) {
+      if (!modePresentation[mode]) return;
+      const landingMode = document.getElementById('landingMode');
+      const builderMode = document.getElementById('builderMode');
+      if (landingMode) landingMode.value = mode;
+      if (builderMode) builderMode.value = mode;
+      if (persist) localStorage.setItem('nexus-builder-mode', mode);
+      const input = document.getElementById('landingChatInput');
+      const submit = document.getElementById('landingSubmit');
+      if (input) input.placeholder = modePresentation[mode].placeholder;
+      if (submit && !landingStartInProgress) submit.textContent = modePresentation[mode].action;
+      setLandingStatus(`${modePresentation[mode].label} mode`);
+      if (announce) appendStream('researchStream', `Mode: ${mode}`);
+    }
+
+    function setLandingBusy(busy, mode) {
+      landingStartInProgress = busy;
+      const submit = document.getElementById('landingSubmit');
+      const input = document.getElementById('landingChatInput');
+      const select = document.getElementById('landingMode');
+      if (submit) {
+        submit.disabled = busy;
+        submit.textContent = busy ? 'Starting...' : (modePresentation[mode]?.action || 'Start');
+      }
+      if (input) input.disabled = busy;
+      if (select) select.disabled = busy;
+    }
+
+    function enterProjectLiveMode(url, prompt) {
+      document.body.classList.remove('landing-first', 'chat-first');
+      document.body.classList.add('project-live');
+      document.getElementById('chatPanel').classList.add('open');
+      document.getElementById('browserView').innerHTML = `
+        <div class="live-build-card">
+          <div class="live-build-inner">
+            <h1>Building from the live web.</h1>
+            <p>Nexus is opening ${escapeHtml(url)}, gathering browser evidence, asking only needed setup questions, then routing the project through OpenCode, preview, staging, and visual QA.</p>
+            <div class="build-pipeline"><span>Open URL</span><span>Research</span><span>OpenCode</span><span>Visual QA</span></div>
+            <div class="launch-status" id="launchStatus">Starting live project...</div>
+          </div>
+        </div>`;
+      document.getElementById('chatPanel').style.display = 'flex';
+      addMessage('system', `Project live window opened for ${url}. Chat is now controlling research, build, staging, and QA.`);
+      document.getElementById('chatInput').value = prompt;
+    }
+
+    async function continueBuildFromLoadedPage(message) {
+      try {
+        await refreshBrowserIntelligence(true);
+        await refreshBackendObserver(true);
+        addMessage('user', message);
+        const result = await api('/api/builder/chat', {
+          chatId: chatApiId(),
+          sessionId: currentSessionId,
+          pageId: currentPageId,
+          activeBuildId,
+          message,
+          browserContext: `${lastBrowserIntelligence}\n\n${lastBackendObservation}`.trim(),
+          mode: 'build',
+          uiLook: document.getElementById('uiLook').value,
+          ...buildBrainOptions(),
+        });
+        if (result.chatId) {
+          const currentTitle = document.getElementById('activeChatTitle')?.textContent || '';
+          setActiveChat(result.chatId, currentTitle && currentTitle !== 'Nexus Chat' ? currentTitle : message, result.projectId || null);
+          if (result.sessionId) currentSessionId = result.sessionId;
+          if (result.pageId) currentPageId = result.pageId;
+        }
+        addMessage('assistant', result.response);
+        if (result.build) showBuildStarted(result.build);
+        if (result.update) showBuildUpdateStarted(result.update);
+        if (result.requiresInput) setLaunchStatus('Waiting for the requested setup information.');
+      } catch (error) {
+        addMessage('system', `Build handoff failed: ${error.message}`);
+      } finally {
+        document.getElementById('chatInput').value = '';
+      }
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem('nexus-theme') || 'light';
+      document.documentElement.dataset.theme = saved;
+      document.getElementById('themeToggle').textContent = saved === 'dark' ? 'Light Mode' : 'Dark Mode';
+    }
+
+    function toggleTheme() {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem('nexus-theme', next);
+      document.getElementById('themeToggle').textContent = next === 'dark' ? 'Light Mode' : 'Dark Mode';
+    }
+
+    function toggleTools(force) {
+      const panel = document.getElementById('toolsPanel');
+      panel.classList.toggle('open', typeof force === 'boolean' ? force : !panel.classList.contains('open'));
+    }
+
+    function toggleChat(force) {
+      const panel = document.getElementById('chatPanel');
+      if (document.body.classList.contains('chat-popout')) {
+        panel.classList.add('open');
+        document.getElementById('chatInput').focus();
+        return;
+      }
+      if (force === true || panel.classList.contains('minimized')) {
+        setChatMinimized(false);
+        panel.classList.add('open');
+      } else {
+        panel.classList.toggle('open', typeof force === 'boolean' ? force : !panel.classList.contains('open'));
+      }
+      if (panel.classList.contains('open')) document.getElementById('chatInput').focus();
+    }
+
+    function setChatMinimized(minimized, persist = true) {
+      if (document.body.classList.contains('chat-popout')) minimized = false;
+      const panel = document.getElementById('chatPanel');
+      panel.classList.toggle('minimized', minimized);
+      if (minimized) panel.classList.add('open');
+      const button = document.getElementById('chatMinimizeButton');
+      const icon = document.getElementById('chatMinimizeIcon');
+      const label = minimized ? 'Restore chat' : 'Minimize chat';
+      if (button) {
+        button.setAttribute('aria-label', label);
+        button.title = label;
+      }
+      if (icon) icon.textContent = minimized ? '+' : '\u2212';
+      if (persist) localStorage.setItem('nexus-chat-minimized', minimized ? 'true' : 'false');
+    }
+
+    function minimizeChat() {
+      const panel = document.getElementById('chatPanel');
+      setChatMinimized(!panel.classList.contains('minimized'));
+      if (!panel.classList.contains('minimized')) document.getElementById('chatInput').focus();
+    }
+
+    function popoutChat() {
+      const chatId = activeChatId || '';
+      const hash = chatId ? `#chat=${encodeURIComponent(chatId)}` : '#chat';
+      const url = `${location.origin}${location.pathname}${location.search}${hash}`;
+      if (chatPopoutWindow && !chatPopoutWindow.closed) {
+        chatPopoutWindow.postMessage({ type: 'nexus-chat-open', chatId, source: chatWindowId }, location.origin);
+        chatPopoutWindow.focus();
+      } else {
+        chatPopoutWindow = window.open(url, 'nexus-chat', 'popup=yes,width=430,height=720,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes');
+      }
+      if (!chatPopoutWindow) {
+        addMessage('system', 'The chat window was blocked. Allow popups for Nexus, then try again.');
+        return;
+      }
+      if (chatId) {
+        setTimeout(() => chatPopoutWindow?.postMessage({ type: 'nexus-chat-open', chatId, source: chatWindowId }, location.origin), 250);
+      }
+      setChatMinimized(true);
+    }
+
+    function initWindowMode() {
+      const hashParams = new URLSearchParams(location.hash.slice(1));
+      const isChatPopout = location.hash === '#chat' || hashParams.has('chat');
+      if (isChatPopout) {
+        popoutChatId = hashParams.get('chat') || activeChatId;
+        document.body.classList.remove('landing-first', 'chat-first', 'project-live');
+        document.body.classList.add('chat-popout');
+        const panel = document.getElementById('chatPanel');
+        panel.classList.add('open');
+        panel.classList.remove('minimized');
+        document.title = 'Nexus Chat';
+        setChatMinimized(false, false);
+      } else if (localStorage.getItem('nexus-chat-minimized') === 'true') {
+        setChatMinimized(true, false);
+      }
+    }
+
+    function returnChatToWorkspace() {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: 'nexus-chat-return', source: chatWindowId }, location.origin);
+        window.opener.focus();
+        window.close();
+        return;
+      }
+      location.href = location.pathname + location.search;
+    }
+
+    async function refreshSyncedChat(chatId) {
+      if (!chatId || chatId !== activeChatId || chatRequestInProgress) return;
+      try {
+        const chat = await getApi(`/api/chats/${encodeURIComponent(chatId)}`);
+        if (chat.id === activeChatId) renderChatMessages(chat.messages || [], chat.title);
+      } catch {}
+    }
+
+    function broadcastChatUpdate() {
+      if (!activeChatId) return;
+      const detail = { type: 'nexus-chat-updated', chatId: activeChatId, source: chatWindowId, at: Date.now() };
+      chatSyncChannel?.postMessage(detail);
+      localStorage.setItem('nexus-chat-sync', JSON.stringify(detail));
+    }
+
+    function handleChatSync(detail) {
+      if (!detail || detail.source === chatWindowId || detail.type !== 'nexus-chat-updated') return;
+      refreshSyncedChat(detail.chatId);
+    }
+
+    if (chatSyncChannel) chatSyncChannel.onmessage = (event) => handleChatSync(event.data);
+    window.addEventListener('storage', (event) => {
+      if (event.key !== 'nexus-chat-sync' || !event.newValue) return;
+      try { handleChatSync(JSON.parse(event.newValue)); } catch {}
+    });
+    window.addEventListener('message', (event) => {
+      if (event.origin !== location.origin) return;
+      if (event.data?.type === 'nexus-chat-return') {
+        setChatMinimized(false);
+        toggleChat(true);
+      } else if (event.data?.type === 'nexus-native-tab-context') {
+        lastBrowserIntelligence = String(event.data.context || '');
+        lastGathererObservationCount += 1;
+        currentSessionId = 'electron-native';
+        currentPageId = String(event.data.tabId || currentPageId || 'active-tab');
+        setText('sessionPill', 'native');
+        const gathererStatus = document.getElementById('gathererStatus');
+        if (gathererStatus) gathererStatus.textContent = 'native tab live';
+        setText('pageStatus', `Native Chromium tab - ${event.data.title || event.data.url || 'active page'}`);
+        if (event.data.url) document.getElementById('urlInput').value = event.data.url;
+        handleBrowserPageLoaded();
+      } else if (event.data?.type === 'nexus-chat-open' && document.body.classList.contains('chat-popout')) {
+        const nextChatId = String(event.data.chatId || '');
+        if (!nextChatId) return;
+        popoutChatId = nextChatId;
+        history.replaceState(null, '', `${location.pathname}${location.search}#chat=${encodeURIComponent(nextChatId)}`);
+        openChat(nextChatId, { announce: false });
+      }
+    });
+
+    function headers() { return { 'x-api-key': apiKey, 'x-csrf-token': csrfToken, 'Content-Type': 'application/json' }; }
+
+    async function loadSecurityToken() {
+      const res = await fetch('/api/security/csrf', { headers: { 'x-api-key': apiKey } });
+      if (res.ok) csrfToken = (await res.json()).token || '';
+    }
+
+    function buildBrainOptions() {
+      return {
+        brainMode: document.getElementById('brainMode')?.value || 'hybrid',
+        aiProvider: document.getElementById('aiProvider')?.value || 'openai',
+        aiModel: document.getElementById('aiModel')?.value.trim() || undefined,
+      };
+    }
+
+    function chatApiId() {
+      return activeChatId || currentSessionId || 'default';
+    }
+
+    function setActiveChat(id, title, projectId = null) {
+      if (activeChatId !== id && buildProgressTimer) { clearTimeout(buildProgressTimer); buildProgressTimer = null; }
+      activeBuildId = projectId;
+      lastBackendObservation = '';
+      document.getElementById('outputPath').textContent = '';
+      activeChatId = id || '';
+      if (activeChatId) localStorage.setItem('nexus-active-chat-id', activeChatId);
+      else localStorage.removeItem('nexus-active-chat-id');
+      setText('activeChatTitle', title ? compactLabel(title, 34) : 'Nexus Chat');
+    }
+
+    function renderChatMessages(messages, title) {
+      const el = document.getElementById('messages');
+      el.innerHTML = '';
+      if (!Array.isArray(messages) || !messages.length) {
+        addMessage('system', 'New Nexus chat ready. Ask, build, fix, QA, deploy, or call an agent.');
+      } else {
+        const progressRefs = messages.map((message) => extractBuildReference(message));
+        const latestProgressIndex = progressRefs.reduce((latest, ref, index) => ref ? index : latest, -1);
+        messages.forEach((message, index) => {
+          const ref = progressRefs[index];
+          if (ref && index === latestProgressIndex) {
+            const card = createBuildProgressMessage(ref.buildId, Boolean(ref.updateId));
+            monitorBuildProgress(ref.buildId, ref.updateId || '', card);
+          } else {
+            addMessage(message.role || 'system', message.content || '');
+          }
+        });
+      }
+      if (title) setText('activeChatTitle', compactLabel(title, 34));
+    }
+
+    function extractBuildReference(message) {
+      if (!message || message.role !== 'assistant') return null;
+      if (message.buildId) return { buildId: String(message.buildId), updateId: message.updateId ? String(message.updateId) : '' };
+      const content = String(message.content || '');
+      if (!/^Build started\.|^App update |^Nexus (?:build|app update)/i.test(content)) return null;
+      const explicitBuild = content.match(/Build ID:\s*([a-f0-9]{8})/i);
+      const workspaceBuild = content.match(/generated-apps[\\/][^\n]*-([a-f0-9]{8})(?:\r?\n|$)/i);
+      const update = content.match(/(?:Update ID:\s*|chat-updates[\\/])([a-f0-9]{8})/i);
+      const buildId = explicitBuild?.[1] || workspaceBuild?.[1];
+      return buildId ? { buildId, updateId: update?.[1] || '' } : null;
+    }
+
+    function compactLabel(value, max = 72) {
+      const text = String(value || '').replace(/\s+/g, ' ').trim();
+      return text.length > max ? `${text.slice(0, max - 3)}...` : text;
+    }
+
+    function formatTime(value) {
+      if (!value) return 'not updated yet';
+      return new Date(value).toLocaleString();
+    }
+
+    async function api(path, body, options = {}) {
+      const controller = new AbortController();
+      const timeoutMs = Number(options.timeoutMs || 0);
+      const timeout = timeoutMs ? setTimeout(() => controller.abort(), timeoutMs) : null;
+      try {
+        const res = await fetch(path, { method: 'POST', headers: headers(), body: JSON.stringify(body || {}), signal: controller.signal });
+        const text = await res.text();
+        let payload = {};
+        try { payload = text ? JSON.parse(text) : {}; } catch { payload = { error: text }; }
+        if (!res.ok) throw new Error(payload.error || text || `Request failed (${res.status})`);
+        return payload;
+      } catch (error) {
+        if (error.name === 'AbortError') throw new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds.`);
+        throw error;
+      } finally {
+        if (timeout) clearTimeout(timeout);
+      }
+    }
+
+    async function deleteApi(path) {
+      const res = await fetch(path, { method: 'DELETE', headers: headers() });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function getApi(path) {
+      const res = await fetch(path, { headers: { 'x-api-key': apiKey } });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    function connect() {
+      ws = new WebSocket(`ws://${location.host}`);
+      ws.onopen = () => { setStatus(true, 'Connected'); ws.send(JSON.stringify({ type: 'auth', apiKey })); };
+      ws.onclose = () => { setStatus(false, 'Disconnected'); setTimeout(connect, 2000); };
+      ws.onmessage = (event) => handleWs(JSON.parse(event.data));
+    }
+
+    function handleWs(msg) {
+      if (msg.type === 'auth:success') {
+        if (nativeBrowserAvailable()) sendWs('native-browser:register');
+        else sendWs('session:list');
+        addMessage('system', 'Builder ready. Enter a URL or ask research/plan/build mode to begin.');
+      }
+      if (msg.type === 'native-browser:registered') {
+        currentSessionId = 'electron-native';
+        currentPageId = currentPageId || 'active-tab';
+        setText('sessionPill', 'native');
+        setText('pageStatus', 'Native Chromium control connected');
+      }
+      if (msg.type === 'native-browser:action') handleNativeBrowserRequest(msg);
+      if (msg.type === 'session:created') {
+        currentSessionId = msg.session.id;
+        currentPageId = msg.session.activePageId || msg.session.pages[0]?.id;
+        setText('sessionPill', currentSessionId.slice(0, 8));
+        addMessage('system', `Session ready: ${currentSessionId}`);
+        if (pendingNavigateUrl) {
+          const url = pendingNavigateUrl;
+          pendingNavigateUrl = null;
+          navigateToUrl(url);
+        }
+      }
+      if (msg.type === 'session:attached') {
+        currentSessionId = msg.session.id;
+        currentPageId = msg.session.activePageId || msg.session.pages[0]?.id;
+        setText('sessionPill', currentSessionId.slice(0, 8));
+        addMessage('system', `Attached to existing session: ${currentSessionId}`);
+        refreshScreenshot();
+      }
+      if (msg.type === 'sessions') attachOrCreateSession(msg.sessions || []);
+      if (msg.type === 'action:result' && msg.result?.page) {
+        if (currentSessionId === 'electron-native') applyNativeActionResult(msg.result, {});
+        else updatePage(msg.result.page);
+      }
+      if (msg.type === 'page:screenshot' && !document.body.classList.contains('landing-first')) showScreenshot(msg.data);
+      if (msg.type === 'page:navigated') document.getElementById('urlInput').value = msg.url;
+      if (msg.type === 'page:loaded') {
+        refreshScreenshot();
+        refreshBrowserIntelligence(true);
+        handleBrowserPageLoaded();
+      }
+      if (msg.type === 'error') addMessage('system', msg.error);
+    }
+
+    function sendWs(type, data = {}) {
+      if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type, ...data }));
+    }
+
+    function nativeBrowserAvailable() {
+      return Boolean(window.nexusNativeBrowser?.action);
+    }
+
+    function describeNativeAction(action = {}) {
+      const detail = action.url || action.selector || action.value || '';
+      return `${action.type || 'action'}${detail ? ` ${compactLabel(detail, 56)}` : ''}`;
+    }
+
+    function applyNativeActionResult(result, action = {}) {
+      if (result?.page) {
+        currentSessionId = 'electron-native';
+        currentPageId = result.page.id || currentPageId || 'active-tab';
+        document.getElementById('urlInput').value = result.page.url || '';
+        setText('pageStatus', `Native Chromium tab - ${result.page.title || result.page.url || 'active page'}`);
+      }
+      if (result?.data?.screenshot) showScreenshot(result.data.screenshot);
+      if (action.type === 'navigate' || action.type === 'back' || action.type === 'forward' || action.type === 'reload') handleBrowserPageLoaded();
+    }
+
+    async function executeNativeBrowserAction(action, options = {}) {
+      if (!nativeBrowserAvailable()) throw new Error('Native Chromium control is not available in this window.');
+      const label = describeNativeAction(action);
+      if (options.announce !== false) {
+        appendStream('researchStream', `Native browser agent: ${label}`);
+        addMessage('system', `Browser agent is executing: ${label}`);
+      }
+      const result = await window.nexusNativeBrowser.action(action);
+      applyNativeActionResult(result, action);
+      if (!result?.success) throw new Error(result?.error || 'Native browser action failed');
+      if (options.announce !== false) addMessage('system', `Browser action complete: ${label}`);
+      return result;
+    }
+
+    async function handleNativeBrowserRequest(msg) {
+      const action = msg.action || {};
+      try {
+        const result = await executeNativeBrowserAction(action, { announce: true });
+        sendWs('native-browser:result', { requestId: msg.requestId, result });
+      } catch (error) {
+        sendWs('native-browser:result', {
+          requestId: msg.requestId,
+          result: { success: false, error: error.message, duration: 0 },
+        });
+      }
+    }
+
+    function handleBrowserPageLoaded() {
+      if (pendingResearchAfterLoad) {
+        pendingResearchAfterLoad = false;
+        addMessage('system', 'Browser page loaded. Resuming research project...');
+        setTimeout(() => runResearchProject(), 1200);
+        return;
+      }
+      if (pendingAutoBuild) {
+        const message = pendingAutoBuild;
+        pendingAutoBuild = null;
+        addMessage('system', 'Target page loaded. Collecting evidence, then starting OpenCode build and staging...');
+        setTimeout(() => continueBuildFromLoadedPage(message), 900);
+      }
+    }
+
+    function newSession() { sendWs('session:create'); }
+
+    function attachOrCreateSession(sessions) {
+      if (nativeBrowserAvailable()) {
+        currentSessionId = 'electron-native';
+        currentPageId = currentPageId || 'active-tab';
+        return;
+      }
+      if (document.body.classList.contains('landing-first')) return;
+      const existing = sessions.find(session => session.pages?.some(page => page.url && !page.url.startsWith('http://localhost:3000') && page.url !== 'about:blank'));
+      if (existing) {
+        sendWs('session:attach', { sessionId: existing.id });
+      } else {
+        addMessage('system', 'No target browser session yet. One will be created when you navigate or start building from a URL.');
+      }
+    }
+
+    function navigate() {
+      const raw = document.getElementById('urlInput').value.trim();
+      if (!raw) return;
+      const looksLikeUrl = /^https?:\/\//i.test(raw) || /^[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?$/i.test(raw);
+      if (!looksLikeUrl) {
+        runBrowserSearch(raw);
+        return;
+      }
+      const url = raw.startsWith('http') ? raw : `https://${raw}`;
+      upsertBrowserTab({ id: `page-${Date.now()}`, title: new URL(url).hostname, kind: 'page', url });
+      if (nativeBrowserAvailable()) {
+        navigateToUrl(url);
+        return;
+      }
+      if (!currentPageId) {
+        pendingNavigateUrl = url;
+        appendStream('researchStream', `Creating target browser session for ${url}`);
+        newSession();
+        return;
+      }
+      navigateToUrl(url);
+    }
+
+    async function runBrowserSearch(query) {
+      try {
+        upsertBrowserTab({ id: `search-${Date.now()}`, title: query, kind: 'search', url: query });
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Search</span><span class="pill">${query}</span></div><div class="search-page"><h1>Searching ${query}</h1><p>Finding pages, docs, APIs, repos, and implementation clues.</p></div>`;
+        const payload = await getApi(`/api/browser/search?q=${encodeURIComponent(query)}`);
+        showSearchResults(payload.query, payload.results || []);
+      } catch (error) {
+        addMessage('system', `Search failed: ${error.message}`);
+      }
+    }
+
+    function showSearchResults(query, results) {
+      document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Search</span><span class="pill">${results.length} results</span></div><div class="search-page"><h1>${query}</h1>${results.map((result) => `<article class="search-result" onclick="openSearchResult('${encodeURIComponent(result.url)}','${encodeURIComponent(result.title)}')"><b>${result.title}</b><small>${result.url}</small><p>${result.snippet || ''}</p></article>`).join('') || '<p>No results found.</p>'}</div>`;
+      setText('pageStatus', `Search - ${query}`);
+      document.getElementById('researchStream').textContent = results.map((result) => `${result.title}\n${result.url}\n${result.snippet}`).join('\n\n');
+    }
+
+    function openSearchResult(encodedUrl, encodedTitle) {
+      const url = decodeURIComponent(encodedUrl);
+      const title = decodeURIComponent(encodedTitle);
+      upsertBrowserTab({ id: `page-${Date.now()}`, title, kind: 'page', url });
+      if (nativeBrowserAvailable()) {
+        navigateToUrl(url);
+        return;
+      }
+      if (!currentPageId) {
+        pendingNavigateUrl = url;
+        newSession();
+      } else {
+        navigateToUrl(url);
+      }
+      showBrowserFrame('Browser', url, title);
+    }
+
+    async function navigateToUrl(url) {
+      appendStream('researchStream', `Navigating to ${url}`);
+      if (nativeBrowserAvailable()) {
+        try {
+          return await executeNativeBrowserAction({ type: 'navigate', url, options: { timeout: 60000 } });
+        } catch (error) {
+          addMessage('system', `Native navigation failed: ${error.message}`);
+          return null;
+        }
+      }
+      sendWs('page:action', { pageId: currentPageId, action: { type: 'navigate', url, options: { waitUntil: 'domcontentloaded', timeout: 60000 } } });
+    }
+
+    async function ensureBrowserPage(url) {
+      if (nativeBrowserAvailable()) {
+        currentSessionId = 'electron-native';
+        currentPageId = currentPageId || 'active-tab';
+        setText('sessionPill', 'native');
+        if (url) {
+          pendingResearchAfterLoad = true;
+          document.getElementById('urlInput').value = url;
+          await navigateToUrl(url);
+        }
+        return;
+      }
+      if (!currentSessionId || !currentPageId) {
+        const session = await api('/api/sessions', {});
+        currentSessionId = session.id;
+        currentPageId = session.activePageId || session.pages?.[0]?.id;
+        setText('sessionPill', currentSessionId.slice(0, 8));
+        addMessage('system', 'Browser agent opened a session for the current workflow.');
+      }
+      if (!currentPageId) throw new Error('Browser session did not create an active page.');
+      if (url) {
+        pendingResearchAfterLoad = true;
+        document.getElementById('urlInput').value = url;
+        navigateToUrl(url);
+      }
+    }
+
+    async function runResearchProject() {
+      if (!currentSessionId || !currentPageId) {
+        const build = await getActiveBuild().catch(() => null);
+        if (build?.previewUrl || activeBuildId) {
+          const preview = build?.previewUrl ? build : await api(`/api/builder/builds/${activeBuildId}/preview`, {}).catch(() => null);
+          if (preview?.previewUrl) {
+            addMessage('system', 'Browser agent is opening the generated preview so research can use real page evidence.');
+            await ensureBrowserPage(preview.previewUrl);
+            return false;
+          }
+        }
+        addMessage('system', 'No active browser session yet. Open a target URL or start a preview so Nexus can research real browser evidence.');
+        return false;
+      }
+      appendStream('researchStream', 'Running full research-project compiler...');
+      const result = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/research-project`, { maxPages: 8, delayMs: 2200, sameOriginOnly: true });
+      updateMetrics(result.project);
+      document.getElementById('outputPath').textContent = result.outputDir;
+      document.getElementById('taskStream').textContent = result.project.buildPlan.map(step => `${step.id}. ${step.title}: ${step.goal}`).join('\n\n');
+      document.getElementById('qaStream').textContent = Object.entries(result.project.scorecard).map(([k, v]) => `${k}: ${v.score}/100`).join('\n');
+      addMessage('assistant', `Research project created. Output: ${result.outputDir}`);
+      return true;
+    }
+
+    async function runUiIntelligence() {
+      if (!currentSessionId || !currentPageId) return;
+      const result = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/ui-intelligence`, {});
+      document.getElementById('componentCount').textContent = result.report.components.length;
+      document.getElementById('outputPath').textContent = result.outputDir;
+      appendStream('researchStream', `UI intelligence: ${result.report.components.length} components, ${result.report.layoutMap.length} layout regions.`);
+      addMessage('assistant', `UI intelligence exported to ${result.outputDir}`);
+    }
+
+    async function runApiCrawl() {
+      if (!currentSessionId || !currentPageId) return;
+      const result = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/api-crawl`, { maxPages: 12, delayMs: 2200, sameOriginOnly: true });
+      document.getElementById('endpointCount').textContent = result.catalog.endpoints.length;
+      document.getElementById('pageCount').textContent = result.catalog.crawledPages.length;
+      document.getElementById('outputPath').textContent = result.outputDir;
+      appendStream('researchStream', `API crawl: ${result.catalog.endpoints.length} endpoints across ${result.catalog.crawledPages.length} pages.`);
+      addMessage('assistant', `API/MCP crawl exported to ${result.outputDir}`);
+    }
+
+    async function runBuildOverlay() {
+      if (!currentSessionId || !currentPageId) return addMessage('system', 'No active page to build from.');
+      appendStream('researchStream', 'Creating block-by-block build overlay...');
+      const plan = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/build-overlay`, {});
+      document.getElementById('componentCount').textContent = plan.blocks.length;
+      addMessage('assistant', `Starting visual build overlay with ${plan.blocks.length} blocks.`);
+      animateBuildOverlay(plan);
+    }
+
+    async function showCompetitiveBlueprint() {
+      try {
+        const blueprint = await getApi('/api/builder/competitive-blueprint');
+        document.getElementById('taskStream').textContent = blueprint.nextMilestones.map(m => `${m.name}\n${m.outcome}\n${m.tasks.map(t => `- ${t}`).join('\n')}`).join('\n\n');
+        document.getElementById('researchStream').textContent = blueprint.features.map(f => `${f.priority.toUpperCase()} ${f.area}\n${f.nexusAdvantage}`).join('\n\n');
+        addMessage('assistant', `${blueprint.positioning}\n\nLoaded ${blueprint.features.length} competitive feature priorities.`);
+      } catch (error) {
+        addMessage('system', `Competitive blueprint failed: ${error.message}`);
+      }
+    }
+
+    async function showBuilderPlatform() {
+      try {
+        const [providers, deploys, sessions] = await Promise.all([
+          getApi('/api/builder/providers'),
+          getApi('/api/builder/deploy-targets'),
+          getApi('/api/builder/opencode-sessions'),
+        ]);
+        document.getElementById('researchStream').textContent = providers.map(p => `${p.name}: ${p.capabilities.join(', ')}\nRecommended: ${p.recommendedFor.join(', ')}`).join('\n\n');
+        document.getElementById('taskStream').textContent = deploys.map(d => `${d.name}\nFiles: ${d.files.join(', ')}\nEnv: ${d.env.join(', ') || 'none'}`).join('\n\n');
+        document.getElementById('qaStream').textContent = `OpenCode sessions: ${sessions.length}\nFile locking and snapshots are available through builder APIs.`;
+        addMessage('assistant', `Loaded ${providers.length} providers and ${deploys.length} deploy targets.`);
+      } catch (error) {
+        addMessage('system', `Builder platform failed: ${error.message}`);
+      }
+    }
+
+    async function showConnectorHub() {
+      try {
+        const connectors = await getApi('/api/connectors');
+        document.getElementById('browserView').innerHTML = `
+          <div class="hud"><span class="pill">Connectors</span><span class="pill">${connectors.filter(c => c.connected).length}/${connectors.length} active</span></div>
+          <div class="search-page">
+            <h1>Connectors</h1>
+            <p>Connect project services like Lovable, but keep credentials server-side and route every connector through Nexus build, QA, SEO, and security workflows.</p>
+            ${connectors.map(connector => `<article class="search-result">
+              <b>${connector.name} ${connector.connected ? 'connected' : 'not connected'}</b>
+              <small>${connector.category} · ${connector.features.join(', ')}</small>
+              <p>${connector.security?.length ? connector.security.join(' · ') : 'Local Nexus capability.'}</p>
+              ${connector.id === 'github' ? `<div class="preview-actions"><button class="btn primary" onclick="loginGitHubConnector()">Login GitHub</button><button class="btn" onclick="disconnectGitHubConnector()">Disconnect</button><button class="btn" onclick="showGitHubProjectManager()">Manage Project</button></div>` : ''}
+              ${connector.id === 'seo' || connector.id === 'security' ? `<div class="preview-actions"><button class="btn" onclick="runSeoSecurityAudit()">Run Audit</button></div>` : ''}
+            </article>`).join('')}
+          </div>`;
+        document.getElementById('researchStream').textContent = connectors.map(c => `${c.name}: ${c.connected ? 'connected' : 'not connected'}\n${c.features.join(', ')}`).join('\n\n');
+        addMessage('assistant', `Loaded ${connectors.length} connectors. GitHub supports login, issues, Projects v2, and task sync.`);
+      } catch (error) {
+        addMessage('system', `Connector hub failed: ${error.message}`);
+      }
+    }
+
+    async function loginGitHubConnector() {
+      try {
+        const result = await getApi(`/api/connectors/github/login?returnTo=${encodeURIComponent(location.pathname)}`);
+        window.open(result.url, 'nexus-github-login', 'width=980,height=820,menubar=no,toolbar=no,location=yes,status=no');
+        addMessage('system', 'Opening GitHub login. Approve access, then return to Nexus.');
+      } catch (error) {
+        addMessage('system', `GitHub login failed: ${error.message}`);
+      }
+    }
+
+    async function disconnectGitHubConnector() {
+      try {
+        await deleteApi('/api/connectors/github');
+        addMessage('assistant', 'Disconnected GitHub connector for this Nexus session.');
+        showConnectorHub();
+      } catch (error) {
+        addMessage('system', `GitHub disconnect failed: ${error.message}`);
+      }
+    }
+
+    async function showGitHubProjectManager() {
+      try {
+        const [status, connection] = await Promise.all([
+          getApi('/api/github/status'),
+          getApi('/api/github/project-connection').catch(() => null),
+        ]);
+        document.getElementById('browserView').innerHTML = `
+          <div class="hud"><span class="pill">GitHub</span><span class="pill">${status.configured ? 'token ready' : 'token missing'}</span></div>
+          <div class="search-page">
+            <h1>GitHub Project Connection</h1>
+            <p>Connect Nexus to a repo and optional GitHub Projects v2 project. Use <code>GITHUB_TOKEN</code>; secrets stay server-side.</p>
+            <div class="landing-builder">
+              <div class="label">Owner</div><input id="githubOwner" class="input" value="${escapeHtml(connection?.owner || status.owner || '')}" placeholder="owner or org">
+              <div class="label">Repo</div><input id="githubRepo" class="input" value="${escapeHtml(connection?.repo || status.repo || '')}" placeholder="repository">
+              <div class="label">Project ID optional</div><input id="githubProjectId" class="input" value="${escapeHtml(connection?.projectId || status.projectId || '')}" placeholder="GitHub Projects v2 node ID">
+              <div class="label">Project URL optional</div><input id="githubProjectUrl" class="input" value="${escapeHtml(connection?.projectUrl || status.projectUrl || '')}" placeholder="https://github.com/users/.../projects/1">
+              <div class="preview-actions">
+                <button class="btn" onclick="loginGitHubConnector()">Login GitHub</button>
+                <button class="btn primary" onclick="saveGitHubConnection()">Save Connection</button>
+                <button class="btn" onclick="listGitHubIssues()">List Issues</button>
+                <button class="btn" onclick="createGitHubIssueFromChat()">Create Issue</button>
+                <button class="btn green" onclick="syncBuildTasksToGitHub()">Sync Build Tasks</button>
+                <button class="btn" onclick="runSeoSecurityAudit()">SEO/Security</button>
+              </div>
+            </div>
+          </div>`;
+        setText('pageStatus', status.configured ? 'GitHub connector ready' : 'Login with GitHub or set GITHUB_TOKEN');
+        addMessage('assistant', status.configured ? `GitHub connector ready${status.account ? ` as ${status.account}` : ''}. Save a repo/project connection to manage work from Nexus.` : 'GitHub management UI is ready. Use Login GitHub or configure GITHUB_TOKEN.');
+      } catch (error) {
+        addMessage('system', `GitHub manager failed: ${error.message}`);
+      }
+    }
+
+    async function runSeoSecurityAudit() {
+      try {
+        const query = new URLSearchParams({ sessionId: currentSessionId || 'default', pageId: currentPageId || '', buildId: activeBuildId || '' });
+        const report = await getApi(`/api/builder/seo-security-audit?${query.toString()}`);
+        document.getElementById('researchStream').textContent = `SEO score inputs\n\n${report.seo.map(item => `- ${item}`).join('\n')}`;
+        document.getElementById('qaStream').textContent = `Security score inputs\n\n${report.security.map(item => `- ${item}`).join('\n')}`;
+        document.getElementById('taskStream').textContent = report.opencodePrompt;
+        addMessage('assistant', `SEO/Security audit score: ${report.score}/100. I generated an OpenCode repair prompt in the task stream.`);
+      } catch (error) {
+        addMessage('system', `SEO/Security audit failed: ${error.message}`);
+      }
+    }
+
+    async function showBoltParity() {
+      try {
+        const matrix = await getApi('/api/builder/bolt-parity');
+        document.getElementById('browserView').innerHTML = `
+          <div class="hud"><span class="pill">Bolt Parity</span><span class="pill">${matrix.providerCount} providers</span><span class="pill">${matrix.gaps.length} gaps</span></div>
+          <div class="search-page">
+            <h1>bolt.diy parity, Nexus browser-first</h1>
+            <p>${escapeHtml(matrix.summary)}</p>
+            ${matrix.features.map(item => `<article class="search-result">
+              <b>${escapeHtml(item.area)} · ${escapeHtml(item.nexusStatus)}</b>
+              <small>bolt.diy: ${escapeHtml(item.boltFeature)}</small>
+              <p>${escapeHtml(item.browserAdvantage)}</p>
+              <div class="preview-actions">${item.actions.map(action => `<button class="btn" onclick="sendBuilderPrompt('${escapeJs(action)}')">${escapeHtml(action)}</button>`).join('')}</div>
+            </article>`).join('')}
+          </div>`;
+        document.getElementById('researchStream').textContent = matrix.features.map(item => `${item.nexusStatus.toUpperCase()} ${item.area}\nBolt: ${item.boltFeature}\nNexus: ${item.browserAdvantage}`).join('\n\n');
+        document.getElementById('taskStream').textContent = matrix.gaps.map(item => `${item.area}\nClose gap with: ${item.actions.join(', ')}`).join('\n\n') || 'All tracked bolt.diy features are live.';
+        addMessage('assistant', `Loaded bolt.diy parity matrix: ${matrix.features.length} features tracked, ${matrix.gaps.length} gaps/partials.`);
+      } catch (error) {
+        addMessage('system', `Bolt parity failed: ${error.message}`);
+      }
+    }
+
+    async function showDiffReview() {
+      try {
+        const params = new URLSearchParams({ visual: 'true', sessionId: currentSessionId || '', pageId: currentPageId || '' });
+        if (activeBuildId) params.set('buildId', activeBuildId);
+        const query = `?${params.toString()}`;
+        const result = await getApi(`/api/builder/diff${query}`);
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Diff Review</span><span class="pill">${escapeHtml(result.root)}</span></div><div class="search-page"><div class="preview-actions"><button class="btn primary" onclick="approveDiff()">Approve Diff</button><button class="btn" onclick="createRollbackPlan()">Restore Version</button><button class="btn" onclick="runVisualQaRepair()">Visual QA</button></div><h2>Changed files</h2>${(result.files || []).map(file => `<article class="search-result"><b>${escapeHtml(file.path)}</b><small>+${file.additions} / -${file.deletions}</small></article>`).join('') || '<p>No changed files detected.</p>'}<h2>Browser review package</h2><pre>${escapeHtml(JSON.stringify(result.visual || {}, null, 2))}</pre><h2>Raw diff</h2><pre>${escapeHtml(result.diff)}</pre></div>`;
+        document.getElementById('taskStream').textContent = `${JSON.stringify(result.visual || {}, null, 2)}\n\n${result.diff}`;
+        addMessage('assistant', 'Loaded source diff. Pair this with Visual QA before approving changes.');
+      } catch (error) {
+        addMessage('system', `Diff review failed: ${error.message}`);
+      }
+    }
+
+    async function approveDiff() {
+      try {
+        const result = await api('/api/builder/diff/approve', { buildId: activeBuildId, reason: 'approved from Nexus diff review' });
+        addMessage('assistant', `Approved diff review ${result.id}. Record: ${result.path}`);
+      } catch (error) {
+        addMessage('system', `Diff approval failed: ${error.message}`);
+      }
+    }
+
+    async function createRollbackPlan() {
+      if (!activeBuildId) return addMessage('system', 'Select a project first.');
+      try {
+        const checkpoints = await getApi('/api/builder/builds/' + activeBuildId + '/checkpoints');
+        document.getElementById('browserView').innerHTML = '<div class="search-page"><h1>Restore a version</h1>' + checkpoints.map(item => '<article class="search-result"><b>' + escapeHtml(item.reason) + '</b><p>' + escapeHtml(item.createdAt) + '</p><button class="btn" onclick="restoreProjectVersion(\'' + escapeJs(item.id) + '\')">Restore</button></article>').join('') + '</div>';
+      } catch (error) { addMessage('system', 'Could not load versions: ' + error.message); }
+    }
+
+    async function restoreProjectVersion(id) {
+      try {
+        const result = await api('/api/builder/builds/' + activeBuildId + '/checkpoints/' + id + '/restore', {});
+        addMessage('assistant', 'Restored ' + result.restored.length + ' files. Checking the restored product in the browser.');
+        showBuildStarted(result.build);
+      } catch (error) { addMessage('system', 'Restore failed: ' + error.message); }
+    }
+
+    function startStreamingTimeline() {
+      const query = new URLSearchParams({ apiKey, buildId: activeBuildId || '' });
+      const events = new EventSource(`/api/builder/stream?${query.toString()}`);
+      addMessage('system', 'Live timeline connected.');
+      events.addEventListener('step', event => {
+        const item = JSON.parse(event.data);
+        appendStream('qaStream', `${item.label}: ${item.detail}`);
+      });
+      events.addEventListener('tick', event => {
+        const item = JSON.parse(event.data);
+        if (item.logTail) document.getElementById('taskStream').textContent = item.logTail;
+        appendStream('qaStream', `Stream ${item.ticks}: ${item.status || 'running'} / ${item.previewStatus || 'preview unknown'}`);
+      });
+      events.addEventListener('done', event => {
+        const item = JSON.parse(event.data);
+        addMessage('assistant', item.message || 'Live timeline finished.');
+        events.close();
+      });
+      events.onerror = () => {
+        addMessage('system', 'Live timeline disconnected.');
+        events.close();
+      };
+    }
+
+    async function exportActiveProject() {
+      try {
+        const res = await fetch('/api/builder/export-zip', { method: 'POST', headers: headers(), body: JSON.stringify({ buildId: activeBuildId }) });
+        if (!res.ok) throw new Error(await res.text());
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nexus-export-${Date.now()}.zip`;
+        a.click();
+        URL.revokeObjectURL(url);
+        addMessage('assistant', 'Exported active project ZIP with Nexus artifacts.');
+      } catch (error) {
+        addMessage('system', `Export failed: ${error.message}`);
+      }
+    }
+
+    async function showProviderSettings() {
+      try {
+        const providers = await getApi('/api/builder/provider-settings');
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Providers</span><span class="pill">${providers.length}</span></div><div class="search-page"><h1>Provider Settings</h1>${providers.map(p => `<article class="search-result"><b>${escapeHtml(p.name)} ${p.configured ? 'configured' : 'missing key'}</b><small>${escapeHtml(p.kind)} · ${escapeHtml(p.capabilities.join(', '))}</small><p>Env: ${escapeHtml(p.env.join(', '))}</p><div class="preview-actions"><button class="btn" onclick="validateProvider('${escapeJs(p.id)}')">Validate</button><button class="btn" onclick="saveProviderSetting('${escapeJs(p.id)}', true)">Enable</button><button class="btn" onclick="saveProviderSetting('${escapeJs(p.id)}', false)">Disable</button></div></article>`).join('')}</div>`;
+        document.getElementById('researchStream').textContent = providers.map(p => `${p.name}: ${p.configured ? 'configured' : 'missing'}\n${p.env.join(', ')}`).join('\n\n');
+      } catch (error) {
+        addMessage('system', `Provider settings failed: ${error.message}`);
+      }
+    }
+
+    async function saveProviderSetting(id, enabled) {
+      const model = prompt(`Optional model override for ${id}`) || '';
+      const setting = await api('/api/builder/provider-settings', { id, enabled, model });
+      addMessage('assistant', `${setting.enabled ? 'Enabled' : 'Disabled'} ${setting.id}${setting.model ? ` with ${setting.model}` : ''}.`);
+    }
+
+    async function validateProvider(id) {
+      try {
+        const result = await api(`/api/builder/provider-settings/${encodeURIComponent(id)}/validate`, {});
+        addMessage('assistant', `${id} validation: ${result.configured ? 'configured' : 'missing env'} / live ${result.live?.ok ? 'ok' : 'failed'}${result.missing.length ? `\nMissing: ${result.missing.join(', ')}` : ''}\n${result.live?.detail || result.live?.error || ''}`);
+      } catch (error) {
+        addMessage('system', `Provider validation failed: ${error.message}`);
+      }
+    }
+
+    async function showDeployPanel() {
+      const status = await getApi('/api/builder/deploy/status').catch(() => null);
+      document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Deploy</span><span class="pill">browser QA after deploy</span></div><div class="search-page"><h1>Deploy Connectors</h1><p>Select a target. Nexus returns the command and can launch it if the CLI/token is configured.</p><pre>${escapeHtml(JSON.stringify(status, null, 2))}</pre><div class="preview-actions"><button class="btn primary" onclick="runDeploy('vercel', false)">Vercel Plan</button><button class="btn" onclick="runDeploy('netlify', false)">Netlify Plan</button><button class="btn" onclick="runDeploy('github-pages', false)">GitHub Pages Plan</button></div><div class="preview-actions"><button class="btn green" onclick="runDeploy('vercel', true)">Launch Vercel</button><button class="btn green" onclick="runDeploy('netlify', true)">Launch Netlify</button></div></div>`;
+    }
+
+    async function runDeploy(target, launch) {
+      try {
+        const result = await api('/api/builder/deploy', { target, buildId: activeBuildId, launch });
+        document.getElementById('qaStream').textContent = JSON.stringify(result, null, 2);
+        if (result.deployedUrls?.[0]) {
+          document.getElementById('urlInput').value = result.deployedUrls[0];
+          addMessage('system', `Captured deployed URL. Open it in Nexus, then run Staging Studio and SEO/Security: ${result.deployedUrls[0]}`);
+        }
+        addMessage('assistant', `${launch ? 'Ran' : 'Prepared'} ${target} deploy: ${result.command}`);
+      } catch (error) {
+        addMessage('system', `Deploy failed: ${error.message}`);
+      }
+    }
+
+    function showImportMobilePanel() {
+      document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Git / Expo</span></div><div class="search-page"><h1>Import or Create</h1><div class="landing-builder"><div class="label">Git repo URL</div><input id="gitRepoUrl" class="input" placeholder="https://github.com/owner/repo.git"><div class="preview-actions"><button class="btn primary" onclick="importGitRepo()">Clone Repo</button></div><div class="label">Expo app name</div><input id="expoName" class="input" placeholder="nexus-mobile-app"><div class="preview-actions"><button class="btn" onclick="createExpoApp(false)">Expo Plan</button><button class="btn green" onclick="createExpoApp(true)">Create Expo App</button></div></div></div>`;
+    }
+
+    async function importGitRepo() {
+      try {
+        const repoUrl = document.getElementById('gitRepoUrl').value.trim();
+        const result = await api('/api/builder/git-import', { repoUrl });
+        document.getElementById('taskStream').textContent = JSON.stringify(result, null, 2);
+        addMessage('assistant', `Imported repo to ${result.root}. Open IDE and start browser QA.`);
+      } catch (error) {
+        addMessage('system', `Git import failed: ${error.message}`);
+      }
+    }
+
+    async function createExpoApp(launch) {
+      try {
+        const name = document.getElementById('expoName').value.trim() || 'nexus-mobile-app';
+        const result = await api('/api/builder/expo-create', { name, launch });
+        document.getElementById('taskStream').textContent = JSON.stringify(result, null, 2);
+        addMessage('assistant', `${launch ? 'Created' : 'Prepared'} Expo app: ${result.root}`);
+      } catch (error) {
+        addMessage('system', `Expo failed: ${error.message}`);
+      }
+    }
+
+    function startVoicePrompt() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return addMessage('system', 'Speech recognition is not available in this browser.');
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.onresult = event => {
+        document.getElementById('chatInput').value = event.results[0][0].transcript;
+        sendChat();
+      };
+      recognition.start();
+      addMessage('system', 'Listening for voice prompt...');
+    }
+
+    function attachScreenshotPrompt() {
+      if (!lastScreenshot) {
+        document.getElementById('chatInput').value = 'Take a screenshot first, then use it as visual context: ';
+        document.getElementById('chatInput').focus();
+        return;
+      }
+      api('/api/builder/image-prompt', { buildId: activeBuildId, image: lastScreenshot, message: 'Improve the app from this browser screenshot.' })
+        .then(result => {
+          document.getElementById('chatInput').value = result.prompt;
+          document.getElementById('taskStream').textContent = result.prompt;
+          addMessage('assistant', `Attached browser screenshot artifact: ${result.filePath}`);
+        })
+        .catch(error => addMessage('system', `Image prompt failed: ${error.message}`));
+    }
+
+    async function showSupabaseCockpit() {
+      try {
+        const [status, plan] = await Promise.all([
+          getApi('/api/connectors/supabase/status'),
+          getApi(`/api/connectors/supabase/schema-plan?sessionId=${encodeURIComponent(currentSessionId || 'default')}&pageId=${encodeURIComponent(currentPageId || '')}`),
+        ]);
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Supabase</span><span class="pill">${status.connected ? 'connected' : 'missing env'}</span></div><div class="search-page"><h1>Supabase Browser Data Cockpit</h1><p>Turn browser/API evidence into schema, RLS, seed data, and UI state checks.</p><div class="landing-builder"><div class="label">Table</div><input id="supabaseTable" class="input" placeholder="profiles"><div class="label">Select</div><input id="supabaseSelect" class="input" value="*"><div class="preview-actions"><button class="btn primary" onclick="querySupabaseTable()">Query Table</button></div></div><h2>Schema Plan</h2>${plan.tables.map(table => `<article class="search-result"><b>${escapeHtml(table.name)}</b><small>${escapeHtml(table.reason)}</small><p>${escapeHtml(table.columns.join(', '))}</p></article>`).join('')}</div>`;
+        document.getElementById('taskStream').textContent = plan.prompt;
+        addMessage('assistant', 'Generated Supabase schema plan from browser evidence.');
+      } catch (error) {
+        addMessage('system', `Supabase cockpit failed: ${error.message}`);
+      }
+    }
+
+    async function querySupabaseTable() {
+      try {
+        const result = await api('/api/connectors/supabase/query', { table: document.getElementById('supabaseTable').value.trim(), select: document.getElementById('supabaseSelect').value.trim(), limit: 25 });
+        document.getElementById('researchStream').textContent = JSON.stringify(result.rows, null, 2);
+        addMessage('assistant', `Loaded ${Array.isArray(result.rows) ? result.rows.length : 0} Supabase rows for browser/UI mapping.`);
+      } catch (error) {
+        addMessage('system', `Supabase query failed: ${error.message}`);
+      }
+    }
+
+    async function showChatManager() {
+      try {
+        const chats = await getApi('/api/chats');
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Chats</span><span class="pill">${chats.length}</span><span class="pill">${escapeHtml(activeChatId || 'no active chat')}</span></div><div class="search-page"><h1>Nexus Chats</h1><p>Browser-based task threads persist locally and keep their own chat history while sharing the active browser page, agents, builds, and QA context.</p><div class="card-actions"><button class="btn primary" onclick="createNewChat()">New Chat</button><button class="btn" onclick="showAgentSwarm()">Agents</button><button class="btn amber" onclick="clearAllChats()">Clear All</button></div><div class="manager-grid">${chats.map(chat => `<article class="search-result" onclick="openChat('${escapeJs(chat.id)}')"><b>${escapeHtml(chat.title)}</b><small>${escapeHtml(chat.id)} · ${chat.messages} messages · ${escapeHtml(formatTime(chat.updatedAt))}</small><p>${escapeHtml(chat.lastMessage || 'No messages yet.')}</p><div class="card-actions"><button class="btn primary" onclick="event.stopPropagation(); openChat('${escapeJs(chat.id)}')">Open</button><button class="btn" onclick="event.stopPropagation(); renameChat('${escapeJs(chat.id)}')">Rename</button><button class="btn amber" onclick="event.stopPropagation(); deleteChat('${escapeJs(chat.id)}')">Delete</button></div></article>`).join('') || '<p>No chats yet. Create one or send a message to start.</p>'}</div></div>`;
+      } catch (error) {
+        addMessage('system', `Chat manager failed: ${error.message}`);
+      }
+    }
+
+    async function resumeRecentChat() {
+      document.body.classList.remove('landing-first', 'project-live');
+      document.body.classList.add('chat-first');
+      toggleChat(true);
+      if (activeChatId) {
+        await openChat(activeChatId, { announce: false });
+      } else {
+        addMessage('system', 'No recent chat yet. Start a prompt here or create a new chat.');
+      }
+    }
+
+    async function createNewChat() {
+      try {
+        const title = prompt('Chat title') || 'New Nexus Chat';
+        const chat = await api('/api/chats', { title });
+        setActiveChat(chat.id, chat.title, chat.projectId || null);
+        renderChatMessages(chat.messages || [], chat.title);
+        toggleChat(true);
+        showChatManager();
+      } catch (error) {
+        addMessage('system', `New chat failed: ${error.message}`);
+      }
+    }
+
+    async function openChat(id, options = {}) {
+      try {
+        const chat = await getApi(`/api/chats/${encodeURIComponent(id)}`);
+        setActiveChat(chat.id, chat.title, chat.projectId || null);
+        renderChatMessages(chat.messages || [], chat.title);
+        toggleChat(true);
+        if (options.announce !== false) addMessage('system', `Opened chat: ${chat.title}`);
+      } catch (error) {
+        addMessage('system', `Open chat failed: ${error.message}`);
+      }
+    }
+
+    async function renameChat(id) {
+      const title = prompt('New chat title');
+      if (!title) return;
+      await fetch(`/api/chats/${encodeURIComponent(id)}`, { method: 'PUT', headers: headers(), body: JSON.stringify({ title }) });
+      if (id === activeChatId) setActiveChat(id, title, activeBuildId);
+      showChatManager();
+    }
+
+    async function deleteChat(id) {
+      await deleteApi(`/api/chats/${encodeURIComponent(id)}`);
+      if (id === activeChatId) {
+        setActiveChat('', '');
+        renderChatMessages([], '');
+      }
+      showChatManager();
+    }
+
+    async function clearAllChats() {
+      await deleteApi('/api/chats');
+      setActiveChat('', '');
+      renderChatMessages([], '');
+      showChatManager();
+    }
+
+    async function saveGitHubConnection() {
+      try {
+        const connection = await api('/api/github/project-connection', {
+          owner: document.getElementById('githubOwner').value.trim(),
+          repo: document.getElementById('githubRepo').value.trim(),
+          projectId: document.getElementById('githubProjectId').value.trim(),
+          projectUrl: document.getElementById('githubProjectUrl').value.trim(),
+        });
+        addMessage('assistant', `Connected GitHub repo ${connection.owner}/${connection.repo}${connection.projectId ? ' with Projects v2 linking' : ''}.`);
+      } catch (error) {
+        addMessage('system', `GitHub connection failed: ${error.message}`);
+      }
+    }
+
+    async function listGitHubIssues() {
+      try {
+        const owner = document.getElementById('githubOwner')?.value.trim();
+        const repo = document.getElementById('githubRepo')?.value.trim();
+        const query = owner && repo ? `?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}` : '';
+        const issues = await getApi(`/api/github/issues${query}`);
+        document.getElementById('researchStream').textContent = issues.map(issue => `#${issue.number} ${issue.title}\n${issue.state} · ${issue.url}`).join('\n\n') || 'No issues found.';
+        addMessage('assistant', `Loaded ${issues.length} GitHub issues.`);
+      } catch (error) {
+        addMessage('system', `GitHub issue list failed: ${error.message}`);
+      }
+    }
+
+    async function createGitHubIssueFromChat() {
+      try {
+        const title = prompt('Issue title');
+        if (!title) return;
+        const body = prompt('Issue details') || 'Created from NexusBrowser project manager.';
+        const issue = await api('/api/github/issues', {
+          owner: document.getElementById('githubOwner')?.value.trim(),
+          repo: document.getElementById('githubRepo')?.value.trim(),
+          title,
+          body,
+          labels: ['nexus'],
+        });
+        addMessage('assistant', `Created GitHub issue #${issue.number}: ${issue.url}${issue.projectLinked ? '\nLinked to GitHub Project.' : ''}`);
+      } catch (error) {
+        addMessage('system', `GitHub issue creation failed: ${error.message}`);
+      }
+    }
+
+    async function syncBuildTasksToGitHub() {
+      try {
+        const tasks = document.getElementById('taskStream').textContent.split(/\n\n+/).map((block, index) => ({ title: block.split('\n')[0].replace(/^\d+\.\s*/, '') || `Nexus build task ${index + 1}`, body: block })).filter(task => task.body.trim()).slice(0, 25);
+        if (!tasks.length) return addMessage('system', 'No build tasks available. Run Research Project or Plan Mode first.');
+        const result = await api('/api/github/sync-build-tasks', {
+          owner: document.getElementById('githubOwner')?.value.trim(),
+          repo: document.getElementById('githubRepo')?.value.trim(),
+          tasks,
+        });
+        document.getElementById('qaStream').textContent = result.created.map(issue => `#${issue.number} ${issue.title}\n${issue.url}${issue.projectLinked ? '\nProject linked' : issue.projectError ? `\nProject link failed: ${issue.projectError}` : ''}`).join('\n\n');
+        addMessage('assistant', `Synced ${result.created.length} Nexus build tasks to GitHub issues.`);
+      } catch (error) {
+        addMessage('system', `GitHub task sync failed: ${error.message}`);
+      }
+    }
+
+    async function showAgentSwarm() {
+      try {
+        const [swarm, runtime, tasks] = await Promise.all([
+          getApi('/api/builder/agents'),
+          getApi('/api/agent-runtime'),
+          getApi('/api/agent-runtime/tasks').catch(() => []),
+        ]);
+        const nativeCount = swarm.agents.filter(agent => agent.runtime === 'nexus-native').length;
+        const workflows = swarm.workflows.map(flow => `<article class="agent-card"><b>${escapeHtml(flow.name)}</b><small>${escapeHtml(flow.trigger)}</small><p>${escapeHtml(flow.output)}</p><div class="card-actions"><button class="btn primary" onclick="startAgentDelegation('${escapeJs(flow.name)}','${escapeJs(flow.agents.join(','))}','${escapeJs(flow.trigger)}')">Run</button><button class="btn" onclick="createRuntimeJobFromPrompt('${escapeJs(flow.name)}','${escapeJs(flow.agents.join(','))}','${escapeJs(flow.trigger)}')">Schedule</button></div></article>`).join('');
+        const agents = swarm.agents.map(agent => `<article class="agent-card"><b>${escapeHtml(agent.name)}</b><small>${escapeHtml(agent.id)} · ${escapeHtml(agent.mode)} · ${escapeHtml(agent.runtime || 'nexus')}</small><p>${escapeHtml(agent.role)}</p><small>Tools: ${escapeHtml(agent.tools.slice(0, 5).join(', '))}</small><div class="card-actions"><button class="btn primary" onclick="startAgentDelegation('${escapeJs(agent.name)}','${escapeJs(agent.id)}','${escapeJs(agent.role)}')">Run</button><button class="btn" onclick="saveAgentSkill('${escapeJs(agent.id)}')">Save Skill</button><button class="btn" onclick="sendBuilderPrompt('Use ${escapeJs(agent.name)} for the current chat and explain the next concrete step.')">Chat</button></div></article>`).join('');
+        const jobs = (runtime.jobs || []).slice(0, 8).map(job => `<div class="runtime-stat"><span>${escapeHtml(job.name)} · ${Math.round(job.intervalMs / 60000)}m · ${job.enabled ? 'on' : 'off'}</span><button class="btn" onclick="deleteRuntimeJob('${escapeJs(job.id)}')">Delete</button></div>`).join('') || '<small>No scheduled jobs yet.</small>';
+        const skills = (runtime.skills || []).slice(0, 6).map(skill => `<div class="runtime-stat"><span>${escapeHtml(skill.name)}</span><span>${skill.successCount}/${skill.failureCount}</span></div>`).join('') || '<small>No saved skills yet.</small>';
+        const taskRows = (tasks || []).slice(-8).reverse().map(task => `<div class="runtime-stat"><span>${escapeHtml(task.goal.slice(0, 70))}</span><span>${escapeHtml(task.status)}</span></div>`).join('') || '<small>No browser-agent tasks yet.</small>';
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Agents</span><span class="pill">${swarm.agents.length} total</span><span class="pill">${nativeCount} native</span></div><div class="search-page"><h1>Agent Control Center</h1><div class="card-actions"><button class="btn primary" onclick="createRuntimeMemory()">Remember</button><button class="btn" onclick="createRuntimeSkillFromPrompt()">New Skill</button><button class="btn" onclick="showChatManager()">Chats</button></div><div class="agent-console"><aside class="runtime-panel"><h2>Runtime</h2><div class="runtime-stat"><span>Memory</span><b>${runtime.memories?.length || 0}</b></div><div class="runtime-stat"><span>Skills</span><b>${runtime.skills?.length || 0}</b></div><div class="runtime-stat"><span>Delegations</span><b>${runtime.delegations?.length || 0}</b></div><div class="runtime-stat"><span>Jobs</span><b>${runtime.jobs?.length || 0}</b></div><h2>Jobs</h2>${jobs}<h2>Skills</h2>${skills}<h2>Tasks</h2>${taskRows}</aside><section><h2>Workflows</h2><div class="agent-list">${workflows}</div><h2>Agents</h2><div class="agent-list">${agents}</div></section></div></div>`;
+        document.getElementById('researchStream').textContent = swarm.philosophy;
+        document.getElementById('taskStream').textContent = swarm.agents.map(agent => `${agent.name}\n${agent.role}\nMode: ${agent.mode}\nRuntime: ${agent.runtime || 'nexus'}\nOutputs: ${agent.outputs.join(', ')}`).join('\n\n');
+        document.getElementById('qaStream').textContent = `Runtime state\nMemory: ${runtime.memories?.length || 0}\nSkills: ${runtime.skills?.length || 0}\nDelegations: ${runtime.delegations?.length || 0}\nJobs: ${runtime.jobs?.length || 0}\nBrowser agent tasks: ${tasks.length || 0}`;
+        addMessage('assistant', `Loaded ${swarm.agents.length} agents, ${runtime.skills?.length || 0} skills, and ${runtime.jobs?.length || 0} scheduled jobs.`);
+      } catch (error) {
+        addMessage('system', `Agent swarm failed: ${error.message}`);
+      }
+    }
+
+    async function ensureAgentBrowserSession() {
+      if (nativeBrowserAvailable()) {
+        const state = await window.nexusNativeBrowser.getState();
+        currentSessionId = 'electron-native';
+        currentPageId = state?.tab?.id || currentPageId || 'active-tab';
+        setText('sessionPill', 'native');
+        return true;
+      }
+      if (currentSessionId && currentPageId) return true;
+      const session = await api('/api/sessions', {});
+      currentSessionId = session.id;
+      currentPageId = session.activePageId || session.pages?.[0]?.id;
+      if (!currentPageId) throw new Error('Browser session did not create an active page.');
+      setText('sessionPill', currentSessionId.slice(0, 8));
+      addMessage('system', 'Created browser session for agent work.');
+      return true;
+    }
+
+    async function startAgentDelegation(label, agentsCsv, defaultGoal) {
+      try {
+        const goal = prompt(`${label} goal`, defaultGoal || `Run ${label} for the current project`);
+        if (!goal) return;
+        await ensureAgentBrowserSession();
+        const agents = agentsCsv.split(',').map(item => item.trim()).filter(Boolean);
+        addMessage('system', `Starting ${label} with ${agents.join(', ')}...`);
+        const run = await api('/api/agent-runtime/delegations', { goal, agents, sessionId: currentSessionId, pageId: currentPageId });
+        appendStream('qaStream', `Delegation ${run.id}: ${run.status} · ${run.result || run.error || ''}`);
+        addMessage(run.status === 'failed' ? 'system' : 'assistant', `${label} finished: ${run.status}\n${run.result || run.error || ''}`);
+        showAgentSwarm();
+      } catch (error) {
+        addMessage('system', `Agent run failed: ${error.message}`);
+      }
+    }
+
+    async function createRuntimeMemory() {
+      const content = prompt('Memory to save for Nexus agents');
+      if (!content) return;
+      await api('/api/agent-runtime/memory', { scope: 'project', content, tags: ['browser-ui', 'manual'], source: 'agent-control-center' });
+      addMessage('assistant', 'Saved runtime memory for future chats and agents.');
+      showAgentSwarm();
+    }
+
+    async function createRuntimeSkillFromPrompt() {
+      const name = prompt('Skill name');
+      if (!name) return;
+      const trigger = prompt('When should Nexus use it?') || name;
+      const steps = (prompt('Steps separated by semicolons') || '').split(';').map(step => step.trim()).filter(Boolean);
+      await api('/api/agent-runtime/skills', { name, description: trigger, trigger, steps: steps.length ? steps : [trigger] });
+      addMessage('assistant', `Saved skill: ${name}`);
+      showAgentSwarm();
+    }
+
+    async function saveAgentSkill(agentId) {
+      const swarm = await getApi('/api/builder/agents');
+      const agent = swarm.agents.find(item => item.id === agentId);
+      if (!agent) return addMessage('system', `Agent not found: ${agentId}`);
+      await api('/api/agent-runtime/skills', {
+        name: `${agent.name} Workflow`,
+        description: agent.role,
+        trigger: `Use when the chat needs ${agent.name}.`,
+        steps: [`Load browser/backend evidence`, `Run ${agent.name}`, `Write outputs: ${agent.outputs.join(', ')}`, 'Persist useful lessons to memory'],
+      });
+      addMessage('assistant', `Saved ${agent.name} as a reusable runtime skill.`);
+      showAgentSwarm();
+    }
+
+    async function createRuntimeJobFromPrompt(name, agentsCsv, defaultGoal) {
+      const goal = prompt(`${name} recurring goal`, defaultGoal || name);
+      if (!goal) return;
+      const minutes = Math.max(1, Number(prompt('Run every how many minutes?', '60') || 60));
+      const agents = agentsCsv.split(',').map(item => item.trim()).filter(Boolean);
+      const job = await api('/api/agent-runtime/jobs', { name, goal, intervalMs: minutes * 60000, agents });
+      addMessage('assistant', `Scheduled ${job.name} every ${minutes} minutes.`);
+      showAgentSwarm();
+    }
+
+    async function deleteRuntimeJob(id) {
+      await deleteApi(`/api/agent-runtime/jobs/${encodeURIComponent(id)}`);
+      addMessage('assistant', 'Deleted scheduled runtime job.');
+      showAgentSwarm();
+    }
+
+    async function createWorkspaceSnapshot() {
+      if (!activeBuildId) return addMessage('system', 'Select a project first.');
+      try {
+        const snapshot = await api('/api/builder/snapshots', { buildId: activeBuildId, reason: 'Manual project checkpoint' });
+        addMessage('assistant', `Snapshot created: ${snapshot.id} with ${snapshot.files.length} files.`);
+        appendStream('qaStream', `Snapshot ${snapshot.id}: ${snapshot.files.length} files tracked.`);
+      } catch (error) {
+        addMessage('system', `Snapshot failed: ${error.message}`);
+      }
+    }
+
+    async function createVisualQaPlan() {
+      try {
+        const targetUrl = document.getElementById('urlInput').value || 'target site not selected';
+        const plan = await api('/api/builder/visual-qa-plan', { targetUrl, localUrl: 'http://localhost:5173' });
+        document.getElementById('qaStream').textContent = `${plan.checks.map(c => `- ${c}`).join('\n')}\n\n${plan.repairPrompt}`;
+        addMessage('assistant', 'Visual QA plan created for target-vs-local browser comparison.');
+      } catch (error) {
+        addMessage('system', `QA plan failed: ${error.message}`);
+      }
+    }
+
+    async function runVisualQaRepair() {
+      if (!currentSessionId || !currentPageId) return addMessage('system', 'No active target page. Open the site you want to compare first.');
+      try {
+        let build = await getActiveBuild();
+        if (!activeBuildId) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        if (!build?.previewUrl) build = await api(`/api/builder/builds/${activeBuildId}/preview`, {});
+        if (!build?.previewUrl) return addMessage('system', 'No live generated preview yet. Start a build preview first.');
+        appendStream('qaStream', `Running DOM-Vision Fusion QA against ${build.previewUrl}`);
+        const run = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/visual-qa-repair`, { buildId: build.id, localUrl: build.previewUrl });
+        document.getElementById('outputPath').textContent = run.outputDir;
+        document.getElementById('qaStream').textContent = `DOM-Vision Fusion: ${run.scores.overall}/100\nPixel: ${run.scores.pixel}/100\nLayout: ${run.scores.layout}/100\nText: ${run.scores.text}/100\nColor: ${run.scores.color}/100\n\n${run.findings.map(f => `[${f.severity}] ${f.area}: ${f.repair}`).join('\n\n')}`;
+        document.getElementById('taskStream').textContent = `Repair artifacts:\n${run.artifacts.repairTasks}\n${run.artifacts.opencodePrompt}\n\nOpenCode repair prompt:\n${run.repairPrompt}`;
+        if (run.update) showBuildUpdateStarted(run.update);
+        addMessage('assistant', `Visual repair started. Comparison score: ${run.scores.overall}/100\nOutput: ${run.outputDir}`);
+      } catch (error) {
+        addMessage('system', `Visual QA repair failed: ${error.message}`);
+      }
+    }
+
+    async function getActiveBuild() {
+      const builds = await getApi('/api/builder/builds');
+      let build = activeBuildId ? builds.find(item => item.id === activeBuildId) : null;
+      if (!build) return null;
+      if (build?.id) activeBuildId = build.id;
+      if (build?.id) localStorage.setItem('nexus-active-build-id', build.id);
+      return build;
+    }
+
+    async function runBrowserShakedown() {
+      if (!currentSessionId || !currentPageId) return addMessage('system', 'Open a real browser target or preview first.');
+      try {
+        const report = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/browser-shakedown`, { buildId: activeBuildId });
+        document.getElementById('outputPath').textContent = report.outputDir;
+        document.getElementById('researchStream').textContent = JSON.stringify(report.checks, null, 2);
+        document.getElementById('qaStream').textContent = `Browser Shakedown\nScreenshot: ${report.screenshotPath || 'none'}\nSEO/Security: ${report.seoSecurity.score}/100\n\nNext:\n${report.next.map(item => `- ${item}`).join('\n')}`;
+        addMessage('assistant', `Browser shakedown complete. Evidence saved to ${report.outputDir}`);
+      } catch (error) {
+        addMessage('system', `Browser shakedown failed: ${error.message}`);
+      }
+    }
+
+    async function runSideBySideVisualDiff() {
+      if (!currentSessionId || !currentPageId) return addMessage('system', 'Open the target page first.');
+      try {
+        let build = await getActiveBuild();
+        if (!build?.previewUrl && activeBuildId) build = await api(`/api/builder/builds/${activeBuildId}/preview`, {});
+        if (!build?.previewUrl) return addMessage('system', 'Start a generated app preview first.');
+        const run = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/side-by-side-visual-diff`, { buildId: activeBuildId, localUrl: build.previewUrl });
+        document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">Side-by-Side Visual Diff</span><span class="pill">${run.scores.overall}/100</span></div><div class="search-page"><h1>Browser target vs generated preview</h1><p>${escapeHtml(run.sideBySide.browserFirstApprovalRule)}</p><div class="build-stream"><div class="stream-card"><h3>Target</h3><pre>${escapeHtml(run.sideBySide.targetScreenshot)}</pre></div><div class="stream-card"><h3>Preview</h3><pre>${escapeHtml(run.sideBySide.localScreenshot)}</pre></div><div class="stream-card"><h3>Findings</h3><pre>${escapeHtml(run.findings.map(f => `[${f.severity}] ${f.area}: ${f.issue}`).join('\n\n'))}</pre></div></div></div>`;
+        document.getElementById('taskStream').textContent = run.repairPrompt;
+        document.getElementById('qaStream').textContent = JSON.stringify(run.scores, null, 2);
+        addMessage('assistant', `Side-by-side visual diff complete. Score: ${run.scores.overall}/100`);
+      } catch (error) {
+        addMessage('system', `Side-by-side visual diff failed: ${error.message}`);
+      }
+    }
+
+    async function runBuildDoctor(autoHeal) {
+      try {
+        const build = await getActiveBuild();
+        if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        appendStream('qaStream', `${autoHeal ? 'Auto-heal' : 'Build Doctor'} inspecting ${build.name}...`);
+        const report = await api(`/api/builder/builds/${build.id}/${autoHeal ? 'auto-heal' : 'doctor'}`, { runBuild: true, autoHeal });
+        document.getElementById('outputPath').textContent = report.outputDir;
+        document.getElementById('qaStream').textContent = `Build Doctor: ${report.score}/100\nStatus: ${report.status}\nIssues: ${report.issues.length}\n\n${report.issues.map(issue => `[${issue.severity}] ${issue.area}: ${issue.issue}\nFix: ${issue.fix}`).join('\n\n') || 'No issues found.'}`;
+        document.getElementById('taskStream').textContent = `Repair plan:\n${report.outputDir}\n\n${report.repairPrompt}`;
+        if (report.autoHealSession) addMessage('assistant', `Auto-heal started. Session: ${report.autoHealSession.id}\nScore: ${report.score}/100\nOutput: ${report.outputDir}`);
+        else addMessage('assistant', `Build Doctor report created. Score: ${report.score}/100\nOutput: ${report.outputDir}`);
+      } catch (error) {
+        addMessage('system', `Build Doctor failed: ${error.message}`);
+      }
+    }
+
+    async function runAutoHealLoop() {
+      try {
+        const build = await getActiveBuild();
+        if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        appendStream('qaStream', `Auto-heal loop started for ${build.name}. This may take a few minutes.`);
+        const result = await api(`/api/builder/builds/${build.id}/auto-heal-loop`, { threshold: 90, maxPasses: 3, sessionId: currentSessionId, pageId: currentPageId });
+        const loop = result.loop;
+        document.getElementById('outputPath').textContent = loop.reports[loop.reports.length - 1]?.outputDir || build.root;
+        document.getElementById('qaStream').textContent = `Auto-Heal Loop: ${loop.status}\n${loop.summary}\n\nPasses: ${loop.healLogs.length}\nFinal Doctor: ${loop.reports[loop.reports.length - 1]?.score}/100\n${result.visualQa?.scores ? `Visual QA: ${result.visualQa.scores.overall}/100` : result.visualQa?.error ? `Visual QA error: ${result.visualQa.error}` : 'Visual QA skipped: no target page.'}`;
+        document.getElementById('taskStream').textContent = loop.reports.map((report, index) => `Report ${index + 1}: ${report.score}/100 ${report.status}\n${report.issues.map(issue => `- [${issue.severity}] ${issue.area}: ${issue.issue}`).join('\n') || 'No issues.'}`).join('\n\n');
+        if (loop.preview?.previewUrl) showAppPreview(loop.preview);
+        addMessage('assistant', `Auto-heal loop finished: ${loop.status}\n${loop.summary}`);
+      } catch (error) {
+        addMessage('system', `Auto-heal loop failed: ${error.message}`);
+      }
+    }
+
+    async function runStagingStudio() {
+      try {
+        const build = await getActiveBuild();
+        if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        appendStream('qaStream', `Staging Studio preparing multi-device preview for ${build.name}...`);
+        const report = await api(`/api/builder/builds/${build.id}/staging`, { sessionId: currentSessionId || 'default', runDoctor: false });
+        document.getElementById('outputPath').textContent = report.outputDir;
+        showStagingStudio(report);
+        document.getElementById('researchStream').textContent = `Staging Studio\n${report.summary}\n\nDevices:\n${report.devices.map(check => `- ${check.device.name}: ${check.status} ${check.device.width}x${check.device.height}, HTTP ${check.healthCode || 'n/a'}, ${check.latencyMs || 0}ms`).join('\n')}`;
+        document.getElementById('taskStream').textContent = report.creativeUniqueness.antiTemplatePrompt;
+        document.getElementById('qaStream').textContent = `Health: ${report.health.score}/100 ${report.health.status}\nVisual originality: awaiting rendered review\n\n${report.health.issues.join('\n') || 'No blocking health issues detected.'}`;
+        addMessage('assistant', `Staging Studio ready. Health ${report.health.score}/100, visual originality awaiting rendered review. Output: ${report.outputDir}`);
+      } catch (error) {
+        addMessage('system', `Staging Studio failed: ${error.message}`);
+      }
+    }
+
+    function showStagingStudio(report) {
+      upsertBrowserTab({ id: `staging-${report.id}`, title: 'Staging', kind: 'staging', url: report.previewUrl });
+      const frames = report.devices.map(check => {
+        const runtime = [...(check.consoleErrors || []), ...(check.networkErrors || [])];
+        return `<div class="device-frame" style="width:${check.device.id === 'mobile' ? 260 : 360}px">
+          <header><span>${check.device.name}</span><span>${check.status}</span></header>
+          <img class="device-shot" id="shot-${report.id}-${check.device.id}" alt="${check.device.name} staging screenshot">
+          <small>${check.device.width}x${check.device.height} capture</small>
+          ${runtime.length ? `<pre>${runtime.slice(0, 3).join('\n')}</pre>` : ''}
+        </div>`;
+      }).join('');
+      document.getElementById('browserView').innerHTML = `
+        <div class="hud"><span class="pill">Staging Studio</span><span class="pill">${report.health.status}</span><span class="pill">${report.previewUrl}</span></div>
+        <div class="preview-actions"><button class="btn" onclick="openActiveBuildExternal()">Open App</button><button class="btn" onclick="runStagingStudio()">Refresh</button><button class="btn amber" onclick="startActiveBuildPreview()">Live Preview</button></div>
+        <div class="staging-studio">
+          <aside class="staging-panel">
+            <div class="label">Health</div><div class="staging-score">${report.health.score}</div>
+            <div class="label">Creative</div><div class="staging-score">${report.creativeUniqueness.score ?? 'Review'}</div>
+            <p>${report.summary}</p>
+          </aside>
+          <div class="device-wall">${frames}</div>
+        </div>`;
+      setText('pageStatus', `Nexus Staging Studio - ${report.previewUrl}`);
+      loadStagingScreenshots(report);
+    }
+
+    async function loadStagingScreenshots(report) {
+      for (const check of report.devices) {
+        if (!check.screenshotUrl) continue;
+        try {
+          const response = await fetch(check.screenshotUrl, { headers: { 'x-api-key': apiKey } });
+          if (!response.ok) continue;
+          const blob = await response.blob();
+          const image = document.getElementById(`shot-${report.id}-${check.device.id}`);
+          if (image) {
+            image.src = URL.createObjectURL(blob);
+            image.style.display = 'block';
+          }
+        } catch {}
+      }
+    }
+
+    async function runExpertRouter() {
+      try {
+        const build = await getActiveBuild();
+        if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        appendStream('qaStream', `Expert Router analyzing ${build.name}...`);
+        const report = await api(`/api/builder/builds/${build.id}/expert-route`, {});
+        document.getElementById('outputPath').textContent = report.outputDir;
+        document.getElementById('researchStream').textContent = `Selected experts\n\n${report.selectedExperts.map(expert => `${expert.score}/100 ${expert.name}\n${expert.reasons.map(reason => `- ${reason}`).join('\n')}\nOfficial: https://github.com/${expert.officialGithub}`).join('\n\n') || 'No experts selected.'}`;
+        document.getElementById('taskStream').textContent = report.prompt;
+        document.getElementById('qaStream').textContent = `Expert routing complete. ${report.selectedExperts.length} agents selected from dependencies, files, prompt, and logs.`;
+        addMessage('assistant', `Expert Router selected ${report.selectedExperts.length} official-source agents. Output: ${report.outputDir}`);
+      } catch (error) {
+        addMessage('system', `Expert Router failed: ${error.message}`);
+      }
+    }
+
+    async function createCreativeDirection() {
+      try {
+        const build = await getActiveBuild();
+        if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        const styleSeed = document.getElementById('uiLook').value;
+        appendStream('researchStream', `Creative Mind generating non-template visual DNA for ${build.name}...`);
+        const direction = await api(`/api/builder/builds/${build.id}/creative-direction`, { styleSeed });
+        document.getElementById('outputPath').textContent = direction.outputDir;
+        document.getElementById('researchStream').textContent = `${direction.name}\n\n${direction.thesis}\n\nVisual language:\n${direction.visualLanguage.map(item => `- ${item}`).join('\n')}\n\nAnti-template rules:\n${direction.antiTemplateRules.map(item => `- ${item}`).join('\n')}`;
+        document.getElementById('taskStream').textContent = direction.prompt;
+        document.getElementById('qaStream').textContent = `Creative DNA ready. Use this prompt with Build Mode, Expert Router, Auto Heal, and Visual QA so the app does not look templated.`;
+        addMessage('assistant', `Creative Mind created: ${direction.name}. Output: ${direction.outputDir}`);
+      } catch (error) {
+        addMessage('system', `Creative Mind failed: ${error.message}`);
+      }
+    }
+
+    async function showProjectMemory() {
+      try {
+        const build = await getActiveBuild();
+        if (!build) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+        const memory = await getApi(`/api/builder/builds/${build.id}/memory`);
+        document.getElementById('outputPath').textContent = `${memory.workspace}/.nexus/memory`;
+        document.getElementById('researchStream').textContent = `Project Memory\nUpdated: ${memory.updatedAt}\nEntries: ${memory.entries.length}\n\n${memory.entries.slice(-30).reverse().map(entry => `[${entry.type}] ${entry.summary}\nTags: ${entry.tags.join(', ')}\nEvidence: ${entry.evidence.slice(0, 4).join(' | ')}`).join('\n\n') || 'No memory entries yet.'}`;
+        document.getElementById('taskStream').textContent = `Working fixes\n${memory.workingFixes.join('\n') || 'None recorded.'}\n\nFailed fixes\n${memory.failedFixes.join('\n') || 'None recorded.'}`;
+        document.getElementById('qaStream').textContent = 'Project memory loaded. Expert Router and Creative Mind append lessons here automatically.';
+        addMessage('assistant', `Project memory loaded with ${memory.entries.length} entries.`);
+      } catch (error) {
+        addMessage('system', `Project Memory failed: ${error.message}`);
+      }
+    }
+
+    async function showLanguageExpert(id) {
+      try {
+        appendStream('researchStream', `Fetching official ${id} expert update from GitHub...`);
+        const update = await getApi(`/api/builder/language-experts/${id}/update`);
+        document.getElementById('researchStream').textContent = `${update.name}\nOfficial: https://github.com/${update.officialGithub}\nFetched: ${update.fetchedAt}\nLatest release: ${update.latestRelease?.tag || 'unavailable'}\nPublished: ${update.latestRelease?.publishedAt || 'unknown'}\nRepo pushed: ${update.repo?.pushedAt || 'unknown'}`;
+        document.getElementById('taskStream').textContent = update.prompt;
+        document.getElementById('qaStream').textContent = `Official-source expert context loaded. Use this with Build Doctor/Auto Heal when TypeScript, React, Vite, or Node setup is broken.`;
+        addMessage('assistant', `${update.name} updated from official GitHub source. Latest release: ${update.latestRelease?.tag || 'unavailable'}`);
+      } catch (error) {
+        addMessage('system', `Language expert update failed: ${error.message}`);
+      }
+    }
+
+    async function showAllLanguageExperts() {
+      try {
+        const experts = await getApi('/api/builder/language-experts');
+        const grouped = experts.reduce((acc, expert) => {
+          acc[expert.category] ||= [];
+          acc[expert.category].push(expert);
+          return acc;
+        }, {});
+        document.getElementById('researchStream').textContent = Object.entries(grouped).map(([category, items]) => `${category.toUpperCase()}\n${items.map(expert => `- ${expert.id}: ${expert.officialGithub}`).join('\n')}`).join('\n\n');
+        document.getElementById('taskStream').textContent = experts.map(expert => `${expert.name}\nOfficial: https://github.com/${expert.officialGithub}\nChecks: ${expert.checks.join(', ')}\nRepairs: ${expert.repairSkills.join(', ')}`).join('\n\n');
+        document.getElementById('qaStream').textContent = `${experts.length} official-source full-stack expert agents loaded. Use chat like "typescript expert", "react expert", "docker expert", or run Auto Heal Loop to route failures automatically.`;
+        addMessage('assistant', `Loaded ${experts.length} official-source stack expert agents.`);
+      } catch (error) {
+        addMessage('system', `Stack experts failed: ${error.message}`);
+      }
+    }
+
+    async function sendChat() {
+      const input = document.getElementById('chatInput');
+      const message = input.value.trim();
+      if (!message || chatRequestInProgress) return;
+      input.value = '';
+      addMessage('user', message);
+      let pendingMessage = null;
+      try {
+        applyModeFromMessage(message);
+        if (maybeShowChatStatus(message)) return;
+        if (prepareBrowserGrounding(message)) return;
+        chatRequestInProgress = true;
+        setChatBusy(true);
+        pendingMessage = addMessage('system', 'Nexus is working...');
+        if (!csrfToken) await loadSecurityToken();
+        await refreshBrowserIntelligence(true);
+        await refreshBackendObserver(true);
+        const result = await api('/api/builder/chat', { chatId: chatApiId(), sessionId: currentSessionId, pageId: currentPageId, activeBuildId, message, browserContext: `${lastBrowserIntelligence}\n\n${lastBackendObservation}`.trim(), mode: document.getElementById('builderMode').value, uiLook: document.getElementById('uiLook').value, ...buildBrainOptions() }, { timeoutMs: 120000 });
+        pendingMessage?.remove();
+        pendingMessage = null;
+        if (result.chatId) {
+          const currentTitle = document.getElementById('activeChatTitle')?.textContent || '';
+          setActiveChat(result.chatId, currentTitle && currentTitle !== 'Nexus Chat' ? currentTitle : message, result.projectId || null);
+          if (result.sessionId) currentSessionId = result.sessionId;
+          if (result.pageId) currentPageId = result.pageId;
+        }
+        addMessage('assistant', result.response);
+        if (result.actions?.length) addActionMessage(result.actions, result.source);
+        if (result.build) showBuildStarted(result.build);
+        if (result.update) showBuildUpdateStarted(result.update);
+        broadcastChatUpdate();
+        // The backend owns intent, verification and repairs. UI refreshes never launch extra work.
+      } catch (error) {
+        const failure = `Builder chat failed: ${error.message}`;
+        if (pendingMessage) pendingMessage.textContent = failure;
+        else addMessage('system', failure);
+      } finally {
+        chatRequestInProgress = false;
+        setChatBusy(false);
+      }
+    }
+
+    function maybeShowChatStatus(message) {
+      const text = message.trim().toLowerCase();
+      const directStatus = /^(?:show\s+(?:me\s+)?)?(?:the\s+)?(?:current\s+)?(?:status|progress|logs|research stream|task stream|qa stream|details)(?:\s+please)?[?.!]*$/.test(text);
+      const questionStatus = /^(?:what(?:'s| is)|how(?:'s| is))\s+(?:the\s+)?(?:status|progress)(?:\s+(?:of|on)\s+(?:the\s+)?(?:build|project|agents?))?[?.!]*$/.test(text)
+        || /^what happened[?.!]*$/.test(text);
+      if (!directStatus && !questionStatus) return false;
+      addMessage('assistant', chatStatusSummary());
+      return true;
+    }
+
+    function chatStatusSummary() {
+      const research = document.getElementById('researchStream')?.textContent.trim() || 'No research updates yet.';
+      const tasks = document.getElementById('taskStream')?.textContent.trim() || 'No task updates yet.';
+      const qa = document.getElementById('qaStream')?.textContent.trim() || 'No QA updates yet.';
+      const recent = nexusStatusLog.slice(-8).map(item => `- ${item}`).join('\n') || '- No recent agent events.';
+      return `Current Nexus status\n\nRecent agent events:\n${recent}\n\nResearch:\n${research}\n\nTasks / OpenCode:\n${tasks}\n\nQA / Browser checks:\n${qa}`;
+    }
+
+    function maybeAskBuildIntake(message) {
+      const text = message.toLowerCase();
+      if (!/\b(build|create|make|generate|app|website|dashboard|landing page|site)\b/.test(text)) return false;
+      if (/\b(decide and build|you decide|surprise me|auto decide|agent decide)\b/.test(text)) return false;
+      const hasSpecifics = /\b(page|auth|login|dashboard|database|stripe|github|supabase|mobile|style|design|api|admin|checkout|user|customer|content|blog|shop|saas|game)\b/.test(text);
+      if (hasSpecifics || message.length > 90) return false;
+      addMessage('assistant', `I can build that. To avoid a generic app, answer these in one message:\n\n1. Who is it for?\n2. What are the main pages or actions?\n3. What style should it feel like?\n4. Any data, login, payments, GitHub, or Supabase?\n5. Should I clone/reference a URL or invent from scratch?\n\nIf you want me to decide, say: "decide and build".`);
+      return true;
+    }
+
+    function prepareBrowserGrounding(message) {
+      const urlMatch = message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i);
+      const mode = document.getElementById('builderMode').value;
+      const buildCapable = ['build', 'ui-builder'].includes(mode);
+      const browserFirst = buildCapable && (shouldAutoBuildFromMessage(message) || /\b(clone|recreate|copy|redesign|this site|this page|current site|current page|like|based on)\b/i.test(message));
+      if (urlMatch && browserFirst) {
+        const url = urlMatch[0].startsWith('http') ? urlMatch[0] : `https://${urlMatch[0]}`;
+        document.getElementById('urlInput').value = url;
+        pendingAutoBuild = message;
+        addMessage('system', `Opening ${url} first so the build is based on real browser evidence.`);
+        navigate();
+        return true;
+      }
+      if (!currentPageId && shouldWebSearch(message) && browserFirst) {
+        pendingAutoBuild = message;
+        addMessage('system', 'Searching first so Nexus can choose a real browser target before building. Open a result to continue.');
+        runBrowserSearch(cleanSearchQuery(message));
+        return true;
+      }
+      return false;
+    }
+
+    function sendBuilderPrompt(message) {
+      document.getElementById('chatInput').value = message;
+      sendChat();
+    }
+
+    async function sendLandingChat() {
+      if (landingStartInProgress) return;
+      const input = document.getElementById('landingChatInput');
+      const raw = input?.value.trim();
+      await startFromLandingValue(raw, input);
+    }
+
+    async function startFromLandingValue(raw, input) {
+      if (!raw) return;
+      const mode = document.getElementById('landingMode')?.value || 'build';
+      syncBuilderMode(mode, { announce: false });
+      setLandingBusy(true, mode);
+      setLandingStatus(`${modePresentation[mode].label} is starting...`);
+      const looksLikeUrl = /^https?:\/\//i.test(raw) || /^[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?$/i.test(raw);
+      if (!looksLikeUrl) {
+        document.body.classList.remove('landing-first', 'project-live');
+        document.body.classList.add('chat-first');
+        toggleChat(true);
+        const startsFreshBuild = mode === 'build' && isProductBuildRequest(raw) && !/\b(update|change|fix|repair|continue|resume)\b/i.test(raw);
+        if (startsFreshBuild) {
+          activeBuildId = null;
+          localStorage.removeItem('nexus-active-build-id');
+        }
+        setActiveChat(`chat-${Date.now()}`, raw);
+        if (input) input.value = '';
+        document.getElementById('chatInput').value = raw;
+        setLandingStatus(`Opening ${modePresentation[mode].label}...`);
+        try {
+          await sendChat();
+        } finally {
+          setLandingBusy(false, mode);
+        }
+        return;
+      }
+      const url = raw.startsWith('http') ? raw : `https://${raw}`;
+      document.getElementById('urlInput').value = url;
+      if (input) input.value = '';
+      try {
+        if (mode === 'build') {
+          const message = `Decide and build from ${url}. First open the URL, run browser research, infer the stack and project setup with smart defaults, then build with OpenCode and run live preview, staging, and visual QA.`;
+          activeBuildId = null;
+          localStorage.removeItem('nexus-active-build-id');
+          setActiveChat(`chat-${Date.now()}`, `Build from ${new URL(url).hostname}`);
+          toggleChat(true);
+          enterProjectLiveMode(url, message);
+          await startProjectFromUrl(url, message);
+        } else {
+          const prompts = {
+            chat: `Explain the product and implementation patterns visible at ${url}. Answer without changing code.`,
+            plan: `Create an implementation plan based on ${url}. Include product structure, stack, milestones, and QA. Do not modify code.`,
+            research: `Research ${url}. Summarize its product, UX, technical patterns, and the evidence that should inform a build. Do not modify code.`,
+            'ui-builder': `Analyze and visually recreate ${url}. Use browser evidence, preserve product-specific details, and verify the result responsively.`,
+          };
+          const message = prompts[mode] || prompts.chat;
+          document.body.classList.remove('landing-first', 'project-live');
+          document.body.classList.add('chat-first');
+          setActiveChat(`chat-${Date.now()}`, `${modePresentation[mode].label}: ${new URL(url).hostname}`);
+          toggleChat(true);
+          addMessage('system', `Opening ${url} for ${modePresentation[mode].label.toLowerCase()} mode...`);
+          await openUrlInBrowser(url);
+          document.getElementById('chatInput').value = message;
+          await sendChat();
+        }
+      } catch (error) {
+        addMessage('system', `${modePresentation[mode].label} start failed: ${error.message}`);
+      } finally {
+        setLandingBusy(false, mode);
+      }
+    }
+
+    async function openUrlInBrowser(url) {
+      if (!csrfToken) await loadSecurityToken();
+      if (nativeBrowserAvailable()) {
+        currentSessionId = 'electron-native';
+        currentPageId = currentPageId || 'active-tab';
+        setText('sessionPill', 'native');
+        setLaunchStatus(`Opening ${url} in the native Chromium tab...`);
+        const result = await executeNativeBrowserAction({ type: 'navigate', url, options: { timeout: 60000 } });
+        return result?.page;
+      }
+      if (!currentSessionId || !currentPageId) {
+        setLaunchStatus('Creating browser session...');
+        addMessage('system', 'Creating browser session...');
+        const session = await api('/api/sessions', {});
+        currentSessionId = session.id;
+        currentPageId = session.activePageId || session.pages?.[0]?.id;
+        setText('sessionPill', currentSessionId.slice(0, 8));
+      }
+      if (!currentPageId) throw new Error('Browser session did not create an active page.');
+      setLaunchStatus(`Opening ${url} in the live browser...`);
+      const result = await api(`/api/sessions/${currentSessionId}/pages/${currentPageId}/action`, {
+        type: 'navigate',
+        url,
+        options: { waitUntil: 'domcontentloaded', timeout: 60000 },
+      });
+      if (result?.page) updatePage(result.page);
+      return result?.page;
+    }
+
+    async function startProjectFromUrl(url, message) {
+      addMessage('system', `Opening ${url} in the live browser...`);
+      await openUrlInBrowser(url);
+      setLaunchStatus('URL loaded. Starting chat-to-OpenCode build handoff...');
+      addMessage('system', 'URL loaded. Starting chat-to-OpenCode build handoff...');
+      await continueBuildFromLoadedPage(message);
+    }
+
+    function applyModeFromMessage(message) {
+      const text = message.toLowerCase();
+      let nextMode = '';
+      if (/\bresearch\s+mode\b|\bswitch\s+to\s+research\b/.test(text)) nextMode = 'research';
+      else if (/\bplan\s+mode\b|\bswitch\s+to\s+plan\b/.test(text)) nextMode = 'plan';
+      else if (/\bask\s+mode\b|\bswitch\s+to\s+ask\b/.test(text)) nextMode = 'chat';
+      else if (/\bvisual(?:\s+edit|\s+mode)?\b|\bswitch\s+to\s+visual\b/.test(text)) nextMode = 'ui-builder';
+      else if (/\bbuild\s+mode\b|\bagent\s+mode\b|\bswitch\s+to\s+(?:build|agent)\b/.test(text)) nextMode = 'build';
+      if (nextMode) syncBuilderMode(nextMode);
+    }
+
+    function isProductBuildRequest(message) {
+      const text = message.trim().toLowerCase();
+      if (!text || text.length > 240 || /\?$/.test(text)) return false;
+      if (/^(what|why|how|when|where|who|can|could|would|should|explain|tell me|show me)\b/.test(text)) return false;
+      if (/\b(status|progress|logs?|staging studio|build doctor|auto heal|expert router|project memory)\b/.test(text)) return false;
+      const product = /\b(landing page|website|web app|application|app|dashboard|portal|tracker|storefront|portfolio|blog|game|tool|site|ui)\b/.test(text);
+      return product || /\b(build|create|make|generate|code|implement)\b/.test(text) && /\b(page|component|frontend|backend|api)\b/.test(text);
+    }
+
+    function isConversationalBuildQuestion(message) {
+      const text = message.trim().toLowerCase();
+      if (!text) return false;
+      const politeAction = /^(?:can|could|would|will)\s+(?:you|we|nexus)\s+(?:please\s+)?(?:build|create|make|generate|implement|change|update|edit|modify|fix|improve|add|remove|replace|move|resize|restyle|connect|wire|debug|repair)\b/.test(text);
+      if (politeAction) return false;
+      return /^(?:what|why|how|when|where|who|which|does|do|did|is|are|was|were|has|have|can|could|would|should|will)\b/.test(text)
+        || /\?\s*$/.test(text);
+    }
+
+    function shouldAutoBuildFromMessage(message) {
+      if (isConversationalBuildQuestion(message)) return false;
+      const mode = document.getElementById('builderMode').value;
+      if (!['build', 'ui-builder'].includes(mode)) return false;
+      return mode === 'build' || isProductBuildRequest(message) || /\b(build|clone|research project|start building|app brain|full app)\b/i.test(message);
+    }
+
+    function executeChatIntent(message) {
+      const mode = document.getElementById('builderMode').value;
+      const text = message.toLowerCase();
+      if (isConversationalBuildQuestion(message)) return;
+      if (mode === 'chat') return;
+      if (mode === 'research') {
+        if (currentPageId) {
+          addMessage('system', 'Compiling research artifacts from the active page...');
+          setTimeout(() => runResearchProject().catch(error => addMessage('system', `Research failed: ${error.message}`)), 900);
+        }
+        return;
+      }
+      if (mode === 'plan') {
+        if (currentPageId) {
+          addMessage('system', 'Generating plan artifacts from the active page...');
+          setTimeout(() => runResearchProject().catch(error => addMessage('system', `Plan generation failed: ${error.message}`)), 900);
+        }
+        return;
+      }
+      const buildCommand = /\b(staging studio|multi-device preview|device wall|preview wall|staging preview|expert router|route experts|smart agents|creative mind|creative direction|visual dna|anti-template|project memory|memory|auto heal loop|heal loop|build doctor|doctor|auto heal|self heal|stack experts|all experts|official source agents|official-source agents|[a-z0-9-]+ expert)\b/.test(text);
+      if (!currentPageId && !buildCommand && !message.match(/https?:\/\/[^\s]+|[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?/i) && !isProductBuildRequest(message)) {
+        if (mode === 'build' || mode === 'plan') addMessage('system', 'Give me a target URL first, or switch to research mode so I can search the web for one.');
+        return;
+      }
+      if (/\b(staging studio|multi-device preview|device wall|preview wall|staging preview)\b/.test(text)) {
+        setTimeout(() => runStagingStudio(), 600);
+      } else if (/\b(expert router|route experts|smart agents)\b/.test(text)) {
+        setTimeout(() => runExpertRouter(), 600);
+      } else if (/\b(creative mind|creative direction|visual dna|anti-template|make it not look the same)\b/.test(text)) {
+        setTimeout(() => createCreativeDirection(), 600);
+      } else if (/\b(project memory|memory)\b/.test(text)) {
+        setTimeout(() => showProjectMemory(), 600);
+      } else if (/\b(auto heal loop|heal loop|repair loop|self healing loop)\b/.test(text)) {
+        setTimeout(() => runAutoHealLoop(), 800);
+      } else if (/\b(stack experts|all experts|official source agents|official-source agents)\b/.test(text)) {
+        setTimeout(() => showAllLanguageExperts(), 600);
+      } else if (/\b(typescript expert|typescript agent|ts expert|compiler expert)\b/.test(text)) {
+        setTimeout(() => showLanguageExpert('typescript'), 600);
+      } else if (/\b([a-z0-9-]+)\s+expert\b/.test(text)) {
+        const match = text.match(/\b([a-z0-9-]+)\s+expert\b/);
+        setTimeout(() => showLanguageExpert(match[1]), 600);
+      } else if (/\b(build doctor|doctor|auto heal|self heal|fix setup|dev setup|repair build)\b/.test(text)) {
+        setTimeout(() => runBuildDoctor(/\b(auto heal|self heal|fix|repair)\b/.test(text)), 800);
+      } else if (mode === 'build' || /\b(start building|build app|build mode|full app|research project)\b/.test(text)) {
+        addMessage('system', 'Starting research-project compiler for OpenCode build...');
+        setTimeout(() => runResearchProject().then((ok) => { if (ok) openIDE(); }).catch(error => addMessage('system', `Build start failed: ${error.message}`)), 1200);
+      } else if (/\b(visual qa|repair qa|auto repair|compare preview|qa repair)\b/.test(text)) {
+        setTimeout(() => runVisualQaRepair(), 800);
+      } else if (/\b(api|mcp|sdk|endpoint)\b/.test(text)) {
+        setTimeout(() => runApiCrawl().catch(error => addMessage('system', `API crawl failed: ${error.message}`)), 1200);
+      } else if (/\b(bolt|palot|lovable|codex|better than|competitive)\b/.test(text)) {
+        setTimeout(() => showCompetitiveBlueprint(), 600);
+      } else if (/\b(hermes|agent swarm|agents|skills|memory|automations)\b/.test(text)) {
+        setTimeout(() => showAgentSwarm(), 600);
+      } else if (/\b(ui|tailwind|figma|overlay|component|clone)\b/.test(text)) {
+        setTimeout(() => runUiIntelligence().then(() => runBuildOverlay()).catch(error => addMessage('system', `UI build failed: ${error.message}`)), 1200);
+      }
+    }
+
+    function showBuildStarted(build) {
+      document.body.classList.remove('landing-first', 'chat-first');
+      document.body.classList.add('project-live');
+      document.getElementById('chatPanel').classList.add('open');
+      activeBuildId = build.id;
+      localStorage.setItem('nexus-active-build-id', build.id);
+      document.getElementById('outputPath').textContent = build.root;
+      const agents = [...(build.stackPlan?.projectAgentIds || []), ...(build.stackPlan?.expertIds || [])].map(agentDisplayName);
+      document.getElementById('taskStream').textContent = `Nexus build workspace\n\n${build.root}\n\nStack: ${build.stackPlan?.framework || 'auto-detected'} / ${build.stackPlan?.primaryLanguage || 'project language'}\n\nActive team:\n${agents.map((agent) => `- ${agent}`).join('\n') || '- Build agent, Build Doctor, and Browser QA'}`;
+      document.getElementById('qaStream').textContent = 'Implementation is running. Build checks, preview, responsive browser QA, and staging follow automatically.';
+      setLaunchStatus(`Nexus agents are building the requested product.\n${build.root}\n\nProgress and failures are shown directly in chat.`);
+      monitorBuildProgress(build.id);
+    }
+
+    async function startPreviewThenStage() {
+      await startActiveBuildPreview();
+      setTimeout(() => runStagingStudio().catch((error) => {
+        setLaunchStatus(`Staging is waiting for the preview server. Retrying...\n${error.message}`);
+        setTimeout(() => runStagingStudio().catch((retryError) => setLaunchStatus(`Staging could not start yet. Use chat: run staging studio.\n${retryError.message}`)), 10000);
+      }), 8000);
+    }
+
+    function showBuildUpdateStarted(update) {
+      activeBuildId = update.buildId;
+      localStorage.setItem('nexus-active-build-id', update.buildId);
+      document.getElementById('outputPath').textContent = update.workspace;
+      const state = update.status === 'queued' ? 'queued behind the active build' : 'started';
+      document.getElementById('taskStream').textContent = `Nexus app update ${state}\n\nRequest:\n${update.userMessage}\n\nWorkspace:\n${update.workspace}`;
+      document.getElementById('qaStream').textContent = `The agent team is applying the update. Preview and browser QA will refresh after queued work finishes.`;
+      monitorBuildProgress(update.buildId, update.id);
+    }
+
+    function monitorBuildProgress(buildId, updateId = '', existingCard = null) {
+      if (buildProgressTimer) clearTimeout(buildProgressTimer);
+      let attempts = 0;
+      const progressMessage = existingCard || createBuildProgressMessage(buildId, Boolean(updateId));
+      const poll = async () => {
+        if (activeBuildId !== buildId) return;
+        attempts += 1;
+        try {
+          const suffix = updateId ? `?updateId=${encodeURIComponent(updateId)}` : '';
+          const activity = await getApi(`/api/builder/builds/${buildId}/activity${suffix}`);
+          const label = activity.kind === 'update' ? 'App update' : 'Build';
+          const tail = (activity.log || '').split('\n').slice(-45).join('\n').trim();
+          document.getElementById('taskStream').textContent = `${label} ${activity.status}\n\n${tail || 'Executor is starting...'}`;
+          renderBuildProgressMessage(progressMessage, activity);
+          setLaunchStatus(`${activity.progress?.phase || `${label}: ${activity.status}`}\n${activity.progress?.summary || activity.build.root}`);
+          if (activity.terminal) {
+            buildProgressTimer = null;
+            if (activity.status === 'completed') {
+              addMessage('assistant', `${label} verified: build and product workflows passed on desktop and mobile.`);
+              if (activity.build.previewUrl) showAppPreview(activity.build);
+            } else {
+              const failure = activity.progress?.failure;
+              if (activity.build.verification?.issues?.length) addMessage('system', activity.build.verification.issues.join('\n'));
+              document.getElementById('qaStream').textContent = `${failure?.title || `${label} did not complete`}\n\n${failure?.detail || 'The executor stopped before completion.'}\n\n${failure?.recovery || 'Run Build Doctor, then retry from the preserved workspace.'}`;
+            }
+            return;
+          }
+        } catch (error) {
+          setLaunchStatus(`Waiting for build status...\n${error.message}`);
+        }
+        if (attempts < 900) buildProgressTimer = setTimeout(poll, 2000);
+        else addMessage('system', 'Build monitoring timed out after 30 minutes. Ask for status to reconnect to the task.');
+      };
+      poll();
+    }
+
+    async function startActiveBuildPreview() {
+      if (!activeBuildId) return addMessage('system', 'No generated build workspace yet. Ask Build Mode to create one first.');
+      try {
+        const build = await api(`/api/builder/builds/${activeBuildId}/preview`, {});
+        showAppPreview(build);
+        pollPreviewLog(build.id);
+        setLaunchStatus(`Live preview starting: ${build.previewUrl}`);
+        addMessage('assistant', `Live preview starting: ${build.previewUrl}`);
+      } catch (error) {
+        setLaunchStatus(`Preview start failed: ${error.message}`);
+        addMessage('system', `Preview start failed: ${error.message}`);
+      }
+    }
+
+    async function verifyActiveProduct() {
+      if (!activeBuildId) return;
+      try { const build = await api('/api/builder/builds/' + activeBuildId + '/verify', {}); showBuildStarted(build); }
+      catch (error) { addMessage('system', 'Could not start verification: ' + error.message); }
+    }
+
+    async function openActiveBuildExternal() {
+      const build = await getActiveBuild();
+      if (!build?.previewUrl) return addMessage('system', 'No live generated preview URL yet. Start Live App Preview first.');
+      window.open(build.previewUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    async function stopActiveBuildPreview() {
+      if (!activeBuildId) return;
+      try {
+        const build = await deleteApi(`/api/builder/builds/${activeBuildId}/preview`);
+        if (previewLogTimer) clearInterval(previewLogTimer);
+        appendStream('qaStream', `Preview stopped for ${build.name}.`);
+      } catch (error) {
+        addMessage('system', `Preview stop failed: ${error.message}`);
+      }
+    }
+
+    function showAppPreview(build) {
+      upsertBrowserTab({ id: `preview-${build.id}`, title: build.name || 'Preview', kind: 'preview', url: build.previewUrl || '' });
+      document.getElementById('browserView').innerHTML = `
+        <div class="hud"><span class="pill">Live App</span><span class="pill">${build.previewStatus}</span><span class="pill">${build.previewUrl || 'starting'}</span></div>
+        <div class="preview-actions"><button class="btn primary" onclick="openActiveBuildExternal()">Open App</button><button class="btn" onclick="startActiveBuildPreview()">Restart</button><button class="btn amber" onclick="stopActiveBuildPreview()">Stop</button><button class="btn" onclick="createRollbackPlan()">Restore Version</button><button class="btn" onclick="verifyActiveProduct()">Check App</button></div>
+        ${build.previewUrl ? `<iframe class="app-frame" src="${build.previewUrl}" title="Generated app preview"></iframe>` : `<div class="preview-card"><div class="preview-card-inner"><h1>Preview starting</h1><p>Nexus is starting the generated app server. Staging will open here when screenshots are ready.</p></div></div>`}`;
+      setText('pageStatus', `Generated app preview - ${build.previewUrl || 'starting'}`);
+    }
+
+    function pollPreviewLog(buildId) {
+      if (previewLogTimer) clearInterval(previewLogTimer);
+      const readLog = async () => {
+        try {
+          const result = await getApi(`/api/builder/builds/${buildId}/preview-log`);
+          const lines = result.log.split('\n').slice(-40).join('\n');
+          document.getElementById('qaStream').textContent = lines || 'Preview is starting...';
+        } catch {}
+      };
+      readLog();
+      previewLogTimer = setInterval(readLog, 2500);
+    }
+
+    function shouldWebSearch(message) {
+      const mode = document.getElementById('builderMode').value;
+      return mode === 'research' || /\b(search|find|research|look up|resources|examples|docs|websites)\b/i.test(message);
+    }
+
+    function cleanSearchQuery(message) {
+      return message
+        .replace(/\b(research|plan|build)\s+mode\b/gi, '')
+        .replace(/\b(search|find|research|look up)\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim() || message;
+    }
+
+    function quickStart(message) {
+      const input = document.getElementById('landingChatInput');
+      if (input) input.value = message;
+      sendLandingChat();
+    }
+
+    function smartCommand(kind) {
+      const prompts = {
+        diagnose: 'Act as the senior DevTools debugger. Use the Gatherer Agent and Backend Observer context to diagnose what is rendered, what APIs are called, what console/network errors exist, what libraries are used, and what code should change first.',
+        mobile: 'Run mobile and kiosk QA thinking. Check desktop, tablet, mobile touch, fullscreen kiosk, app-store screenshot, accessibility, responsive overflow, touch targets, and visual regression risks for this app.',
+        backend: 'Map the backend and API functionality. Identify package scripts, dependencies, server routes, data models, env keys, auth/session behavior, API request shapes, storage, logs, and what must be duplicated.',
+        employee: 'Use the Twin-inspired developer employee model. Assign Browser Gatherer, Backend Observer, Full-Stack Architect, OpenCode Implementer, Mobile/Kiosk QA, Integration Builder, and Release Operator to this project with triggers and outputs.',
+        agentBrowser: '/agent-browser chat "inspect the current page, summarize what is interactive, and suggest the next browser action"',
+        setup: 'Plan smart project setup before building. Infer the project type and stack, ask only missing critical questions, then connect chat, project setup, staging, Build Doctor, Agent Browser, Backend Observer, OpenCode, QA, and deploy into one workflow.',
+      };
+      document.getElementById('chatInput').value = prompts[kind] || prompts.diagnose;
+      toggleChat(true);
+      sendChat();
+    }
+
+    function updatePage(page) {
+      setText('pageStatus', `${page.title || 'Page'} - ${page.url}`);
+      document.getElementById('urlInput').value = page.url;
+      refreshScreenshot();
+      refreshBrowserIntelligence(true);
+    }
+
+    async function refreshBrowserIntelligence(silent = false) {
+      if (!currentSessionId || !currentPageId) return;
+      try {
+        const result = await api('/api/builder/browser-intelligence', { sessionId: currentSessionId, pageId: currentPageId });
+        lastBrowserIntelligence = result.context || '';
+        lastGathererObservationCount = result.timeline?.length || lastGathererObservationCount;
+        const gathererStatus = document.getElementById('gathererStatus');
+        if (gathererStatus) gathererStatus.textContent = `${lastGathererObservationCount} observations`;
+        setText('pageStatus', `Gatherer Agent: ${lastGathererObservationCount} observations - ${document.getElementById('urlInput').value || 'active page'}`);
+        if (!silent) appendStream('researchStream', `Gatherer Agent refreshed (${lastGathererObservationCount} observations, ${lastBrowserIntelligence.length} chars).`);
+      } catch (error) {
+        if (!silent) addMessage('system', `Browser intelligence failed: ${error.message}`);
+      }
+    }
+
+    async function refreshBackendObserver(silent = false) {
+      if (!activeBuildId) return;
+      try {
+        const result = await api('/api/builder/backend-observer', { buildId: activeBuildId });
+        lastBackendObservation = result.context || '';
+        lastBackendObservationCount = result.timeline?.length || lastBackendObservationCount;
+        const backendStatus = document.getElementById('backendStatus');
+        if (backendStatus) backendStatus.textContent = `${lastBackendObservationCount} observations`;
+        if (!silent) appendStream('researchStream', `Backend Observer refreshed (${lastBackendObservationCount} observations, ${lastBackendObservation.length} chars).`);
+      } catch (error) {
+        if (!silent) addMessage('system', `Backend Observer failed: ${error.message}`);
+      }
+    }
+
+    function startBrowserIntelligenceLoop() {
+      if (browserIntelTimer) clearInterval(browserIntelTimer);
+      browserIntelTimer = setInterval(() => {
+        refreshBrowserIntelligence(true);
+        refreshBackendObserver(true);
+      }, 10000);
+    }
+
+    function refreshScreenshot() {
+      if (!currentPageId) return;
+      if (nativeBrowserAvailable()) {
+        executeNativeBrowserAction({ type: 'screenshot' }, { announce: false }).catch(() => {});
+        return;
+      }
+      sendWs('page:screenshot', { pageId: currentPageId });
+    }
+
+    function showScreenshot(base64) {
+      lastScreenshot = base64;
+      document.getElementById('browserView').innerHTML = `<div class="hud"><span class="pill">${viewMode}</span><span class="pill">${document.getElementById('uiLook').value}</span></div><img id="previewImage" src="data:image/png;base64,${base64}" alt="Live browser screenshot"><div class="overlay-layer" id="overlayLayer"></div>`;
+    }
+
+    function animateBuildOverlay(plan) {
+      if (overlayTimer) clearInterval(overlayTimer);
+      if (!lastScreenshot) refreshScreenshot();
+      const view = document.getElementById('browserView');
+      if (!document.getElementById('overlayLayer')) {
+        view.insertAdjacentHTML('beforeend', '<div class="overlay-layer" id="overlayLayer"></div>');
+      }
+      const layer = document.getElementById('overlayLayer');
+      layer.innerHTML = '';
+      const scale = getOverlayScale(plan);
+      let index = 0;
+      document.getElementById('qaStream').textContent = 'AI visual build started...';
+      overlayTimer = setInterval(() => {
+        if (index >= plan.blocks.length) {
+          clearInterval(overlayTimer);
+          appendStream('qaStream', 'AI visual build overlay complete.');
+          addMessage('assistant', 'Overlay complete. OpenCode now has the ordered component build script.');
+          return;
+        }
+        const block = plan.blocks[index];
+        const el = document.createElement('div');
+        el.className = 'build-block live';
+        el.style.left = `${block.rect.x * scale.x + scale.offsetX}px`;
+        el.style.top = `${block.rect.y * scale.y + scale.offsetY}px`;
+        el.style.width = `${Math.max(10, block.rect.width * scale.x)}px`;
+        el.style.height = `${Math.max(10, block.rect.height * scale.y)}px`;
+        el.innerHTML = `<div class="block-label">${block.order}. ${block.kind} - ${block.name}</div>`;
+        layer.appendChild(el);
+        appendStream('taskStream', `${block.order}. ${block.name}\n${block.tailwind}`);
+        appendStream('qaStream', block.explanation);
+        setTimeout(() => el.classList.add('done'), 550);
+        index += 1;
+      }, 420);
+    }
+
+    function getOverlayScale(plan) {
+      const view = document.getElementById('browserView');
+      const img = document.getElementById('previewImage');
+      const viewport = plan.viewport || { width: img?.naturalWidth || view.clientWidth, height: img?.naturalHeight || view.clientHeight };
+      const containerRatio = view.clientWidth / view.clientHeight;
+      const sourceRatio = viewport.width / viewport.height;
+      let width = view.clientWidth;
+      let height = view.clientHeight;
+      let offsetX = 0;
+      let offsetY = 0;
+      if (sourceRatio > containerRatio) {
+        height = width / sourceRatio;
+        offsetY = (view.clientHeight - height) / 2;
+      } else {
+        width = height * sourceRatio;
+        offsetX = (view.clientWidth - width) / 2;
+      }
+      return { x: width / viewport.width, y: height / viewport.height, offsetX, offsetY };
+    }
+
+    function setViewMode(el, mode) {
+      viewMode = mode;
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      el.classList.add('active');
+      setText('viewPill', mode);
+      appendStream('qaStream', `Switched to ${mode} mode.`);
+    }
+
+    function updateMetrics(project) {
+      document.getElementById('endpointCount').textContent = project.brain.api.endpoints.length;
+      document.getElementById('componentCount').textContent = project.brain.ui.components.length;
+      document.getElementById('pageCount').textContent = project.brain.pages.length;
+      document.getElementById('outputCount').textContent = Object.keys(project.tasks).length + Object.keys(project.integrations).length;
+    }
+
+    function addMessage(role, content) {
+      const messages = document.getElementById('messages');
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.textContent = content;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+      return div;
+    }
+
+    function createBuildProgressMessage(buildId, isUpdate = false) {
+      const messages = document.getElementById('messages');
+      const div = document.createElement('div');
+      div.className = 'msg assistant build-progress';
+      div.dataset.buildId = buildId;
+      div.innerHTML = `<div class="build-progress-head"><strong>${isUpdate ? 'Nexus app update' : 'Nexus multi-agent build'}</strong><span class="build-progress-state">starting</span></div><div class="build-progress-summary">Loading the agent route and build stages...</div><div class="build-progress-track"><span></span></div>`;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+      return div;
+    }
+
+    function agentDisplayName(value) {
+      const known = {
+        'framework-expert-router': 'Framework router',
+        'opencode-build-agent': 'Build agent',
+        'build-doctor-agent': 'Build Doctor',
+        'qa-agent': 'Browser QA',
+        'memory-agent': 'Project memory',
+        'react-agent': 'React agent',
+      };
+      return known[value] || String(value || '').replace(/-agent$/, '').replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function renderBuildProgressMessage(card, activity) {
+      const progress = activity.progress || {};
+      const failed = Boolean(progress.failure) || ['failed', 'opencode-unavailable'].includes(activity.status);
+      const completed = activity.status === 'completed' && !activity.pendingUpdates;
+      const state = failed ? 'failed' : completed ? 'completed' : activity.status === 'queued' ? 'queued' : 'running';
+      card.dataset.state = state;
+      const steps = (progress.steps || []).map((step) => `<div class="build-step ${escapeHtml(step.status)}"><span class="build-step-dot"></span><span><b>${escapeHtml(step.label)}</b><small>${escapeHtml(step.detail)}</small></span></div>`).join('');
+      const agents = (progress.agents || []).map((agent) => `<span class="build-agent">${escapeHtml(agentDisplayName(agent))}</span>`).join('');
+      const output = (progress.recentOutput || [])
+        .filter((line) => !(completed && /Code executor exited with code/i.test(line)))
+        .filter((line) => !(completed && (/^# Todos$/i.test(line) || /^\[[\u2713\u2022 x]\]/i.test(line))))
+        .join('\n');
+      const failure = progress.failure ? `<div class="build-failure"><b>${escapeHtml(progress.failure.title)}</b><span>${escapeHtml(progress.failure.detail)}</span><span>${escapeHtml(progress.failure.recovery)}</span></div>` : '';
+      const actions = failed ? `<div class="build-progress-actions"><button type="button" onclick="retryBuildFromProgress('${escapeJs(activity.build.id)}')">Retry build</button><button type="button" onclick="runBuildDoctor(true)">Run Build Doctor</button></div>` : '';
+      card.innerHTML = `
+        <div class="build-progress-head"><strong>${activity.kind === 'update' ? 'Nexus app update' : 'Nexus multi-agent build'}</strong><span class="build-progress-state">${escapeHtml(progress.phase || activity.status)}</span></div>
+        <div class="build-progress-summary">${escapeHtml(progress.summary || 'Nexus is preparing the workspace.')}</div>
+        <div class="build-progress-track"><span style="width:${Math.max(0, Math.min(100, Number(progress.percent || 0)))}%"></span></div>
+        <div class="build-progress-steps">${steps}</div>
+        ${agents ? `<div class="build-agent-list">${agents}</div>` : ''}
+        ${output ? `<pre class="build-output">${escapeHtml(output)}</pre>` : ''}
+        ${failure}
+        ${actions}`;
+      const messages = document.getElementById('messages');
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function retryBuildFromProgress(buildId) {
+      activeBuildId = buildId;
+      localStorage.setItem('nexus-active-build-id', buildId);
+      syncBuilderMode('build');
+      document.getElementById('chatInput').value = 'Fix the failed build, continue implementation from the preserved workspace, run the build checks, then start the preview and browser QA.';
+      sendChat();
+    }
+
+    function setChatBusy(busy) {
+      const input = document.getElementById('chatInput');
+      const button = document.getElementById('chatSendButton');
+      if (input) input.disabled = busy;
+      if (button) {
+        button.disabled = busy;
+        button.textContent = busy ? 'Working...' : 'Send';
+      }
+      if (!busy && document.body.classList.contains('chat-first')) input?.focus();
+    }
+
+    function addActionMessage(actions, source) {
+      if (!actions.length) return;
+      const messages = document.getElementById('messages');
+      const wrap = document.createElement('div');
+      wrap.className = 'chat-actions';
+      const sourceLine = document.createElement('div');
+      sourceLine.className = 'chat-source';
+      sourceLine.textContent = source === 'agent-browser' ? 'Agent Browser next moves' : source === 'ai' ? 'AI conductor next moves' : 'Fallback next moves';
+      wrap.appendChild(sourceLine);
+      actions.slice(0, 2).forEach((action) => {
+        const button = document.createElement('button');
+        button.className = 'chat-action';
+        button.type = 'button';
+        const title = document.createElement('b');
+        title.textContent = action.label || 'Run';
+        const desc = document.createElement('span');
+        desc.textContent = action.description || action.prompt || '';
+        button.appendChild(title);
+        button.appendChild(desc);
+        button.onclick = () => sendBuilderPrompt(action.prompt || action.description || action.label || 'Continue');
+        wrap.appendChild(button);
+      });
+      messages.appendChild(wrap);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function appendStream(id, text) {
+      const el = document.getElementById(id);
+      el.textContent = `${el.textContent}\n${new Date().toLocaleTimeString()} ${text}`.trim();
+      nexusStatusLog.push(`${id}: ${text}`);
+      if (nexusStatusLog.length > 100) nexusStatusLog.shift();
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    function escapeJs(value) {
+      return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\r?\n/g, '\\n');
+    }
+
+    function setStatus(ok, text) {
+      setText('statusText', text);
+      const apiDot = document.getElementById('apiDot');
+      if (apiDot) apiDot.className = ok ? 'dot' : 'dot bad';
+      const wsBadge = document.getElementById('wsBadge');
+      if (wsBadge) wsBadge.innerHTML = `<span class="dot ${ok ? '' : 'bad'}"></span>${ok ? 'live' : 'offline'}`;
+    }
+
+    async function detectWebGpu() {
+      const supported = Boolean(navigator.gpu);
+      const badge = document.getElementById('gpuBadge');
+      if (badge) badge.textContent = supported ? 'GPU' : 'CPU';
+      appendStream('qaStream', supported ? 'WebGPU available for future visual analysis acceleration.' : 'WebGPU not available; CPU/browser mode active.');
+    }
+
+    function openIDE() {
+      const url = `http://${location.hostname === 'localhost' ? '127.0.0.1' : location.hostname}:3002`;
+      upsertBrowserTab({ id: 'ide', title: 'IDE', kind: 'ide', url });
+      showBrowserFrame('IDE', url, 'Files and terminal');
+    }
+
+    document.getElementById('urlInput').addEventListener('keydown', (event) => { if (event.key === 'Enter') navigate(); });
+    document.getElementById('landingForm')?.addEventListener('submit', (event) => { event.preventDefault(); sendLandingChat(); });
+    document.getElementById('uiLook').addEventListener('change', (event) => { setText('lookPill', event.target.value); });
+    const savedBuilderMode = localStorage.getItem('nexus-builder-mode');
+    const initialBuilderMode = savedBuilderMode && modePresentation[savedBuilderMode] ? savedBuilderMode : 'build';
+    syncBuilderMode(initialBuilderMode, { persist: false, announce: false });
+    document.getElementById('landingMode').addEventListener('change', (event) => syncBuilderMode(event.target.value));
+    document.getElementById('builderMode').addEventListener('change', (event) => {
+      syncBuilderMode(event.target.value);
+    });
+
+    function startFromQueryParam() {
+      const raw = new URLSearchParams(location.search).get('start');
+      if (!raw || !document.body.classList.contains('landing-first')) return;
+      const input = document.getElementById('landingChatInput');
+      if (input) input.value = raw;
+      history.replaceState(null, '', location.pathname + location.hash);
+      setTimeout(() => startFromLandingValue(raw, input), 300);
+    }
+
+    initTheme();
+    initWindowMode();
+    if (activeChatId) setText('activeChatTitle', compactLabel(activeChatId, 34));
+    renderBrowserTabs();
+    detectWebGpu();
+    loadSecurityToken().finally(async () => {
+      connect();
+      startBrowserIntelligenceLoop();
+      if (popoutChatId || activeChatId) await openChat(popoutChatId || activeChatId, { announce: false });
+      startFromQueryParam();
+    });
+  </script>
+</body>
+</html>
