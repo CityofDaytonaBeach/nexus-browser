@@ -1,0 +1,84 @@
+{
+  "build": {
+    "id": "c45a3a8b",
+    "name": "bike-week",
+    "root": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b",
+    "prompt": "bike week",
+    "status": "completed",
+    "previewStatus": "running",
+    "opencodeCommand": "opencode run \"Read the attached Nexus build brief, complete the requested work in the current workspace, run appropriate checks, and summarize the result.\" --file C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\OPENCODE_BUILD_PROMPT.md",
+    "logPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\opencode-build.log",
+    "previewLogPath": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\preview.log",
+    "previewCommand": "npm install && npm run dev -- --host 0.0.0.0 --port 5173",
+    "brain": {
+      "mode": "opencode",
+      "provider": "opencode",
+      "executor": "opencode",
+      "notes": [
+        "opencode local CLI performs planning, file edits, commands, and repair directly."
+      ]
+    },
+    "stackPlan": {
+      "primaryLanguage": "TypeScript",
+      "framework": "React + Vite",
+      "runtime": "Node.js",
+      "packageManager": "npm",
+      "expertIds": [
+        "typescript",
+        "react",
+        "vite",
+        "node",
+        "npm",
+        "accessibility",
+        "playwright",
+        "owasp"
+      ],
+      "projectAgentIds": [
+        "framework-expert-router",
+        "opencode-build-agent",
+        "build-doctor-agent",
+        "qa-agent",
+        "memory-agent",
+        "react-agent"
+      ],
+      "setupCommands": [
+        "npm install"
+      ],
+      "devCommand": "npm run dev -- --host 0.0.0.0 --port {port}",
+      "buildCommands": [
+        "npm run build"
+      ],
+      "testCommands": [
+        "npm test -- --runInBand"
+      ],
+      "evidence": [
+        "No explicit backend stack was requested; React + Vite is the browser-app default."
+      ]
+    },
+    "executorSessionId": "ba63647c-b20b-4aa9-b110-bdc89e6c5393",
+    "createdAt": "2026-10-07T20:31:25.668Z",
+    "verification": {
+      "phase": "passed",
+      "pass": 1,
+      "issues": [],
+      "artifacts": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\desktop-0-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\desktop-0.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\desktop-0-runtime.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\desktop-1-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\desktop-1.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\desktop-1-runtime.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\mobile-0-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\mobile-0.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\mobile-0-runtime.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\mobile-1-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\mobile-1.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\mobile-1-runtime.json"
+      ],
+      "checkedAt": "2026-10-07T20:35:19.289Z"
+    },
+    "previewPort": 5176,
+    "previewUrl": "http://127.0.0.1:5176/"
+  },
+  "updates": []
+}

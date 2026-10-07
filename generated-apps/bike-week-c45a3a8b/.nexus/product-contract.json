@@ -1,0 +1,80 @@
+{
+  "product": "Daytona Bike Week landing page",
+  "workflows": [
+    {
+      "name": "Reserve a rally pass",
+      "path": "/",
+      "steps": [
+        {
+          "action": "fill",
+          "target": {
+            "role": "textbox",
+            "name": "Rider name"
+          },
+          "value": "Morgan Miles"
+        },
+        {
+          "action": "select",
+          "target": {
+            "role": "combobox",
+            "name": "Pass type"
+          },
+          "value": "Scenic loop ride pass"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Reserve pass"
+          }
+        },
+        {
+          "action": "expectText",
+          "text": "Morgan Miles, your scenic loop ride pass is reserved for Daytona Bike Week."
+        }
+      ],
+      "mobileSteps": [
+        {
+          "action": "fill",
+          "target": {
+            "role": "textbox",
+            "name": "Rider name"
+          },
+          "value": "Taylor Throttle"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Reserve pass"
+          }
+        },
+        {
+          "action": "expectText",
+          "text": "Taylor Throttle, your weekend rally pass is reserved for Daytona Bike Week."
+        }
+      ]
+    },
+    {
+      "name": "Review the Bike Week schedule",
+      "path": "/",
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "View schedule"
+          }
+        },
+        {
+          "action": "expectText",
+          "text": "Main Street Bike Show"
+        },
+        {
+          "action": "expectText",
+          "text": "Throttle Night Concert"
+        }
+      ]
+    }
+  ]
+}

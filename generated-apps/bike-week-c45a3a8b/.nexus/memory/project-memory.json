@@ -1,0 +1,77 @@
+{
+  "buildId": "c45a3a8b",
+  "workspace": "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b",
+  "updatedAt": "2026-10-07T20:35:19.292Z",
+  "entries": [
+    {
+      "type": "expert-routing",
+      "summary": "Routed to typescript, node, react, npm, vite, playwright, owasp, accessibility, r, soc2, boilerplates, create-t3-app",
+      "evidence": [
+        "Selected during React + Vite preflight",
+        "Dependency signal: typescript",
+        "Selected during React + Vite preflight",
+        "File signal: package.json",
+        "Selected during React + Vite preflight",
+        "Dependency signal: react",
+        "Selected during React + Vite preflight",
+        "File signal: package.json",
+        "Selected during React + Vite preflight",
+        "Dependency signal: vite",
+        "Selected during React + Vite preflight",
+        "Selected during React + Vite preflight",
+        "File signal: src/**/*",
+        "Selected during React + Vite preflight",
+        "File signal: src/**/*.{tsx,jsx,html}",
+        "Dependency signal: r",
+        "File signal: README.md",
+        "File signal: src/**/*",
+        "File signal: package.json",
+        "File signal: src/**",
+        "File signal: package.json",
+        "File signal: src/**"
+      ],
+      "tags": [
+        "typescript",
+        "node",
+        "react",
+        "npm",
+        "vite",
+        "playwright",
+        "owasp",
+        "accessibility",
+        "r",
+        "soc2",
+        "boilerplates",
+        "create-t3-app"
+      ],
+      "id": "dc32746a",
+      "createdAt": "2026-10-07T20:31:25.691Z"
+    },
+    {
+      "type": "qa",
+      "summary": "Independent build and desktop/mobile user workflows passed",
+      "evidence": [
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\desktop-0-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\desktop-0.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\desktop-0-runtime.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\desktop-1-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\desktop-1.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\desktop-1-runtime.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\mobile-0-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\mobile-0.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\mobile-0-runtime.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\mobile-1-dom.json",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\mobile-1.png",
+        "C:\\Users\\AV\\Documents\\GitHub\\nexus-browser\\generated-apps\\bike-week-c45a3a8b\\.nexus\\verification\\1791405304472-1\\mobile-1-runtime.json"
+      ],
+      "tags": [
+        "browser-verified"
+      ],
+      "id": "b1d33f62",
+      "createdAt": "2026-10-07T20:35:19.292Z"
+    }
+  ],
+  "preferences": {},
+  "workingFixes": [],
+  "failedFixes": []
+}

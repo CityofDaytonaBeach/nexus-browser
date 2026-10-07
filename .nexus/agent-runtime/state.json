@@ -1,6 +1,18 @@
 {
   "memories": [
     {
+      "id": "b9e6e045-1daa-4258-85a2-d1a6b7c682ae",
+      "scope": "session",
+      "content": "User asked: bike week\nMode: build\nActive build: none",
+      "tags": [
+        "builder-chat",
+        "build"
+      ],
+      "source": "builder-chat:default",
+      "createdAt": 1791405085641,
+      "updatedAt": 1791405085641
+    },
+    {
       "id": "14615d52-d1eb-412e-a5e6-3b7cb7fb78bb",
       "scope": "session",
       "content": "User asked: build bikeweek landing page\nMode: build\nActive build: 5f4d2e38",
